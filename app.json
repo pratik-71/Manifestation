@@ -18,8 +18,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
+      "package": "com.pratik71.Manifesation"
     },
     "web": {
       "output": "static",
@@ -37,6 +38,13 @@
           "dark": {
             "backgroundColor": "#000000"
           }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to record your affirmation.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to record your affirmation."
         }
       ]
     ],
