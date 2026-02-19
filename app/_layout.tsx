@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import 'react-native-get-random-values';
 import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
 import "../global.css";
 

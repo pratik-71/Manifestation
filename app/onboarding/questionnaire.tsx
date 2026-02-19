@@ -6,6 +6,7 @@ import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../../components/TimeWheelPicker';
 import { AppColors } from '../../constants/Colors';
+import { requestNotificationPermissions, scheduleManifestationNotifications } from '../../services/notificationService';
 
 const { width } = Dimensions.get('window');
 const TOTAL_STEPS = 3;
@@ -179,7 +180,7 @@ export default function Questionnaire() {
         return false;
     }, [currentStep]);
 
-    const handleNext = useCallback(() => {
+    const handleNext = useCallback(async () => {
         if (!isStepValid()) {
             return;
         }
@@ -193,6 +194,28 @@ export default function Questionnaire() {
                 sleepTime: sleepTimeRef.current,
                 manifestTime: manifestTimeRef.current
             });
+
+            // Schedule Notifications
+            try {
+                const hasPermission = await requestNotificationPermissions();
+                if (hasPermission) {
+                    const parseTime = (val: TimeValue) => {
+                        let hour = parseInt(val.hour);
+                        if (val.ampm === 'PM' && hour !== 12) hour += 12;
+                        if (val.ampm === 'AM' && hour === 12) hour = 0;
+                        return { hour, minute: parseInt(val.minute) };
+                    };
+
+                    await scheduleManifestationNotifications({
+                        wakeTime: parseTime(wakeTimeRef.current),
+                        sleepTime: parseTime(sleepTimeRef.current),
+                        manifestTime: parseTime(manifestTimeRef.current),
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to schedule notifications", err);
+            }
+
             router.push('/onboarding/goals');
         }
     }, [currentStep, isStepValid, router]);

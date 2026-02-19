@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     SafeAreaView,
     ScrollView,
@@ -13,11 +13,17 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
+import { requestNotificationPermissions } from '../../services/notificationService';
 
 export default function Goals() {
     const router = useRouter();
     const [currentGoal, setCurrentGoal] = useState('');
     const [goalTags, setGoalTags] = useState<string[]>([]);
+
+    useEffect(() => {
+        // Request permissions as soon as they reach the goals page
+        requestNotificationPermissions();
+    }, []);
 
     const handleAddGoal = () => {
         if (currentGoal.trim().length >= 3) {

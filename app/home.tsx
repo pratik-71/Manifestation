@@ -1,15 +1,39 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { Dimensions, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { AppState, Dimensions, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
+import { NotificationPermissionModal } from '../components/NotificationPermissionModal';
+import { checkNotificationStatus } from '../services/notificationService';
 
 const { width } = Dimensions.get('window');
 
 export default function Home() {
     const router = useRouter();
+    const [showNotifModal, setShowNotifModal] = useState(false);
+
+    useEffect(() => {
+        const checkPerms = async () => {
+            const status = await checkNotificationStatus();
+            if (status !== 'granted') {
+                // Delay slightly to not overwhelm on mount
+                setTimeout(() => setShowNotifModal(true), 2000);
+            }
+        };
+
+        checkPerms();
+
+        // Also check when app comes back to foreground (e.g., from settings)
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            if (nextAppState === 'active') {
+                checkPerms();
+            }
+        });
+
+        return () => subscription.remove();
+    }, []);
 
     return (
         <View style={styles.container}>
@@ -126,6 +150,11 @@ export default function Home() {
                     <BottomBar />
                 </SafeAreaView>
             </View>
+
+            <NotificationPermissionModal
+                isVisible={showNotifModal}
+                onClose={() => setShowNotifModal(false)}
+            />
         </View>
     );
 }

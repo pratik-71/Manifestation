@@ -23,7 +23,7 @@ export default function AcceptChallenge() {
 
     const handleSignature = (signature: string) => {
         console.log("Signature captured");
-        router.replace('/home');
+        router.replace('/onboarding/google_signin');
     };
 
     const handleEmpty = () => {

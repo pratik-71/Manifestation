@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BreathingBackground } from '../../components/BreathingBackground';
+import { signInWithGoogle } from '../../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -11,13 +12,17 @@ export default function GoogleSignIn() {
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
-        
-        // Simulate Google Sign-In process
-        setTimeout(() => {
+        try {
+            await signInWithGoogle();
+            router.replace('/home');
+        } catch (error: any) {
+            console.error('Login failed', error);
+            if (error.code !== 'SIGN_IN_CANCELLED') {
+                Alert.alert("Connection Failed", "The Universe couldn't verify your signal. Please try again.");
+            }
+        } finally {
             setIsLoading(false);
-            // Navigate to questionnaire after successful sign-in
-            router.replace('/onboarding/questionnaire');
-        }, 1500);
+        }
     };
 
     return (
@@ -26,19 +31,19 @@ export default function GoogleSignIn() {
 
             {/* Background Layers */}
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0a0a' }]} />
-            <BreathingBackground 
-                colors={['#0a0a0a', '#1e3a8a', '#2563eb']} 
+            <BreathingBackground
+                colors={['#0a0a0a', '#1e3a8a', '#2563eb']}
                 opacity={0.4}
             />
 
             <SafeAreaView style={styles.safeArea}>
                 {/* Content Container */}
                 <View style={styles.contentContainer}>
-                    
+
                     {/* Logo Section */}
                     <View style={styles.logoSection}>
                         <View style={styles.logoWrapper}>
-                            <Image 
+                            <Image
                                 source={require('../../assets/logo.png')}
                                 style={styles.logoImage}
                                 resizeMode="contain"
@@ -52,8 +57,8 @@ export default function GoogleSignIn() {
 
                         <Text style={styles.unlockText}>Unlock Faster Result With Our App</Text>
                         {/* Trust Image Container */}
-                        <View style={styles.imageContainer}>                        
-                            <Image 
+                        <View style={styles.imageContainer}>
+                            <Image
                                 source={require('../../assets/Onboarding/trust_google_sign_in.png')}
                                 style={styles.trustImage}
                                 resizeMode="contain"
@@ -75,7 +80,7 @@ export default function GoogleSignIn() {
                             ) : (
                                 <View style={styles.buttonContent}>
                                     <View style={styles.googleIconContainer}>
-                                        <Image 
+                                        <Image
                                             source={require('../../assets/Onboarding/google_icon.png')}
                                             style={styles.googleIconImage}
                                             resizeMode="contain"
@@ -116,7 +121,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingBottom: 40,
     },
-    
+
     // Logo Section
     logoSection: {
         alignItems: 'center',
@@ -143,14 +148,14 @@ const styles = StyleSheet.create({
         color: '#94a3b8',
         letterSpacing: 1,
     },
-    
+
     // Main Content
     mainContent: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    
+
     // Image Container
     imageContainer: {
         width: '100%',
@@ -168,7 +173,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
         position: 'relative',
     },
-    
+
     // Wave/Aura Effects
     wave1: {
         position: 'absolute',
@@ -221,7 +226,7 @@ const styles = StyleSheet.create({
         elevation: 4,
         zIndex: 3,
     },
-    
+
     // Value Proposition
     valueProp: {
         alignItems: 'center',
@@ -246,7 +251,7 @@ const styles = StyleSheet.create({
         lineHeight: 22,
         letterSpacing: 0,
     },
-    
+
     unlockText: {
         fontSize: 16,
         fontWeight: '700',
@@ -256,7 +261,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         letterSpacing: 0,
     },
-    
+
     // Sign-In Button
     signInButton: {
         backgroundColor: '#ffffff',
@@ -293,10 +298,10 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         marginRight: 7,
-     
+
         alignItems: 'center',
         justifyContent: 'center',
-   
+
     },
     googleIconImage: {
         width: 20,
@@ -318,7 +323,7 @@ const styles = StyleSheet.create({
         borderTopColor: 'transparent',
         marginRight: 14,
     },
-    
+
     // Terms
     termsContainer: {
         alignItems: 'center',

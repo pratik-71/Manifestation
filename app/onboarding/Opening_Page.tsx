@@ -10,6 +10,7 @@ import Animated, {
     withRepeat,
     withTiming
 } from 'react-native-reanimated';
+import { getCurrentUser } from '../../services/authService';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +18,7 @@ export default function OpeningPage() {
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
     // Shared Values for animations
     const textOpacity = useSharedValue(0);
@@ -85,7 +87,22 @@ export default function OpeningPage() {
     };
 
     useEffect(() => {
-        runSequence();
+        const checkAuth = async () => {
+            try {
+                const user = await getCurrentUser();
+                if (user) {
+                    router.replace('/home');
+                    return;
+                }
+            } catch (err) {
+                console.error("Auth check failed", err);
+            } finally {
+                setIsCheckingAuth(false);
+                runSequence();
+            }
+        };
+
+        checkAuth();
     }, []);
 
     const getStepContent = () => {
@@ -98,10 +115,12 @@ export default function OpeningPage() {
     };
 
     const handleSkip = () => {
-        // Stop animation logic if possible, but simplest is to just jump to finished state
-        // Reanimated values might need to be cancelled but overwriting state usually works appropriately for UI
         setIsFinished(true);
     };
+
+    if (isCheckingAuth) {
+        return <View className="flex-1 bg-black" />; // Splash-like while checking auth
+    }
 
     return (
         <View className="flex-1 bg-slate-900">
@@ -172,11 +191,11 @@ export default function OpeningPage() {
             {/* Bottom Button Area - Always Visible */}
             <View className="absolute bottom-12 w-full items-center">
                 <TouchableOpacity
-                    onPress={isFinished ? () => router.push('/onboarding/google_signin') : handleSkip}
+                    onPress={isFinished ? () => router.push('/onboarding/questionnaire') : handleSkip}
                     className="py-4 px-10 border border-white/20 rounded-full bg-white/5 active:bg-white/10"
                 >
                     <Text className={`text-white text-center uppercase font-bold ${isFinished ? 'text-lg' : 'text-xs opacity-60'}`}>
-                        {isFinished ? "Start Your Journey" : "Skip Intro"}
+                        {isFinished ? "Continue" : "Skip Intro"}
                     </Text>
                 </TouchableOpacity>
             </View>
