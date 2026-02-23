@@ -15,7 +15,7 @@ import {
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { getCurrentUser, signOut } from '../services/authService';
-import { supabase } from '../services/supabase';
+import { useUserStore } from '../store/userStore';
 
 interface UserProfile {
     username: string;
@@ -26,42 +26,24 @@ interface UserProfile {
 
 export default function Profile() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
+    const { profile, isLoading: isStoreLoading, fetchProfile } = useUserStore();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
     const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        setIsLoading(true);
-        try {
+        const init = async () => {
             const user = await getCurrentUser();
             if (!user) {
                 router.replace('/onboarding/Opening_Page');
                 return;
             }
             setUserEmail(user.email || null);
-
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('username, wake_time, sleep_time, manifest_time')
-                .eq('id', user.id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching profile:', error);
-            } else {
-                setProfile(data);
+            if (!profile) {
+                await fetchProfile(user.id);
             }
-        } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        };
+        init();
+    }, []);
 
     const handleLogout = async () => {
         Alert.alert(
@@ -88,7 +70,7 @@ export default function Profile() {
         );
     };
 
-    if (isLoading || isLoggingOut) {
+    if (isStoreLoading || isLoggingOut) {
         return (
             <View style={styles.loadingContainer}>
                 <BreathingBackground colors={['#0f172a', '#1e1b4b']} opacity={1} />
@@ -131,16 +113,16 @@ export default function Profile() {
 
                         <View style={styles.statsRow}>
                             <View style={styles.statBox}>
-                                <Text style={styles.statValue}>12</Text>
+                                <Text style={styles.statValue}>{profile?.daily_message_count || 0}</Text>
                                 <Text style={styles.statLabel}>Rituals</Text>
                             </View>
                             <View style={[styles.statBox, styles.statBorder]}>
-                                <Text style={styles.statValue}>3</Text>
+                                <Text style={styles.statValue}>{profile?.streak_count || 0}</Text>
                                 <Text style={styles.statLabel}>Day Streak</Text>
                             </View>
                             <View style={styles.statBox}>
-                                <Text style={styles.statValue}>Zen</Text>
-                                <Text style={styles.statLabel}>Level</Text>
+                                <Text style={styles.statValue}>{profile?.challenge_day || 1}</Text>
+                                <Text style={styles.statLabel}>Day</Text>
                             </View>
                         </View>
                     </Animated.View>

@@ -20,10 +20,14 @@ export default function AcceptChallenge() {
     const router = useRouter();
     const signatureRef = useRef<SignatureViewRef>(null);
     const [hasSigned, setHasSigned] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleSignature = (signature: string) => {
+        if (isProcessing) return;
+        setIsProcessing(true);
         console.log("Signature captured");
         router.replace('/onboarding/google_signin');
+        setTimeout(() => setIsProcessing(false), 1000);
     };
 
     const handleEmpty = () => {
@@ -80,7 +84,11 @@ export default function AcceptChallenge() {
 
             <SafeAreaView style={{ flex: 1 }}>
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <TouchableOpacity
+                        onPress={() => !isProcessing && router.back()}
+                        disabled={isProcessing}
+                        style={styles.backButton}
+                    >
                         <Ionicons name="chevron-back" size={28} color="#fff" />
                     </TouchableOpacity>
                 </View>
@@ -131,11 +139,15 @@ export default function AcceptChallenge() {
 
                 <View style={styles.footer}>
                     <TouchableOpacity
-                        onPress={handleOK}
-                        disabled={!hasSigned}
+                        onPress={() => {
+                            if (hasSigned && !isProcessing) {
+                                handleOK();
+                            }
+                        }}
+                        disabled={!hasSigned || isProcessing}
                         style={[
                             styles.completeButton,
-                            hasSigned ? styles.buttonActive : styles.buttonInactive
+                            hasSigned && !isProcessing ? styles.buttonActive : styles.buttonInactive
                         ]}
                     >
                         <Text style={[

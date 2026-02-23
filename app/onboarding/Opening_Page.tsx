@@ -19,6 +19,7 @@ export default function OpeningPage() {
     const [step, setStep] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [isNavigating, setIsNavigating] = useState(false);
 
     // Shared Values for animations
     const textOpacity = useSharedValue(0);
@@ -191,7 +192,17 @@ export default function OpeningPage() {
             {/* Bottom Button Area - Always Visible */}
             <View className="absolute bottom-12 w-full items-center">
                 <TouchableOpacity
-                    onPress={isFinished ? () => router.push('/onboarding/questionnaire') : handleSkip}
+                    onPress={() => {
+                        if (isNavigating) return;
+                        if (isFinished) {
+                            setIsNavigating(true);
+                            router.push('/onboarding/questionnaire');
+                            setTimeout(() => setIsNavigating(false), 1000);
+                        } else {
+                            handleSkip();
+                        }
+                    }}
+                    disabled={isNavigating}
                     className="py-4 px-10 border border-white/20 rounded-full bg-white/5 active:bg-white/10"
                 >
                     <Text className={`text-white text-center uppercase font-bold ${isFinished ? 'text-lg' : 'text-xs opacity-60'}`}>

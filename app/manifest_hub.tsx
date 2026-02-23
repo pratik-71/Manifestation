@@ -20,18 +20,27 @@ const { width } = Dimensions.get('window');
 export default function ManifestHub() {
     const router = useRouter();
     const {
-        challengeDay,
-        challengeDuration,
-        isChallengeComplete,
+        profile,
         manifestTasks,
         toggleManifestTask,
-        checkAndResetDaily,
-        startChallenge
+        startChallenge,
+        completeTaskDay
     } = useUserStore();
 
+    const challengeDay = profile?.challenge_day || 1;
+    const challengeDuration = profile?.challenge_duration || 7;
+    const isChallengeComplete = profile?.is_challenge_complete || false;
+
     useEffect(() => {
-        checkAndResetDaily();
-    }, []);
+        // Automatically check for completion when all tasks are done
+        const allTasksDone = manifestTasks.tookAction &&
+            manifestTasks.watchedContent &&
+            manifestTasks.connectedWithPeople;
+
+        if (allTasksDone) {
+            completeTaskDay();
+        }
+    }, [manifestTasks]);
 
     const tasks = [
         {
@@ -102,7 +111,7 @@ export default function ManifestHub() {
                         />
                         <Ionicons name="medal-outline" size={48} color="#10b981" style={{ alignSelf: 'center', marginBottom: 16 }} />
                         <Text style={styles.completeTitle}>Tier 1 Mastery!</Text>
-                        <Text style={styles.completeSubtitle}>You've completed your 7-day sprint. Ready for the ultimate challenge?</Text>
+                        <Text style={styles.completeSubtitle}>You've completed your {challengeDuration}-day sprint. Ready for the ultimate challenge?</Text>
 
                         <TouchableOpacity
                             style={styles.upgradeButton}

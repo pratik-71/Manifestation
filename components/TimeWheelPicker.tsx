@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     NativeScrollEvent,
     NativeSyntheticEvent,
@@ -28,14 +28,14 @@ type TimeWheelPickerProps = {
 };
 
 const ITEM_HEIGHT = 60;
-const REPEAT_HOURS = 50; // ~600 items (12 * 50) - Much lighter
-const REPEAT_MINUTES = 20; // ~1200 items (60 * 20) - Reduced significantly
-const REPEAT_AMPM = 100; // ~200 items (2 * 100)
+const REPEAT_HOURS = 10;
+const REPEAT_MINUTES = 4;
+const REPEAT_AMPM = 20;
 
 // Data Generation
 const HOURS_BASE = ['12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
 const MINUTES_BASE = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
-const AMPM_BASE = ['AM', 'PM'];
+const AMPM_BASE = ['AM', 'PM'] as const;
 
 const HOURS_DATA = Array.from({ length: REPEAT_HOURS }, () => HOURS_BASE).flat();
 const MINUTES_DATA = Array.from({ length: REPEAT_MINUTES }, () => MINUTES_BASE).flat();
@@ -51,15 +51,15 @@ interface WheelProps {
 
 const WheelItem = React.memo(
     ({ label, index, scrollY }: { label: string; index: number; scrollY: SharedValue<number> }) => {
-        const animatedStyle = useAnimatedStyle(() => {
-            const inputRange = [
-                (index - 2) * ITEM_HEIGHT,
-                (index - 1) * ITEM_HEIGHT,
-                index * ITEM_HEIGHT,
-                (index + 1) * ITEM_HEIGHT,
-                (index + 2) * ITEM_HEIGHT,
-            ];
+        const inputRange = useMemo(() => [
+            (index - 2) * ITEM_HEIGHT,
+            (index - 1) * ITEM_HEIGHT,
+            index * ITEM_HEIGHT,
+            (index + 1) * ITEM_HEIGHT,
+            (index + 2) * ITEM_HEIGHT,
+        ], [index]);
 
+        const animatedStyle = useAnimatedStyle(() => {
             const scale = interpolate(
                 scrollY.value,
                 inputRange,
@@ -91,43 +91,65 @@ const WheelItem = React.memo(
 const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelProps) => {
     const flatListRef = useRef<Animated.FlatList<string>>(null);
     const scrollY = useSharedValue(0);
-    const isMomentumScroll = useRef(false);
+    const isInteracting = useRef(false);
     const lastReportedValue = useRef(value);
+    const [isLayoutReady, setIsLayoutReady] = useState(false);
 
-    // Calculate start index to be roughly in the middle
-    const initialIndex = useMemo(() => {
-        const middleSet = Math.floor(items.length / baseLength / 2);
-        const startIndexInBase = items.slice(0, baseLength).indexOf(value);
-        const targetIndex = (middleSet * baseLength) + (startIndexInBase !== -1 ? startIndexInBase : 0);
-        return Math.max(0, targetIndex);
-    }, [items.length, baseLength]);
+    const isMatch = useCallback((a: string, b: string) => {
+        if (!a || !b) return false;
+        const nA = parseInt(a, 10);
+        const nB = parseInt(b, 10);
+        if (!isNaN(nA) && !isNaN(nB)) return nA === nB;
+        return a.toString().toUpperCase() === b.toString().toUpperCase();
+    }, []);
 
-    // Sync Scroll to Value (only if external change)
-    useEffect(() => {
-        if (isMomentumScroll.current) return;
+    // Initial index in the middle range
+    const middleIndex = useMemo(() => {
+        const middleBlock = Math.floor(items.length / baseLength / 2);
+        const indexInBase = items.slice(0, baseLength).findIndex(item => isMatch(item, value));
+        return (middleBlock * baseLength) + (indexInBase !== -1 ? indexInBase : 0);
+    }, [items, baseLength, value]);
+
+    const syncToValue = useCallback((val: string, animated = true) => {
+        if (!flatListRef.current || isInteracting.current) return;
 
         const currentIndex = Math.round(scrollY.value / ITEM_HEIGHT);
-        if (isNaN(currentIndex)) return;
+        const valIndexInBase = items.slice(0, baseLength).findIndex(item => isMatch(item, val));
 
-        const currentItem = items[currentIndex];
-        if (currentItem === value) return;
+        if (valIndexInBase === -1) return;
 
-        const valIndexInBase = items.slice(0, baseLength).indexOf(value);
+        // Current block we are in
         const currentBlock = Math.floor(currentIndex / baseLength);
         let targetIndex = currentBlock * baseLength + valIndexInBase;
 
-        if (Math.abs(targetIndex - currentIndex) > baseLength / 2) {
-            if (targetIndex > currentIndex) targetIndex -= baseLength;
-            else targetIndex += baseLength;
+        // Ensure we are somewhat in the middle of the items array for better infinite feel
+        const totalBlocks = items.length / baseLength;
+        const targetBlock = Math.floor(totalBlocks / 2);
+
+        // If we are too far from middle, jump to middle block
+        if (Math.abs(currentBlock - targetBlock) > 2) {
+            targetIndex = targetBlock * baseLength + valIndexInBase;
         }
 
-        if (targetIndex < 0) targetIndex += baseLength;
-        if (targetIndex >= items.length) targetIndex -= baseLength;
+        lastReportedValue.current = val;
+        flatListRef.current.scrollToIndex({ index: targetIndex, animated });
+    }, [items, baseLength, isMatch]);
 
-        if (targetIndex >= 0 && targetIndex < items.length) {
-            flatListRef.current?.scrollToIndex({ index: targetIndex, animated: true });
+    useEffect(() => {
+        if (isLayoutReady && value !== lastReportedValue.current) {
+            syncToValue(value, true);
         }
-    }, [value, items, baseLength]);
+    }, [value, isLayoutReady, syncToValue]);
+
+    const handleLayout = () => {
+        if (!isLayoutReady) {
+            // Give extra time for Android layout to stabilize before first forced scroll
+            setTimeout(() => {
+                setIsLayoutReady(true);
+                syncToValue(value, false);
+            }, 150);
+        }
+    };
 
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
@@ -137,13 +159,13 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
 
     const onMomentumScrollEnd = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            isMomentumScroll.current = false;
+            isInteracting.current = false;
             const offsetY = event.nativeEvent.contentOffset.y;
             const index = Math.round(offsetY / ITEM_HEIGHT);
             const safeIndex = Math.max(0, Math.min(index, items.length - 1));
 
             const newValue = items[safeIndex];
-            if (newValue !== lastReportedValue.current) {
+            if (newValue && newValue !== lastReportedValue.current) {
                 lastReportedValue.current = newValue;
                 onChange(newValue);
             }
@@ -152,20 +174,20 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
     );
 
     const onScrollBeginDrag = useCallback(() => {
-        isMomentumScroll.current = true;
+        isInteracting.current = true;
     }, []);
 
     const onScrollEndDrag = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             const velocity = event.nativeEvent.velocity?.y ?? 0;
             if (Math.abs(velocity) < 0.2) {
-                isMomentumScroll.current = false;
+                isInteracting.current = false;
                 const offsetY = event.nativeEvent.contentOffset.y;
                 const index = Math.round(offsetY / ITEM_HEIGHT);
                 const safeIndex = Math.max(0, Math.min(index, items.length - 1));
 
                 const newValue = items[safeIndex];
-                if (newValue !== lastReportedValue.current) {
+                if (newValue && newValue !== lastReportedValue.current) {
                     lastReportedValue.current = newValue;
                     onChange(newValue);
                 }
@@ -174,31 +196,21 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
         [items, onChange]
     );
 
-    const getItemLayout = useCallback(
-        (_: any, index: number) => ({
-            length: ITEM_HEIGHT,
-            offset: ITEM_HEIGHT * index,
-            index,
-        }),
-        []
-    );
-
-    const renderItem = useCallback(
-        ({ item, index }: { item: string; index: number }) => {
-            return <WheelItem label={item} index={index} scrollY={scrollY} />;
-        },
-        [scrollY]
-    );
-
     return (
         <View style={[styles.wheelContainer, style]}>
             <Animated.FlatList
                 ref={flatListRef}
                 data={items}
-                renderItem={renderItem}
+                renderItem={({ item, index }) => (
+                    <WheelItem label={item} index={index} scrollY={scrollY} />
+                )}
                 keyExtractor={(item, index) => `${index}`}
-                getItemLayout={getItemLayout}
-                initialScrollIndex={initialIndex}
+                getItemLayout={(_, index) => ({
+                    length: ITEM_HEIGHT,
+                    offset: ITEM_HEIGHT * index,
+                    index,
+                })}
+                initialScrollIndex={middleIndex}
                 showsVerticalScrollIndicator={false}
                 snapToInterval={ITEM_HEIGHT}
                 decelerationRate="fast"
@@ -207,40 +219,33 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
                 onMomentumScrollEnd={onMomentumScrollEnd}
                 onScrollBeginDrag={onScrollBeginDrag}
                 onScrollEndDrag={onScrollEndDrag}
+                onLayout={handleLayout}
                 contentContainerStyle={styles.listContent}
-                initialNumToRender={7}
-                maxToRenderPerBatch={3}
-                updateCellsBatchingPeriod={100}
-                windowSize={3}
-                removeClippedSubviews={true}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={Platform.OS === 'android'}
             />
         </View>
     );
 });
+
+import { Platform } from 'react-native';
 
 export const TimeWheelPicker = React.memo(({ value, onChange }: TimeWheelPickerProps) => {
     const valueRef = useRef(value);
     valueRef.current = value;
 
     const handleHourChange = useCallback((newHour: string) => {
-        const current = valueRef.current;
-        if (current.hour !== newHour) {
-            onChange({ ...current, hour: newHour });
-        }
+        onChange({ ...valueRef.current, hour: newHour });
     }, [onChange]);
 
     const handleMinuteChange = useCallback((newMinute: string) => {
-        const current = valueRef.current;
-        if (current.minute !== newMinute) {
-            onChange({ ...current, minute: newMinute });
-        }
+        onChange({ ...valueRef.current, minute: newMinute });
     }, [onChange]);
 
     const handleAmPmChange = useCallback((newAmPm: string) => {
-        const current = valueRef.current;
-        if (current.ampm !== newAmPm) {
-            onChange({ ...current, ampm: newAmPm as 'AM' | 'PM' });
-        }
+        onChange({ ...valueRef.current, ampm: newAmPm as 'AM' | 'PM' });
     }, [onChange]);
 
     return (
@@ -270,14 +275,6 @@ export const TimeWheelPicker = React.memo(({ value, onChange }: TimeWheelPickerP
                 />
             </View>
         </View>
-    );
-}, (prevProps, nextProps) => {
-    // Only re-render if the time value actually changed
-    return (
-        prevProps.value.hour === nextProps.value.hour &&
-        prevProps.value.minute === nextProps.value.minute &&
-        prevProps.value.ampm === nextProps.value.ampm &&
-        prevProps.onChange === nextProps.onChange
     );
 });
 

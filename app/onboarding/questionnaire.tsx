@@ -7,6 +7,7 @@ import { BreathingBackground } from '../../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../../components/TimeWheelPicker';
 import { AppColors } from '../../constants/Colors';
 import { requestNotificationPermissions, scheduleManifestationNotifications } from '../../services/notificationService';
+import { useOnboardingStore } from '../../store/onboardingStore';
 
 const { width } = Dimensions.get('window');
 const TOTAL_STEPS = 3;
@@ -105,25 +106,43 @@ type StepTwoProps = {
     onChangeSleep: (value: TimeValue) => void;
 };
 
-const StepTwo = memo(({ wakeTime, sleepTime, onChangeWake, onChangeSleep }: StepTwoProps) => (
-    <View style={styles.stepContainer}>
-        <View style={styles.questionContainer}>
-            <Text style={styles.questionText}>
-                Your daily rhythm
-            </Text>
-        </View>
+const StepTwo = memo(({ wakeTime, sleepTime, onChangeWake, onChangeSleep }: StepTwoProps) => {
+    const [isMounted, setIsMounted] = React.useState(false);
 
-        <View style={styles.timeSection}>
-            <Text style={styles.timeSectionLabel}>Wake up time</Text>
-            <TimeWheelPicker value={wakeTime} onChange={onChangeWake} />
-        </View>
+    React.useEffect(() => {
+        // Increase delay even further to 500ms for absolute stability on Android
+        const timer = setTimeout(() => setIsMounted(true), 500);
+        return () => clearTimeout(timer);
+    }, []);
 
-        <View style={styles.timeSection}>
-            <Text style={styles.timeSectionLabel}>Sleep time</Text>
-            <TimeWheelPicker value={sleepTime} onChange={onChangeSleep} />
+    return (
+        <View style={styles.stepContainer}>
+            <View style={styles.questionContainer}>
+                <Text style={styles.questionText}>
+                    Your daily rhythm
+                </Text>
+            </View>
+
+            {isMounted ? (
+                <>
+                    <Animated.View entering={FadeInRight.duration(400)} style={styles.timeSection}>
+                        <Text style={styles.timeSectionLabel}>Wake up time</Text>
+                        <TimeWheelPicker value={wakeTime} onChange={onChangeWake} />
+                    </Animated.View>
+
+                    <Animated.View entering={FadeInRight.delay(100).duration(400)} style={styles.timeSection}>
+                        <Text style={styles.timeSectionLabel}>Sleep time</Text>
+                        <TimeWheelPicker value={sleepTime} onChange={onChangeSleep} />
+                    </Animated.View>
+                </>
+            ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={[styles.helperText, { fontSize: 16 }]}>Preparing your rhythm...</Text>
+                </View>
+            )}
         </View>
-    </View>
-), (prev, next) =>
+    );
+}, (prev, next) =>
     prev.wakeTime.hour === next.wakeTime.hour &&
     prev.wakeTime.minute === next.wakeTime.minute &&
     prev.wakeTime.ampm === next.wakeTime.ampm &&
@@ -137,30 +156,59 @@ type StepThreeProps = {
     onChangeManifest: (value: TimeValue) => void;
 };
 
-const StepThree = memo(({ manifestTime, onChangeManifest }: StepThreeProps) => (
-    <View style={styles.stepContainer}>
-        <View style={styles.questionContainer}>
-            <Text style={styles.questionText}>
-                What time do you want to manifest?
-            </Text>
+const StepThree = memo(({ manifestTime, onChangeManifest }: StepThreeProps) => {
+    const [isMounted, setIsMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        // Increase delay even further to 500ms for absolute stability on Android (matching StepTwo)
+        const timer = setTimeout(() => setIsMounted(true), 500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    return (
+        <View style={styles.stepContainer}>
+            <View style={styles.questionContainer}>
+                <Text style={styles.questionText}>
+                    Your manifestation
+                </Text>
+            </View>
+            {isMounted ? (
+                <Animated.View entering={FadeInRight.duration(400)} style={styles.timeSection}>
+                    <Text style={styles.timeSectionLabel}>Manifestation time</Text>
+                    <TimeWheelPicker value={manifestTime} onChange={onChangeManifest} />
+                </Animated.View>
+            ) : (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={[styles.helperText, { fontSize: 16 }]}>Aligning with the universe...</Text>
+                </View>
+            )}
         </View>
-        <TimeWheelPicker value={manifestTime} onChange={onChangeManifest} />
-    </View>
-), (prev, next) =>
+    );
+}, (prev, next) =>
     prev.manifestTime.hour === next.manifestTime.hour &&
     prev.manifestTime.minute === next.manifestTime.minute &&
     prev.manifestTime.ampm === next.manifestTime.ampm
 );
 
+// Helper: convert 12-hour TimeValue to "HH:MM" 24-hour string
+const timeValueTo24h = (val: { hour: string; minute: string; ampm: 'AM' | 'PM' }): string => {
+    let hour = parseInt(val.hour, 10);
+    if (val.ampm === 'PM' && hour !== 12) hour += 12;
+    if (val.ampm === 'AM' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${val.minute}`;
+};
+
 export default function Questionnaire() {
     const router = useRouter();
+    const setOnboardingUserData = useOnboardingStore((s) => s.setUserData);
     const [currentStep, setCurrentStep] = useState(1);
 
     // Form State
     const [username, setUsername] = useState('');
     const [wakeTime, setWakeTime] = useState<TimeValue>({ hour: '07', minute: '00', ampm: 'AM' });
     const [sleepTime, setSleepTime] = useState<TimeValue>({ hour: '11', minute: '00', ampm: 'PM' });
-    const [manifestTime, setManifestTime] = useState<TimeValue>({ hour: '12', minute: '00', ampm: 'AM' });
+    const [manifestTime, setManifestTime] = useState<TimeValue>({ hour: '10', minute: '00', ampm: 'AM' });
+    const [isProcessing, setIsProcessing] = useState(false);
 
     // Use refs to access current values without recreating callbacks
     const wakeTimeRef = useRef(wakeTime);
@@ -181,44 +229,62 @@ export default function Questionnaire() {
     }, [currentStep]);
 
     const handleNext = useCallback(async () => {
-        if (!isStepValid()) {
+        if (!isStepValid() || isProcessing) {
             return;
         }
 
-        if (currentStep < TOTAL_STEPS) {
-            setCurrentStep(currentStep + 1);
-        } else {
-            console.log("Finished:", {
-                username: usernameRef.current,
-                wakeTime: wakeTimeRef.current,
-                sleepTime: sleepTimeRef.current,
-                manifestTime: manifestTimeRef.current
-            });
+        setIsProcessing(true);
+        try {
+            if (currentStep < TOTAL_STEPS) {
+                setCurrentStep(currentStep + 1);
+            } else {
+                // Convert TimeValues to 24-hour strings and save to onboarding store
+                const wake24 = timeValueTo24h(wakeTimeRef.current);
+                const sleep24 = timeValueTo24h(sleepTimeRef.current);
+                const manifest24 = timeValueTo24h(manifestTimeRef.current);
 
-            // Schedule Notifications
-            try {
-                const hasPermission = await requestNotificationPermissions();
-                if (hasPermission) {
-                    const parseTime = (val: TimeValue) => {
-                        let hour = parseInt(val.hour);
-                        if (val.ampm === 'PM' && hour !== 12) hour += 12;
-                        if (val.ampm === 'AM' && hour === 12) hour = 0;
-                        return { hour, minute: parseInt(val.minute) };
-                    };
+                setOnboardingUserData({
+                    username: usernameRef.current,
+                    wakeTime: wake24,
+                    sleepTime: sleep24,
+                    manifestTime: manifest24,
+                });
 
-                    await scheduleManifestationNotifications({
-                        wakeTime: parseTime(wakeTimeRef.current),
-                        sleepTime: parseTime(sleepTimeRef.current),
-                        manifestTime: parseTime(manifestTimeRef.current),
-                    });
+                console.log('Onboarding data saved to store:', {
+                    username: usernameRef.current,
+                    wake24, sleep24, manifest24,
+                });
+
+                // Schedule Notifications
+                try {
+                    const hasPermission = await requestNotificationPermissions();
+                    if (hasPermission) {
+                        const parseTime = (val: TimeValue) => {
+                            let hour = parseInt(val.hour);
+                            if (val.ampm === 'PM' && hour !== 12) hour += 12;
+                            if (val.ampm === 'AM' && hour === 12) hour = 0;
+                            return { hour, minute: parseInt(val.minute) };
+                        };
+
+                        await scheduleManifestationNotifications({
+                            wakeTime: parseTime(wakeTimeRef.current),
+                            sleepTime: parseTime(sleepTimeRef.current),
+                            manifestTime: parseTime(manifestTimeRef.current),
+                        });
+                    }
+                } catch (err) {
+                    console.error("Failed to schedule notifications", err);
                 }
-            } catch (err) {
-                console.error("Failed to schedule notifications", err);
-            }
 
-            router.push('/onboarding/goals');
+                router.push('/onboarding/goals');
+            }
+        } catch (err) {
+            console.error("Error in handleNext:", err);
+        } finally {
+            // Delay resetting to prevent quick double taps even after processing
+            setTimeout(() => setIsProcessing(false), 500);
         }
-    }, [currentStep, isStepValid, router]);
+    }, [currentStep, isStepValid, router, isProcessing]);
 
     const handleBack = useCallback(() => {
         if (currentStep > 1) {

@@ -8,13 +8,25 @@ import { BreathingBackground } from '../components/BreathingBackground';
 import { NotificationPermissionModal } from '../components/NotificationPermissionModal';
 import { checkNotificationStatus } from '../services/notificationService';
 
+import { getCurrentUser } from '../services/authService';
+import { useUserStore } from '../store/userStore';
+
 const { width } = Dimensions.get('window');
 
 export default function Home() {
     const router = useRouter();
+    const { profile, fetchProfile } = useUserStore();
     const [showNotifModal, setShowNotifModal] = useState(false);
 
     useEffect(() => {
+        const init = async () => {
+            const user = await getCurrentUser();
+            if (user && !profile) {
+                await fetchProfile(user.id);
+            }
+        };
+        init();
+
         const checkPerms = async () => {
             const status = await checkNotificationStatus();
             if (status !== 'granted') {
@@ -52,12 +64,12 @@ export default function Home() {
                     <View style={styles.header}>
                         <View style={styles.brandingContainer}>
 
-                            <Text style={styles.appName}>Hello Pratik</Text>
+                            <Text style={styles.appName}>Hello {profile?.username || 'Seeker'}</Text>
                         </View>
 
                         <TouchableOpacity style={styles.streakBadge} activeOpacity={0.7}>
                             <Ionicons name="flame" size={18} color="#f97316" />
-                            <Text style={styles.streakText}>3</Text>
+                            <Text style={styles.streakText}>{profile?.streak_count || 0}</Text>
                         </TouchableOpacity>
                     </View>
 

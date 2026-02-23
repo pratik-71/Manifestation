@@ -1,8 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BreathingBackground } from '../../components/BreathingBackground';
+import { AppColors } from '../../constants/Colors';
 import { signInWithGoogle } from '../../services/authService';
+import { saveOnboardingProfile } from '../../services/profileService';
+import { useOnboardingStore } from '../../store/onboardingStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,11 +14,42 @@ export default function GoogleSignIn() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
+    // ⚠️ IMPORTANT: Select each value individually with separate calls.
+    // Using (s) => ({ key: s.key }) creates a NEW object on every render,
+    // which breaks useSyncExternalStore and causes an infinite loop.
+    const ob_username = useOnboardingStore((s) => s.username);
+    const ob_wakeTime = useOnboardingStore((s) => s.wakeTime);
+    const ob_sleepTime = useOnboardingStore((s) => s.sleepTime);
+    const ob_manifestTime = useOnboardingStore((s) => s.manifestTime);
+    const ob_goals = useOnboardingStore((s) => s.goals);
+    const resetOnboarding = useOnboardingStore((s) => s.reset);
+
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
         try {
-            await signInWithGoogle();
-            router.replace('/home');
+            const result = await signInWithGoogle();
+            const userId = result?.data?.user?.id;
+
+            if (userId) {
+                // Save all onboarding data to Supabase
+                try {
+                    await saveOnboardingProfile({
+                        userId,
+                        username: ob_username || result?.data?.user?.email?.split('@')[0] || 'Seeker',
+                        wakeTime: ob_wakeTime || '07:00',
+                        sleepTime: ob_sleepTime || '23:00',
+                        manifestTime: ob_manifestTime || '10:00',
+                        goals: ob_goals,
+                    });
+                    console.log('✅ Onboarding profile saved to Supabase');
+                    resetOnboarding();
+                } catch (saveErr) {
+                    console.error('⚠️ Failed to save onboarding profile:', saveErr);
+                    // Non-fatal — user still proceeds to trust screens
+                }
+            }
+
+            router.replace('/onboarding/trust1');
         } catch (error: any) {
             console.error('Login failed', error);
             if (error.code !== 'SIGN_IN_CANCELLED') {
@@ -25,323 +60,324 @@ export default function GoogleSignIn() {
         }
     };
 
+    const handleAppleSignIn = () => {
+        Alert.alert("Apple Sign In", "This feature is coming soon to your iOS experience.");
+    };
+
+    const openLink = (title: string) => {
+        Alert.alert(title, "Link functionality will be integrated with your legal documentation soon.");
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            {/* Background Layers */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0a0a0a' }]} />
+            {/* Ultra-HD Cosmic Background */}
             <BreathingBackground
-                colors={['#0a0a0a', '#1e3a8a', '#2563eb']}
-                opacity={0.4}
+                colors={['#080111', '#7c3aed', '#f97316']} // Deep Void -> Electric Purple -> Radiant Orange
+                opacity={0.8}
             />
+            <View style={styles.overlay} pointerEvents="none" />
 
             <SafeAreaView style={styles.safeArea}>
-                {/* Content Container */}
+                <TouchableOpacity
+                    style={styles.floatingBackButton}
+                    onPress={() => router.back()}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="chevron-back" size={28} color="#fff" />
+                </TouchableOpacity>
+
                 <View style={styles.contentContainer}>
 
-                    {/* Logo Section */}
-                    <View style={styles.logoSection}>
-                        <View style={styles.logoWrapper}>
+                    {/* Top Branding */}
+                    <View style={styles.header}>
+                        <View style={styles.logoRing}>
                             <Image
                                 source={require('../../assets/logo.png')}
                                 style={styles.logoImage}
                                 resizeMode="contain"
                             />
-                            <Text style={styles.brandName}>Manifest</Text>
+                        </View>
+                        <Text style={styles.brandTitle}>MANIFEST</Text>
+                    </View>
+
+                    {/* Central Visual */}
+                    <View style={styles.centerSection}>
+                        <View style={styles.heroContent}>
+                            <Image
+                                source={require('../../assets/Onboarding/trust_google_sign_in.png')}
+                                style={styles.heroImage}
+                                resizeMode="contain"
+                            />
+
+                            {/* Social Proof Card */}
+                            <View style={styles.trustContainer}>
+                                <View style={styles.trustItem}>
+                                    <Ionicons name="sparkles" size={14} color="rgba(255, 255, 255, 0.6)" />
+                                    <Text style={styles.trustText}>95% see results</Text>
+                                </View>
+                                <View style={styles.trustItem}>
+                                    <Ionicons name="flash" size={14} color="rgba(255, 255, 255, 0.6)" />
+                                    <Text style={styles.trustText}>Only Proven Manifestation Techniques</Text>
+                                </View>
+                            </View>
                         </View>
                     </View>
 
-                    {/* Main Content */}
-                    <View style={styles.mainContent}>
+                    {/* Interaction Area */}
+                    <View style={styles.bottomSection}>
+                        <Text style={styles.intentText}>Now Its Your Turn</Text>
 
-                        <Text style={styles.unlockText}>Unlock Faster Result With Our App</Text>
-                        {/* Trust Image Container */}
-                        <View style={styles.imageContainer}>
-                            <Image
-                                source={require('../../assets/Onboarding/trust_google_sign_in.png')}
-                                style={styles.trustImage}
-                                resizeMode="contain"
-                            />
+                        <View style={styles.buttonStack}>
+                            {Platform.OS === 'ios' && (
+                                <TouchableOpacity
+                                    style={[styles.appleButton, isLoading && styles.buttonDisabled]}
+                                    onPress={() => {
+                                        if (isLoading) return;
+                                        handleAppleSignIn();
+                                    }}
+                                    disabled={isLoading}
+                                    activeOpacity={0.9}
+                                >
+                                    <View style={styles.buttonContent}>
+                                        <Ionicons name="logo-apple" size={22} color="#ffffff" style={styles.appleIcon} />
+                                        <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
+
+                            <TouchableOpacity
+                                style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+                                onPress={() => {
+                                    if (isLoading) return;
+                                    handleGoogleSignIn();
+                                }}
+                                disabled={isLoading}
+                                activeOpacity={0.9}
+                            >
+                                <View style={styles.buttonContent}>
+                                    <Image
+                                        source={require('../../assets/Onboarding/google_icon.png')}
+                                        style={styles.googleIcon}
+                                    />
+                                    <Text style={styles.googleButtonText}>
+                                        {isLoading ? 'Aligning...' : 'Continue with Google'}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
                         </View>
 
-                        {/* Sign-In Button */}
-                        <TouchableOpacity
-                            style={[styles.signInButton, isLoading && styles.buttonDisabled]}
-                            onPress={handleGoogleSignIn}
-                            disabled={isLoading}
-                            activeOpacity={0.8}
-                        >
-                            {isLoading ? (
-                                <View style={styles.loadingContent}>
-                                    <View style={styles.spinner} />
-                                    <Text style={styles.buttonText}>Connecting...</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.buttonContent}>
-                                    <View style={styles.googleIconContainer}>
-                                        <Image
-                                            source={require('../../assets/Onboarding/google_icon.png')}
-                                            style={styles.googleIconImage}
-                                            resizeMode="contain"
-                                        />
-                                    </View>
-                                    <Text style={styles.buttonText}>Continue with Google</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-
-                        {/* Terms with Links */}
-                        <View style={styles.termsContainer}>
-                            <Text style={styles.termsText}>
-                                By continuing, you accept our{' '}
-                                <Text style={styles.linkText}>Terms of Service</Text>
+                        <View style={styles.footerContainer}>
+                            <Text style={styles.footerNote}>
+                                By continuing, you agree to our{' '}
+                                <Text style={styles.linkText} onPress={() => openLink("Terms of Service")}>Terms of Service</Text>
                                 {' and '}
-                                <Text style={styles.linkText}>Privacy Policy</Text>
+                                <Text style={styles.linkText} onPress={() => openLink("Privacy Policy")}>Privacy Policy</Text>.
                             </Text>
                         </View>
                     </View>
                 </View>
-            </SafeAreaView>
-        </View>
+            </SafeAreaView >
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0a0a0a',
+        backgroundColor: AppColors.black,
+    },
+    overlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)',
     },
     safeArea: {
         flex: 1,
     },
+    floatingBackButton: {
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        zIndex: 100,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+    },
     contentContainer: {
         flex: 1,
-        paddingHorizontal: 32,
+        paddingHorizontal: 30,
         justifyContent: 'space-between',
-        paddingBottom: 40,
+        paddingVertical: 30,
     },
-
-    // Logo Section
-    logoSection: {
+    header: {
         alignItems: 'center',
-        paddingTop: 60,
-        paddingBottom: 20,
+        marginTop: 10,
     },
-    logoWrapper: {
+    logoRing: {
+        width: 85,
+        height: 85,
+        borderRadius: 42.5,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        justifyContent: 'center',
         alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: 'rgba(124, 58, 237, 0.3)', // Electric Purple border
+        marginBottom: 16,
     },
     logoImage: {
-        width: 64,
-        height: 64,
-        marginBottom: 16,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        width: 50,
+        height: 50,
     },
-    brandName: {
-        fontSize: 20,
-        fontWeight: '600',
-        fontFamily: 'Comfortaa_600SemiBold',
-        color: '#94a3b8',
-        letterSpacing: 1,
+    brandTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 26,
+        color: '#fff',
+        letterSpacing: 10,
+        textShadowColor: 'rgba(124, 58, 237, 0.6)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 20,
     },
-
-    // Main Content
-    mainContent: {
+    centerSection: {
         flex: 1,
-        alignItems: 'center',
+        width: '100%',
         justifyContent: 'center',
+        alignItems: 'center',
     },
-
-    // Image Container
-    imageContainer: {
+    heroContent: {
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 40,
-        height: height * 0.45,
-        position: 'relative',
+        gap: 20,
     },
-    trustImage: {
-        width: width * 0.92,
-        height: height * 0.40,
-        maxWidth: 500,
-        maxHeight: 320,
-        zIndex: 10,
-        position: 'relative',
+    heroImage: {
+        width: width * 0.8,
+        height: height * 0.3,
     },
-
-    // Wave/Aura Effects
-    wave1: {
-        position: 'absolute',
-        width: width * 0.85,
-        height: height * 0.32,
-        maxWidth: 340,
-        maxHeight: 250,
-        borderRadius: 20,
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-        borderWidth: 2,
-        borderColor: 'rgba(37, 99, 235, 0.3)',
-        shadowColor: '#2563eb',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 20,
-        elevation: 8,
-        zIndex: 1,
-    },
-    wave2: {
-        position: 'absolute',
-        width: width * 0.80,
-        height: height * 0.30,
-        maxWidth: 320,
-        maxHeight: 235,
-        borderRadius: 16,
-        backgroundColor: 'rgba(37, 99, 235, 0.08)',
-        borderWidth: 1.5,
-        borderColor: 'rgba(37, 99, 235, 0.25)',
-        shadowColor: '#2563eb',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 6,
-        zIndex: 2,
-    },
-    wave3: {
-        position: 'absolute',
-        width: width * 0.78,
-        height: height * 0.29,
-        maxWidth: 310,
-        maxHeight: 228,
-        borderRadius: 14,
-        backgroundColor: 'rgba(37, 99, 235, 0.06)',
-        borderWidth: 1,
-        borderColor: 'rgba(37, 99, 235, 0.2)',
-        shadowColor: '#2563eb',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 4,
-        zIndex: 3,
-    },
-
-    // Value Proposition
-    valueProp: {
-        alignItems: 'center',
-        marginBottom: 48,
-        paddingHorizontal: 20,
-    },
-    mainTagline: {
-        fontSize: 28,
-        fontWeight: '700',
-        fontFamily: 'Comfortaa_700Bold',
-        color: '#f1f5f9',
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: 0,
-    },
-    subTagline: {
-        fontSize: 16,
-        fontWeight: '400',
-        fontFamily: 'Comfortaa_400Regular',
-        color: '#64748b',
-        textAlign: 'center',
-        lineHeight: 22,
-        letterSpacing: 0,
-    },
-
-    unlockText: {
-        fontSize: 16,
-        fontWeight: '700',
-        fontFamily: 'Comfortaa_700Bold',
-        color: '#f1f5f9',
-        textAlign: 'center',
-        marginBottom: 8,
-        letterSpacing: 0,
-    },
-
-    // Sign-In Button
-    signInButton: {
-        backgroundColor: '#ffffff',
+    trustContainer: {
+        width: '90%',
+        alignItems: 'flex-start',
+        backgroundColor: 'rgba(255, 255, 255, 0.07)',
+        paddingVertical: 18,
+        paddingHorizontal: 22,
         borderRadius: 24,
-        paddingVertical: 14,
-        paddingHorizontal: 28,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        gap: 14,
+    },
+    trustItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 6,
-        marginBottom: 28,
+        gap: 6,
+    },
+    trustText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 13,
+        color: 'rgba(255, 255, 255, 0.8)',
+        letterSpacing: 0.3,
+    },
+    dividerDots: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        marginHorizontal: 12,
+    },
+    bottomSection: {
+        alignItems: 'center',
+        paddingBottom: 20,
+    },
+    intentText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 17,
+        color: 'rgba(255,255,255,0.85)',
+        marginBottom: 25,
+        letterSpacing: 0.8,
+    },
+    buttonStack: {
         width: '100%',
-        maxWidth: 340,
+        gap: 12,
+        marginBottom: 25,
+    },
+    googleButton: {
+        backgroundColor: '#ffffff',
+        width: '100%',
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#7c3aed',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    appleButton: {
+        backgroundColor: '#000000',
+        width: '100%',
+        height: 60,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        shadowColor: '#ffffff',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 6,
     },
     buttonDisabled: {
-        opacity: 0.7,
-        transform: [{ scale: 0.98 }],
+        opacity: 0.85,
     },
     buttonContent: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    loadingContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    googleIconContainer: {
-        width: 28,
-        height: 28,
-        marginRight: 7,
-
-        alignItems: 'center',
-        justifyContent: 'center',
-
-    },
-    googleIconImage: {
+    googleIcon: {
         width: 20,
         height: 20,
+        marginRight: 12,
     },
-    buttonText: {
-        fontSize: 17,
-        fontWeight: '800',
-        fontFamily: 'Comfortaa_600SemiBold',
-        color: '#1e293b',
-        letterSpacing: 0.2,
+    appleIcon: {
+        marginRight: 10,
     },
-    spinner: {
-        width: 18,
-        height: 18,
-        borderRadius: 9,
-        borderWidth: 2.5,
-        borderColor: '#1e293b',
-        borderTopColor: 'transparent',
-        marginRight: 14,
+    googleButtonText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 16,
+        color: '#0f172a',
     },
-
-    // Terms
-    termsContainer: {
+    appleButtonText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 16,
+        color: '#ffffff',
+    },
+    footerContainer: {
         alignItems: 'center',
-        paddingHorizontal: 20,
     },
-    termsText: {
-        fontSize: 13,
-        fontWeight: '400',
+    footerNote: {
         fontFamily: 'Comfortaa_400Regular',
-        color: '#64748b',
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.5)',
         textAlign: 'center',
         lineHeight: 18,
+        marginBottom: 8,
     },
     linkText: {
-        fontSize: 13,
-        fontWeight: '600',
-        fontFamily: 'Comfortaa_600SemiBold',
-        color: '#4285f4',
+        color: '#fb923c', // Radiant Orange for links
         textDecorationLine: 'underline',
+        fontFamily: 'Comfortaa_600SemiBold',
+    },
+    securityNote: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(124, 58, 237, 0.6)', // Muted Purple
+        textAlign: 'center',
+        letterSpacing: 0.5,
     },
 });

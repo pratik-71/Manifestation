@@ -14,11 +14,14 @@ import {
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { requestNotificationPermissions } from '../../services/notificationService';
+import { useOnboardingStore } from '../../store/onboardingStore';
 
 export default function Goals() {
     const router = useRouter();
+    const setGoals = useOnboardingStore((s) => s.setGoals);
     const [currentGoal, setCurrentGoal] = useState('');
     const [goalTags, setGoalTags] = useState<string[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         // Request permissions as soon as they reach the goals page
@@ -39,12 +42,12 @@ export default function Goals() {
     const isValid = goalTags.length > 0;
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#1a0d1f' }}>
+        <View style={{ flex: 1, backgroundColor: '#02010a' }}>
             <StatusBar barStyle="light-content" />
 
             <BreathingBackground
-                colors={['#100f13ff', '#361a3fff', '#83208aff']}
-                opacity={0.75}
+                colors={['#02010a', '#4506cb', '#00d4ff']} // Night -> Electric Purple -> Vivid Blue
+                opacity={0.8}
             />
 
             <View style={styles.overlay} pointerEvents="none" />
@@ -74,6 +77,9 @@ export default function Goals() {
                             <Text style={styles.questionText}>
                                 What are your goals? you wanna acheieve
                             </Text>
+                            <Text style={styles.subQuestionText}>
+                                Enter the dreams in short that you wnated to manifest or to turn into reality enter 2-3 dreams
+                            </Text>
                         </Animated.View>
 
                         {/* Input Card */}
@@ -90,8 +96,8 @@ export default function Goals() {
                                     style={styles.input}
                                     maxLength={100}
                                     returnKeyType="done"
-                                    cursorColor="#d946ef"
-                                    selectionColor="rgba(217,70,239,0.3)"
+                                    cursorColor="#00d4ff"
+                                    selectionColor="rgba(0,212,255,0.3)"
                                     onSubmitEditing={handleAddGoal}
                                     multiline
                                 />
@@ -111,7 +117,7 @@ export default function Goals() {
                                         size={36}
                                         color={
                                             currentGoal.trim().length >= 3
-                                                ? '#d946ef'
+                                                ? '#00d4ff'
                                                 : 'rgba(255,255,255,0.2)'
                                         }
                                     />
@@ -146,7 +152,7 @@ export default function Goals() {
                                             <Ionicons
                                                 name="close-circle-outline"
                                                 size={24}
-                                                color="#d946ef"
+                                                color="#00d4ff"
                                             />
                                         </TouchableOpacity>
                                     </Animated.View>
@@ -157,13 +163,20 @@ export default function Goals() {
                         {/* Footer moved inside ScrollView */}
                         <View style={styles.footer}>
                             <TouchableOpacity
-                                onPress={() =>
-                                    isValid &&
-                                    router.push('/onboarding/accept_challenge')
-                                }
+                                onPress={() => {
+                                    if (isValid && !isSubmitting) {
+                                        setIsSubmitting(true);
+                                        // Save goals to onboarding store
+                                        setGoals(goalTags);
+                                        console.log('Goals saved to store:', goalTags);
+                                        router.push('/onboarding/accept_challenge');
+                                        setTimeout(() => setIsSubmitting(false), 800);
+                                    }
+                                }}
+                                disabled={!isValid || isSubmitting}
                                 style={[
                                     styles.nextButton,
-                                    isValid
+                                    isValid && !isSubmitting
                                         ? styles.nextButtonActive
                                         : styles.nextButtonInactive,
                                 ]}
@@ -215,8 +228,18 @@ const styles = StyleSheet.create({
     questionText: {
         fontFamily: 'Comfortaa_600SemiBold',
         fontSize: 20,
-        lineHeight: 42,
+        lineHeight: 28,
         color: '#fff',
+        textShadowColor: 'rgba(217,70,239,0.5)',
+        textShadowRadius: 20,
+        textShadowOffset: { width: 0, height: 0 },
+    },
+    subQuestionText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 12,
+        lineHeight: 16,
+        marginTop: 6,
+        color: '#908d8dff',
         textShadowColor: 'rgba(217,70,239,0.5)',
         textShadowRadius: 20,
         textShadowOffset: { width: 0, height: 0 },
@@ -300,17 +323,17 @@ const styles = StyleSheet.create({
     },
 
     nextButtonActive: {
-        backgroundColor: '#d946ef',
-        shadowColor: '#d946ef',
+        backgroundColor: '#0bbfe3ff',
+        shadowColor: '#00d4ff',
         shadowOpacity: 0.4,
         shadowRadius: 16,
         shadowOffset: { width: 0, height: 8 },
     },
 
     nextButtonInactive: {
-        backgroundColor: 'rgba(217,70,239,0.1)',
+        backgroundColor: 'rgba(0,212,255,0.1)',
         borderWidth: 1,
-        borderColor: 'rgba(217,70,239,0.2)',
+        borderColor: 'rgba(0,212,255,0.2)',
     },
 
     nextButtonText: {
@@ -318,11 +341,11 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         letterSpacing: 1.5,
-        color: '#fff',
+        color: '#ffffffff',
     },
 
     overlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(29,11,31,0.15)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
     },
 });

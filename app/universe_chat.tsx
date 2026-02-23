@@ -198,7 +198,7 @@ export default function UniverseChat() {
             setMessages((prev) => [...prev, errorMsg]);
         } finally {
             setIsUniverseTyping(false);
-            incrementMessageCount();
+            await incrementMessageCount();
         }
     };
 
