@@ -88,7 +88,7 @@ export default function UniverseChat() {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
-            text: 'Greetings, seeker of light. I am the voice of the Universe. What intentions shall we weave into reality today?',
+            text: 'Hello! I am here to help you manifest your goals. What would you like to focus on today?',
             sender: 'universe',
             timestamp: new Date(),
         },
@@ -146,7 +146,7 @@ export default function UniverseChat() {
         if (!canSendMessage()) {
             const limitMsg: Message = {
                 id: 'limit-' + Date.now(),
-                text: "The cosmic energies need rest. You have reached your daily limit of 12 messages. Return tomorrow to weave more intentions.",
+                text: "You have reached your daily limit of 12 messages. Please return tomorrow to continue.",
                 sender: 'universe',
                 timestamp: new Date(),
             };
@@ -190,7 +190,7 @@ export default function UniverseChat() {
             console.error("Universe Chat Error:", error);
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: "The cosmic stream is momentarily obscured. Please share your light again.",
+                text: "I'm having trouble connecting right now. Please try again in a moment.",
                 sender: 'universe',
                 timestamp: new Date(),
                 isTyping: true,
@@ -270,7 +270,7 @@ export default function UniverseChat() {
                         </TouchableOpacity>
                         <View style={styles.headerTitleContainer}>
                             <Animated.View style={[styles.titleGlow, animatedPulseStyle]} />
-                            <Text style={styles.headerTitle}>UNIVERSE</Text>
+                            <Text style={styles.headerTitle}>CHAT</Text>
                         </View>
                         <View style={{ width: 40 }} />
                     </View>

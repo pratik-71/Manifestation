@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    FlatList,
+    ListRenderItem,
     NativeScrollEvent,
     NativeSyntheticEvent,
     StyleSheet,
@@ -28,9 +30,9 @@ type TimeWheelPickerProps = {
 };
 
 const ITEM_HEIGHT = 60;
-const REPEAT_HOURS = 10;
-const REPEAT_MINUTES = 4;
-const REPEAT_AMPM = 20;
+const REPEAT_HOURS = 3;
+const REPEAT_MINUTES = 2; // 120 items is enough for smooth scroll
+const REPEAT_AMPM = 5;
 
 // Data Generation
 const HOURS_BASE = ['12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
@@ -41,6 +43,10 @@ const HOURS_DATA = Array.from({ length: REPEAT_HOURS }, () => HOURS_BASE).flat()
 const MINUTES_DATA = Array.from({ length: REPEAT_MINUTES }, () => MINUTES_BASE).flat();
 const AMPM_DATA = Array.from({ length: REPEAT_AMPM }, () => AMPM_BASE).flat();
 
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+// @ts-ignore - needed because Animated.createAnimatedComponent doesn't perfectly preserve generic types sometimes
+const TypedAnimatedFlatList = AnimatedFlatList as any;
+
 interface WheelProps {
     items: string[];
     value: string;
@@ -49,28 +55,36 @@ interface WheelProps {
     baseLength: number;
 }
 
+const isMatch = (a: string, b: string) => {
+    if (!a || !b) return false;
+    const nA = parseInt(a, 10);
+    const nB = parseInt(b, 10);
+    if (!isNaN(nA) && !isNaN(nB)) return nA === nB;
+    return a.toString().toUpperCase() === b.toString().toUpperCase();
+};
+
 const WheelItem = React.memo(
     ({ label, index, scrollY }: { label: string; index: number; scrollY: SharedValue<number> }) => {
-        const inputRange = useMemo(() => [
-            (index - 2) * ITEM_HEIGHT,
-            (index - 1) * ITEM_HEIGHT,
-            index * ITEM_HEIGHT,
-            (index + 1) * ITEM_HEIGHT,
-            (index + 2) * ITEM_HEIGHT,
-        ], [index]);
-
         const animatedStyle = useAnimatedStyle(() => {
+            const inputRange = [
+                (index - 2) * ITEM_HEIGHT,
+                (index - 1) * ITEM_HEIGHT,
+                index * ITEM_HEIGHT,
+                (index + 1) * ITEM_HEIGHT,
+                (index + 2) * ITEM_HEIGHT,
+            ];
+
             const scale = interpolate(
                 scrollY.value,
                 inputRange,
-                [0.75, 0.9, 1.05, 0.9, 0.75],
+                [0.75, 0.9, 1.1, 0.9, 0.75],
                 Extrapolation.CLAMP
             );
 
             const opacity = interpolate(
                 scrollY.value,
                 inputRange,
-                [0.3, 0.5, 1, 0.5, 0.3],
+                [0.2, 0.4, 1, 0.4, 0.2],
                 Extrapolation.CLAMP
             );
 
@@ -82,58 +96,45 @@ const WheelItem = React.memo(
 
         return (
             <Animated.View style={[styles.itemContainer, animatedStyle]}>
-                <Text style={[styles.itemText, label === 'AM' || label === 'PM' ? styles.ampmText : null]}>{label}</Text>
+                <Text style={[styles.itemText, label === 'AM' || label === 'PM' ? styles.ampmText : null]}>
+                    {label}
+                </Text>
             </Animated.View>
         );
     }
 );
 
 const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelProps) => {
-    const flatListRef = useRef<Animated.FlatList<string>>(null);
+    const flatListRef = useRef<any>(null);
     const scrollY = useSharedValue(0);
     const isInteracting = useRef(false);
     const lastReportedValue = useRef(value);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
 
-    const isMatch = useCallback((a: string, b: string) => {
-        if (!a || !b) return false;
-        const nA = parseInt(a, 10);
-        const nB = parseInt(b, 10);
-        if (!isNaN(nA) && !isNaN(nB)) return nA === nB;
-        return a.toString().toUpperCase() === b.toString().toUpperCase();
-    }, []);
+    // Calculate the target index in the items array that corresponds to value
+    const getTargetIndex = useCallback((val: string) => {
+        const valIndexInBase = items.slice(0, baseLength).findIndex(item => isMatch(item, val));
+        if (valIndexInBase === -1) return 0;
 
-    // Initial index in the middle range
-    const middleIndex = useMemo(() => {
-        const middleBlock = Math.floor(items.length / baseLength / 2);
-        const indexInBase = items.slice(0, baseLength).findIndex(item => isMatch(item, value));
-        return (middleBlock * baseLength) + (indexInBase !== -1 ? indexInBase : 0);
-    }, [items, baseLength, value]);
+        // Find the middle block
+        const totalBlocks = items.length / baseLength;
+        const middleBlock = Math.floor(totalBlocks / 2);
+        return middleBlock * baseLength + valIndexInBase;
+    }, [items, baseLength]);
+
+    const initialIndex = useMemo(() => getTargetIndex(value), [getTargetIndex, value]);
 
     const syncToValue = useCallback((val: string, animated = true) => {
         if (!flatListRef.current || isInteracting.current) return;
 
-        const currentIndex = Math.round(scrollY.value / ITEM_HEIGHT);
-        const valIndexInBase = items.slice(0, baseLength).findIndex(item => isMatch(item, val));
-
-        if (valIndexInBase === -1) return;
-
-        // Current block we are in
-        const currentBlock = Math.floor(currentIndex / baseLength);
-        let targetIndex = currentBlock * baseLength + valIndexInBase;
-
-        // Ensure we are somewhat in the middle of the items array for better infinite feel
-        const totalBlocks = items.length / baseLength;
-        const targetBlock = Math.floor(totalBlocks / 2);
-
-        // If we are too far from middle, jump to middle block
-        if (Math.abs(currentBlock - targetBlock) > 2) {
-            targetIndex = targetBlock * baseLength + valIndexInBase;
-        }
-
+        const targetIndex = getTargetIndex(val);
         lastReportedValue.current = val;
-        flatListRef.current.scrollToIndex({ index: targetIndex, animated });
-    }, [items, baseLength, isMatch]);
+
+        flatListRef.current.scrollToOffset({
+            offset: targetIndex * ITEM_HEIGHT,
+            animated
+        });
+    }, [getTargetIndex]);
 
     useEffect(() => {
         if (isLayoutReady && value !== lastReportedValue.current) {
@@ -141,23 +142,13 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
         }
     }, [value, isLayoutReady, syncToValue]);
 
-    const handleLayout = () => {
-        if (!isLayoutReady) {
-            // Give extra time for Android layout to stabilize before first forced scroll
-            setTimeout(() => {
-                setIsLayoutReady(true);
-                syncToValue(value, false);
-            }, 150);
-        }
-    };
-
     const scrollHandler = useAnimatedScrollHandler({
         onScroll: (event) => {
             scrollY.value = event.contentOffset.y;
         },
     });
 
-    const onMomentumScrollEnd = useCallback(
+    const handleScrollEnd = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             isInteracting.current = false;
             const offsetY = event.nativeEvent.contentOffset.y;
@@ -177,60 +168,44 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
         isInteracting.current = true;
     }, []);
 
-    const onScrollEndDrag = useCallback(
-        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const velocity = event.nativeEvent.velocity?.y ?? 0;
-            if (Math.abs(velocity) < 0.2) {
-                isInteracting.current = false;
-                const offsetY = event.nativeEvent.contentOffset.y;
-                const index = Math.round(offsetY / ITEM_HEIGHT);
-                const safeIndex = Math.max(0, Math.min(index, items.length - 1));
+    const getItemLayout = (_: any, index: number) => ({
+        length: ITEM_HEIGHT,
+        offset: ITEM_HEIGHT * index,
+        index,
+    });
 
-                const newValue = items[safeIndex];
-                if (newValue && newValue !== lastReportedValue.current) {
-                    lastReportedValue.current = newValue;
-                    onChange(newValue);
-                }
-            }
-        },
-        [items, onChange]
-    );
+    const renderItem: ListRenderItem<string> = useCallback(({ item, index }) => (
+        <WheelItem label={item} index={index} scrollY={scrollY} />
+    ), [scrollY]);
 
     return (
         <View style={[styles.wheelContainer, style]}>
-            <Animated.FlatList
+            <TypedAnimatedFlatList
                 ref={flatListRef}
                 data={items}
-                renderItem={({ item, index }) => (
-                    <WheelItem label={item} index={index} scrollY={scrollY} />
-                )}
-                keyExtractor={(item, index) => `${index}`}
-                getItemLayout={(_, index) => ({
-                    length: ITEM_HEIGHT,
-                    offset: ITEM_HEIGHT * index,
-                    index,
-                })}
-                initialScrollIndex={middleIndex}
+                keyExtractor={(item: string, index: number) => index.toString()}
+                renderItem={renderItem}
+                getItemLayout={getItemLayout}
+                initialScrollIndex={initialIndex}
                 showsVerticalScrollIndicator={false}
                 snapToInterval={ITEM_HEIGHT}
                 decelerationRate="fast"
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
-                onMomentumScrollEnd={onMomentumScrollEnd}
+                onMomentumScrollEnd={handleScrollEnd}
                 onScrollBeginDrag={onScrollBeginDrag}
-                onScrollEndDrag={onScrollEndDrag}
-                onLayout={handleLayout}
+                onScrollEndDrag={handleScrollEnd}
+                onLayout={() => setIsLayoutReady(true)}
                 contentContainerStyle={styles.listContent}
-                initialNumToRender={10}
-                maxToRenderPerBatch={10}
-                windowSize={5}
-                removeClippedSubviews={Platform.OS === 'android'}
+                nestedScrollEnabled={true}
+                removeClippedSubviews={true}
+                initialNumToRender={5}
+                maxToRenderPerBatch={5}
+                windowSize={3}
             />
         </View>
     );
 });
-
-import { Platform } from 'react-native';
 
 export const TimeWheelPicker = React.memo(({ value, onChange }: TimeWheelPickerProps) => {
     const valueRef = useRef(value);
@@ -285,14 +260,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
-        backgroundColor: 'rgba(0,0,0,0.2)',
-        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: 'rgba(255,255,255,0.08)',
     },
     wheelsWrapper: {
         flexDirection: 'row',
-        width: '90%',
+        width: '100%',
         height: '100%',
     },
     wheelContainer: {
@@ -312,7 +287,7 @@ const styles = StyleSheet.create({
     },
     itemText: {
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 24,
+        fontSize: 26,
         color: '#fff',
         includeFontPadding: false,
     },
@@ -325,10 +300,10 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 180 / 2 - ITEM_HEIGHT / 2,
         height: ITEM_HEIGHT,
-        width: '90%',
+        width: '94%',
         backgroundColor: 'rgba(255,255,255,0.08)',
-        borderRadius: 12,
+        borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.12)',
     },
 });

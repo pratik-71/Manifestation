@@ -1,18 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
     Dimensions,
+    SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BottomBar } from '../components/BottomBar';
+import { BreathingBackground } from '../components/BreathingBackground';
 import { useUserStore } from '../store/userStore';
 
 const { width } = Dimensions.get('window');
@@ -32,7 +35,6 @@ export default function ManifestHub() {
     const isChallengeComplete = profile?.is_challenge_complete || false;
 
     useEffect(() => {
-        // Automatically check for completion when all tasks are done
         const allTasksDone = manifestTasks.tookAction &&
             manifestTasks.watchedContent &&
             manifestTasks.connectedWithPeople;
@@ -42,133 +44,153 @@ export default function ManifestHub() {
         }
     }, [manifestTasks]);
 
-    const tasks = [
-        {
-            id: 'tookAction',
-            label: 'Take action for your goal',
-            icon: 'flash-outline',
-            color: '#10b981', // Emerald
-            checked: manifestTasks.tookAction
-        },
-        {
-            id: 'watchedContent',
-            label: 'Watch content for your goal',
-            icon: 'play-circle-outline',
-            color: '#3b82f6', // Blue
-            checked: manifestTasks.watchedContent
-        },
-        {
-            id: 'connectedWithPeople',
-            label: 'Connect with people for your goal',
-            icon: 'people-outline',
-            color: '#8b5cf6', // Violet
-            checked: manifestTasks.connectedWithPeople
-        },
-    ];
-
-    const renderProgress = () => {
-        const progress = challengeDay / challengeDuration;
-        return (
-            <View style={styles.progressContainer}>
-                <View style={styles.progressBarWrapper}>
-                    <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
+    const RitualRow = ({ icon, label, checked, onPress, showBorder = true }: any) => (
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.7}
+            style={[styles.ritualRow, !showBorder && { borderBottomWidth: 0 }]}
+        >
+            <View style={styles.ritualLeft}>
+                <View style={[styles.iconContainer, checked && styles.iconContainerChecked]}>
+                    <Ionicons name={checked ? "checkmark" : icon} size={18} color={checked ? "#10b981" : "#fff"} />
                 </View>
-                <View style={styles.progressTextRow}>
-                    <Text style={styles.progressText}>Progress</Text>
-                    <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
-                </View>
+                <Text style={[styles.ritualLabel, checked && styles.ritualLabelChecked]}>{label}</Text>
             </View>
-        );
-    };
+            <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                {checked && <Ionicons name="checkmark" size={12} color="#fff" />}
+            </View>
+        </TouchableOpacity>
+    );
 
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#09090b' }]} />
+            <BreathingBackground
+                colors={['#0f172a', '#1c1917', '#451a03']}
+                opacity={0.8}
+            />
 
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.header}>
-                    <Text style={styles.greeting}>Daily Rituals</Text>
-                    <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{challengeDay}</Text>
-                            <Text style={styles.statLabel}>Day</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{challengeDuration}</Text>
-                            <Text style={styles.statLabel}>Target</Text>
-                        </View>
-                    </View>
-                </View>
+            <SafeAreaView style={styles.safe}>
+                <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
+                    <Text style={styles.headerTitle}>JOURNEY</Text>
+                </Animated.View>
 
-                {isChallengeComplete ? (
-                    <Animated.View entering={FadeInDown.duration(800)} style={styles.completeCard}>
-                        <LinearGradient
-                            colors={['rgba(16, 185, 129, 0.2)', 'rgba(6, 78, 59, 0.1)']}
-                            style={[StyleSheet.absoluteFill, { borderRadius: 24 }]}
-                        />
-                        <Ionicons name="medal-outline" size={48} color="#10b981" style={{ alignSelf: 'center', marginBottom: 16 }} />
-                        <Text style={styles.completeTitle}>Tier 1 Mastery!</Text>
-                        <Text style={styles.completeSubtitle}>You've completed your {challengeDuration}-day sprint. Ready for the ultimate challenge?</Text>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                        <TouchableOpacity
-                            style={styles.upgradeButton}
-                            onPress={() => startChallenge(30)}
-                        >
-                            <Text style={styles.upgradeButtonText}>Start 30-Day Mastery</Text>
-                            <Ionicons name="arrow-forward" size={18} color="#000" />
-                        </TouchableOpacity>
+                    {/* Simple Hero */}
+                    <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroContainer}>
+                        <Text style={styles.dayText}>Day {challengeDay}</Text>
+                        <Text style={styles.durationText}>{challengeDuration} Day Challenge</Text>
                     </Animated.View>
-                ) : (
-                    <Animated.View entering={FadeInDown.duration(800)} style={styles.challengeCard}>
-                        <View style={styles.challengeHeader}>
-                            <Text style={styles.challengeTitle}>{challengeDuration}-Day Challenge</Text>
-                            <View style={styles.dayBadge}>
-                                <Text style={styles.dayBadgeText}>DAY {challengeDay}</Text>
-                            </View>
-                        </View>
 
-                        {renderProgress()}
+                    {isChallengeComplete ? (
+                        <Animated.View entering={FadeInDown.duration(800)} style={styles.sectionWrapper}>
+                            <BlurView intensity={25} tint="dark" style={styles.glassCard}>
+                                <View style={styles.completeContent}>
+                                    <Ionicons name="medal-outline" size={40} color="#fcd34d" style={{ marginBottom: 16 }} />
+                                    <Text style={styles.completeTitle}>Challenge Complete</Text>
+                                    <Text style={styles.completeSubtitle}>You've successfully finished your {challengeDuration}-day sprint.</Text>
 
-                        <View style={styles.ritualContainer}>
-                            {tasks.map((task, index) => (
-                                <Animated.View
-                                    key={task.id}
-                                    entering={FadeInRight.delay(index * 100).duration(600)}
-                                    style={styles.ritualItem}
-                                >
                                     <TouchableOpacity
-                                        style={[styles.checkbox, task.checked && { backgroundColor: task.color, borderColor: task.color }]}
-                                        onPress={() => toggleManifestTask(task.id as any)}
+                                        activeOpacity={0.8}
+                                        style={styles.upgradeButton}
+                                        onPress={() => startChallenge(30)}
                                     >
-                                        {task.checked && <Ionicons name="checkmark" size={12} color="#fff" />}
+                                        <LinearGradient
+                                            colors={['#fb923c', '#ea580c']}
+                                            style={styles.upgradeGrad}
+                                        >
+                                            <Text style={styles.upgradeButtonText}>Start 30 Day Mastery</Text>
+                                        </LinearGradient>
                                     </TouchableOpacity>
-                                    <View style={styles.ritualTextContent}>
-                                        <Text style={[styles.ritualLabel, task.checked && styles.ritualLabelChecked]}>
-                                            {task.label}
-                                        </Text>
-                                        <View style={[styles.taskIndicator, { backgroundColor: task.color + '20' }]}>
-                                            <Ionicons name={task.icon as any} size={10} color={task.color} />
-                                            <Text style={[styles.taskIndicatorText, { color: task.color }]}>DAILY</Text>
-                                        </View>
+                                </View>
+                            </BlurView>
+                        </Animated.View>
+                    ) : (
+                        <>
+                            {/* Progress Section */}
+                            <Animated.View entering={FadeInDown.delay(400).duration(800)} style={styles.sectionWrapper}>
+                                <BlurView intensity={25} tint="dark" style={[styles.glassCard, { paddingVertical: 24 }]}>
+                                    <View style={styles.progressHeader}>
+                                        <Text style={styles.progressLabel}>PROGRESS</Text>
+                                        <Text style={styles.progressValue}>{Math.round((challengeDay / challengeDuration) * 100)}%</Text>
                                     </View>
+                                    <View style={styles.progressBarBg}>
+                                        <View style={[styles.progressBarFill, { width: `${(challengeDay / challengeDuration) * 100}%` }]} />
+                                    </View>
+                                </BlurView>
+                            </Animated.View>
+
+                            {/* Goals Section */}
+                            {profile?.goals && profile.goals.length > 0 && (
+                                <Animated.View entering={FadeInDown.delay(500).duration(800)} style={styles.sectionWrapper}>
+                                    <BlurView intensity={25} tint="dark" style={styles.glassCard}>
+                                        <View style={styles.cardHeader}>
+                                            <Text style={styles.cardTitle}>Your Intentions</Text>
+                                        </View>
+                                        <View style={styles.goalsList}>
+                                            {profile.goals.map((goal, index) => (
+                                                <View key={index} style={styles.goalLine}>
+                                                    <View style={styles.goalBullet} />
+                                                    <Text style={styles.goalText}>{goal}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </BlurView>
                                 </Animated.View>
-                            ))}
-                        </View>
+                            )}
+
+                            {/* Rituals List Card */}
+                            <Animated.View entering={FadeInDown.delay(600).duration(800)} style={styles.sectionWrapper}>
+                                <BlurView intensity={25} tint="dark" style={styles.glassCard}>
+                                    <View style={styles.cardHeader}>
+                                        <Text style={styles.cardTitle}>Daily Rituals</Text>
+                                    </View>
+
+                                    <RitualRow
+                                        icon="flash-outline"
+                                        label="Take Action Toward Your Goal"
+                                        checked={manifestTasks.tookAction}
+                                        onPress={() => toggleManifestTask('tookAction')}
+                                    />
+                                    <RitualRow
+                                        icon="play-circle-outline"
+                                        label="Watch Content Related to Your Goal"
+                                        checked={manifestTasks.watchedContent}
+                                        onPress={() => toggleManifestTask('watchedContent')}
+                                    />
+                                    <RitualRow
+                                        icon="people-outline"
+                                        label="Connect with People of Similar Mindset"
+                                        checked={manifestTasks.connectedWithPeople}
+                                        onPress={() => toggleManifestTask('connectedWithPeople')}
+                                        showBorder={false}
+                                    />
+                                </BlurView>
+                            </Animated.View>
+
+                            {/* Manage Button */}
+                            <Animated.View entering={FadeInDown.delay(700).duration(800)} style={styles.manageWrapper}>
+                                <TouchableOpacity
+                                    onPress={() => router.push('/edit_profile')}
+                                    style={styles.manageButton}
+                                    activeOpacity={0.7}
+                                >
+                                    <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.4)" />
+                                    <Text style={styles.manageButtonText}>Change Goals</Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </>
+                    )}
+
+                    <Animated.View entering={FadeIn.delay(1000)} style={styles.footer}>
+                        <Text style={styles.footerText}>Keep the streak alive to manifest your goals.</Text>
                     </Animated.View>
-                )}
 
-                <View style={styles.footerInfo}>
-                    <Ionicons name="information-circle-outline" size={16} color="rgba(255,255,255,0.3)" />
-                    <Text style={styles.footerInfoText}>
-                        Your progress resets if you miss a daily ritual. Keep the streak alive.
-                    </Text>
-                </View>
-
-                <View style={{ height: 120 }} />
-            </ScrollView>
+                    <View style={{ height: 120 }} />
+                </ScrollView>
+            </SafeAreaView>
 
             <BottomBar />
         </View>
@@ -176,208 +198,215 @@ export default function ManifestHub() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#09090b',
+    container: { flex: 1, backgroundColor: '#0f172a' },
+    safe: { flex: 1 },
+    header: {
+        alignItems: 'center',
+        paddingTop: 16,
+        paddingBottom: 8,
+    },
+    headerTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: 3,
+        paddingTop: 24,
+        textTransform: 'uppercase',
     },
     scrollContent: {
         paddingHorizontal: 24,
-        paddingTop: 60,
+        paddingTop: 20,
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    heroContainer: {
         alignItems: 'center',
         marginBottom: 32,
     },
-    greeting: {
+    dayText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 24,
+        fontSize: 32,
         color: '#fff',
+        marginBottom: 4,
     },
-    statsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
-    },
-    statItem: {
-        alignItems: 'center',
-    },
-    statValue: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
-        color: '#fff',
-    },
-    statLabel: {
+    durationText: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 10,
-        color: 'rgba(255,255,255,0.4)',
-        textTransform: 'uppercase',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.3)',
     },
-    statDivider: {
-        width: 1,
-        height: 20,
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        marginHorizontal: 16,
+    sectionWrapper: {
+        marginBottom: 20,
+        borderRadius: 20,
+        overflow: 'hidden',
     },
-    challengeCard: {
+    glassCard: {
+        padding: 20,
         backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 28,
-        padding: 24,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.05)',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 15,
-        elevation: 10,
-        marginBottom: 24,
     },
-    challengeHeader: {
+    cardHeader: {
+        marginBottom: 12,
+    },
+    cardTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.3)',
+        textTransform: 'uppercase',
+        letterSpacing: 2,
+    },
+    progressHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 12,
     },
-    challengeTitle: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 18,
-        color: '#fff',
-    },
-    dayBadge: {
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(59, 130, 246, 0.2)',
-    },
-    dayBadgeText: {
+    progressLabel: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 10,
-        color: '#3b82f6',
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 1,
     },
-    progressContainer: {
-        marginBottom: 32,
+    progressValue: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 12,
+        color: '#fff',
     },
-    progressBarWrapper: {
+    progressBarBg: {
         height: 6,
         backgroundColor: 'rgba(255,255,255,0.05)',
         borderRadius: 3,
-        overflow: 'hidden',
-        marginBottom: 10,
     },
-    progressBar: {
+    progressBarFill: {
         height: '100%',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#fb923c',
         borderRadius: 3,
     },
-    progressTextRow: {
+    ritualRow: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.03)',
     },
-    progressText: {
-        fontFamily: 'Comfortaa_400Regular',
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.4)',
-    },
-    ritualContainer: {
-        gap: 20,
-    },
-    ritualItem: {
+    ritualLeft: {
+        flex: 1,
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: 16,
+        paddingRight: 10,
     },
-    checkbox: {
-        width: 24,
-        height: 24,
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.1)',
+    iconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 16,
+        marginTop: -4,
     },
-    ritualTextContent: {
-        flex: 1,
+    iconContainerChecked: {
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
     },
     ritualLabel: {
-        fontFamily: 'Comfortaa_500Medium',
-        fontSize: 15,
+        flex: 1,
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 14,
         color: 'rgba(255,255,255,0.8)',
-        marginBottom: 4,
+        lineHeight: 20,
     },
     ritualLabelChecked: {
         color: 'rgba(255,255,255,0.3)',
         textDecorationLine: 'line-through',
     },
-    taskIndicator: {
+    checkbox: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxChecked: {
+        backgroundColor: '#10b981',
+        borderColor: '#10b981',
+    },
+    goalsList: {
+        gap: 12,
+    },
+    goalLine: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 4,
-        gap: 4,
+        gap: 12,
     },
-    taskIndicatorText: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 8,
-        letterSpacing: 1,
+    goalBullet: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#fb923c',
     },
-    completeCard: {
-        padding: 32,
-        borderRadius: 28,
-        borderWidth: 1,
-        borderColor: 'rgba(16, 185, 129, 0.3)',
-        marginBottom: 24,
-        overflow: 'hidden',
+    goalText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.7)',
+        flex: 1,
+    },
+    manageWrapper: {
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    manageButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+    },
+    manageButtonText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+    },
+    completeContent: {
+        alignItems: 'center',
+        paddingVertical: 10,
     },
     completeTitle: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 22,
         color: '#fff',
-        textAlign: 'center',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     completeSubtitle: {
         fontFamily: 'Comfortaa_400Regular',
         fontSize: 14,
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(255,255,255,0.5)',
         textAlign: 'center',
         lineHeight: 22,
         marginBottom: 24,
     },
     upgradeButton: {
-        backgroundColor: '#10b981',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: '100%',
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    upgradeGrad: {
         paddingVertical: 16,
-        borderRadius: 20,
-        gap: 10,
+        alignItems: 'center',
     },
     upgradeButtonText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
-        color: '#000',
+        fontSize: 15,
+        color: '#fff',
     },
-    footerInfo: {
-        flexDirection: 'row',
+    footer: {
         alignItems: 'center',
-        paddingHorizontal: 8,
-        gap: 10,
+        marginTop: 20,
     },
-    footerInfoText: {
-        flex: 1,
+    footerText: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 12,
-        color: 'rgba(255,255,255,0.3)',
-        lineHeight: 18,
-    }
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.2)',
+        textAlign: 'center',
+    },
 });

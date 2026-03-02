@@ -21,6 +21,7 @@ interface UserProfile {
     challenge_duration: number;
     is_challenge_complete: boolean;
     onboarding_complete: boolean;
+    about: string | null;
 }
 
 interface UserState {
@@ -80,6 +81,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                         challenge_duration: 7,
                         is_challenge_complete: false,
                         onboarding_complete: false,
+                        about: "I am on a journey to align with my highest self and manifest my deepest desires.",
                     };
 
                     const { data: createdProfile, error: createError } = await supabase

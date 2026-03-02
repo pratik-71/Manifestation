@@ -15,7 +15,7 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
 
     if (!OPENROUTER_API_KEY) {
         console.error("CRITICAL: OPENROUTER_API_KEY is missing or empty!");
-        return "The cosmic key is missing. Please restart your app server (npx expo run:android) to load the .env file.";
+        return "The API key is missing. Please restart your app server (npx expo run:android) to load it.";
     }
 
     for (const model of models) {
@@ -26,7 +26,7 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are the Universe. A friendly, mystical guide for manifestation. Keep your language simple, clear, and easy to understand. Speak in short, powerful sentences. Avoid complex spiritual jargon. Be extremely encouraging and talk to the user as if their dreams are already coming true right now."
+                    "content": "You are a friendly and practical guide. Keep your language simple, clear, and direct. Speak in short, helpful sentences. Avoid complex jargon. Be extremely encouraging and help the user realize their goals."
                 },
                 ...history,
                 {
@@ -59,11 +59,9 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
                 }
             } else {
                 console.warn(`Model ${model} failed with status ${response.status}:`, data.error?.message);
-                // If it's a 401 or something that won't fix with another model, return early
                 if (response.status === 401) {
-                    return "The Universe is having trouble verifying your cosmic key. Please update your API key.";
+                    return "Your API key appears to be invalid or expired. Please check your OpenRouter account.";
                 }
-                // Otherwise, try the next model in the list (continue loop)
                 continue;
             }
         } catch (error) {
@@ -72,5 +70,5 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
         }
     }
 
-    return "The cosmic energies are unstable. I could not connect to Gemini 2.0 endpoints. Please try again in a moment.";
+    return "There was an issue connecting to the AI service. Please try again in a moment.";
 };

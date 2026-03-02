@@ -22,6 +22,7 @@ export default function GoogleSignIn() {
     const ob_sleepTime = useOnboardingStore((s) => s.sleepTime);
     const ob_manifestTime = useOnboardingStore((s) => s.manifestTime);
     const ob_goals = useOnboardingStore((s) => s.goals);
+    const ob_aiRoadmap = useOnboardingStore((s) => s.aiRoadmap);
     const resetOnboarding = useOnboardingStore((s) => s.reset);
 
     const handleGoogleSignIn = async () => {
@@ -40,6 +41,7 @@ export default function GoogleSignIn() {
                         sleepTime: ob_sleepTime || '23:00',
                         manifestTime: ob_manifestTime || '10:00',
                         goals: ob_goals,
+                        aiRoadmap: ob_aiRoadmap,
                     });
                     console.log('✅ Onboarding profile saved to Supabase');
                     resetOnboarding();
@@ -74,7 +76,7 @@ export default function GoogleSignIn() {
 
             {/* Ultra-HD Cosmic Background */}
             <BreathingBackground
-                colors={['#080111', '#7c3aed', '#f97316']} // Deep Void -> Electric Purple -> Radiant Orange
+                colors={['#02010a', '#1e40af', '#be123c']}
                 opacity={0.8}
             />
             <View style={styles.overlay} pointerEvents="none" />
@@ -92,14 +94,12 @@ export default function GoogleSignIn() {
 
                     {/* Top Branding */}
                     <View style={styles.header}>
-                        <View style={styles.logoRing}>
-                            <Image
-                                source={require('../../assets/logo.png')}
-                                style={styles.logoImage}
-                                resizeMode="contain"
-                            />
-                        </View>
-                        <Text style={styles.brandTitle}>MANIFEST</Text>
+                        <Image
+                            source={require('../../assets/logo.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.brandTitle}>Manifest</Text>
                     </View>
 
                     {/* Central Visual */}
@@ -115,7 +115,7 @@ export default function GoogleSignIn() {
                             <View style={styles.trustContainer}>
                                 <View style={styles.trustItem}>
                                     <Ionicons name="sparkles" size={14} color="rgba(255, 255, 255, 0.6)" />
-                                    <Text style={styles.trustText}>95% see results</Text>
+                                    <Text style={styles.trustText}>95% users started getting results in 15 days</Text>
                                 </View>
                                 <View style={styles.trustItem}>
                                     <Ionicons name="flash" size={14} color="rgba(255, 255, 255, 0.6)" />
@@ -202,12 +202,11 @@ const styles = StyleSheet.create({
         zIndex: 100,
         width: 44,
         height: 44,
-        borderRadius: 22,
+
         backgroundColor: 'rgba(255, 255, 255, 0.08)',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.15)',
+
     },
     contentContainer: {
         flex: 1,
@@ -220,28 +219,22 @@ const styles = StyleSheet.create({
         marginTop: 10,
     },
     logoRing: {
-        width: 85,
-        height: 85,
-        borderRadius: 42.5,
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 1.5,
-        borderColor: 'rgba(124, 58, 237, 0.3)', // Electric Purple border
-        marginBottom: 16,
+        marginBottom: 8,
     },
     logoImage: {
-        width: 50,
-        height: 50,
+        width: 64,
+        height: 64,
+        tintColor: '#fff',
     },
     brandTitle: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 26,
+        fontFamily: 'DancingScript_400Regular',
+        fontSize: 38,
         color: '#fff',
-        letterSpacing: 10,
-        textShadowColor: 'rgba(124, 58, 237, 0.6)',
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 20,
+        letterSpacing: 1,
+        textShadowColor: 'rgba(30, 64, 175, 0.4)', // Subtle Royal Blue glow
+        textShadowOffset: { width: 0, height: 4 },
+        textShadowRadius: 10,
+        marginTop: 0,
     },
     centerSection: {
         flex: 1,
@@ -260,15 +253,20 @@ const styles = StyleSheet.create({
         height: height * 0.3,
     },
     trustContainer: {
-        width: '90%',
+        width: '100%',
         alignItems: 'flex-start',
-        backgroundColor: 'rgba(255, 255, 255, 0.07)',
         paddingVertical: 18,
-        paddingHorizontal: 22,
+        paddingHorizontal: 28,
         borderRadius: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.12)',
         gap: 14,
+        // Added subtle glow to replace the lost borders
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderWidth: 1,
+        borderColor: 'rgba(190, 18, 60, 0.1)',
+        shadowColor: '#be123c',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
     },
     trustItem: {
         flexDirection: 'row',
@@ -280,6 +278,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: 'rgba(255, 255, 255, 0.8)',
         letterSpacing: 0.3,
+        lineHeight: 16,
     },
     dividerDots: {
         width: 4,
@@ -311,7 +310,7 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#7c3aed',
+        shadowColor: '#1e40af', // Royal Blue shadow
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -369,14 +368,14 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     linkText: {
-        color: '#fb923c', // Radiant Orange for links
+        color: '#be123c', // Ruby Crimson for links
         textDecorationLine: 'underline',
         fontFamily: 'Comfortaa_600SemiBold',
     },
     securityNote: {
         fontFamily: 'Comfortaa_400Regular',
         fontSize: 11,
-        color: 'rgba(124, 58, 237, 0.6)', // Muted Purple
+        color: 'rgba(190, 18, 60, 0.6)', // Muted Ruby
         textAlign: 'center',
         letterSpacing: 0.5,
     },

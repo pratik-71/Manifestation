@@ -147,11 +147,15 @@ export default function Home() {
                             </View>
                         </View>
 
-                        {/* More Options / Explore */}
+                        {/* Explore Guide */}
                         <Animated.View entering={FadeIn.delay(1000)} style={styles.exploreContainer}>
-                            <TouchableOpacity style={styles.exploreButton}>
-                                <Text style={styles.exploreText}>View More Rituals</Text>
-                                <Ionicons name="arrow-down" size={16} color="rgba(255,255,255,0.4)" />
+                            <TouchableOpacity
+                                onPress={() => router.push('/guide' as any)}
+                                style={styles.exploreButton}
+                            >
+                                <Ionicons name="book-outline" size={18} color="#fb923c" style={{ marginRight: 8 }} />
+                                <Text style={styles.exploreText}>View Cosmic Guide</Text>
+                                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
                             </TouchableOpacity>
                         </Animated.View>
 

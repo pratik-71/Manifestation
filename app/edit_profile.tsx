@@ -15,7 +15,6 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../components/TimeWheelPicker';
 import { getCurrentUser } from '../services/authService';
@@ -33,7 +32,7 @@ export default function EditProfile() {
     const [manifestTime, setManifestTime] = useState<TimeValue>({ hour: '12', minute: '00', ampm: 'AM' });
 
     // Goals State
-    const [goals, setGoals] = useState<{ id: string; content: string }[]>([]);
+    const [goals, setGoals] = useState<string[]>([]);
     const [newGoal, setNewGoal] = useState('');
     const [username, setUsername] = useState('');
 
@@ -46,7 +45,7 @@ export default function EditProfile() {
         try {
             const user = await getCurrentUser();
             if (!user) {
-                router.replace('/onboarding/Opening_Page');
+                router.replace('/onboarding/google_signin');
                 return;
             }
 
@@ -62,16 +61,7 @@ export default function EditProfile() {
                 setWakeTime(parseTimeToValue(profile.wake_time));
                 setSleepTime(parseTimeToValue(profile.sleep_time));
                 setManifestTime(parseTimeToValue(profile.manifest_time));
-            }
-
-            // Fetch Goals
-            const { data: goalsData } = await supabase
-                .from('goals')
-                .select('*')
-                .eq('user_id', user.id);
-
-            if (goalsData) {
-                setGoals(goalsData);
+                setGoals(profile.goals || []);
             }
 
         } catch (error) {
@@ -102,35 +92,14 @@ export default function EditProfile() {
         return `${hour.toString().padStart(2, '0')}:${val.minute}:00`;
     };
 
-    const handleAddGoal = async () => {
+    const handleAddGoal = () => {
         if (!newGoal.trim()) return;
-
-        try {
-            const user = await getCurrentUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('goals')
-                .insert([{ user_id: user.id, content: newGoal.trim() }])
-                .select()
-                .single();
-
-            if (data) {
-                setGoals([...goals, data]);
-                setNewGoal('');
-            }
-        } catch (err) {
-            console.error(err);
-        }
+        setGoals([...goals, newGoal.trim()]);
+        setNewGoal('');
     };
 
-    const handleDeleteGoal = async (id: string) => {
-        try {
-            await supabase.from('goals').delete().eq('id', id);
-            setGoals(goals.filter(g => g.id !== id));
-        } catch (err) {
-            console.error(err);
-        }
+    const handleDeleteGoal = (index: number) => {
+        setGoals(goals.filter((_, i) => i !== index));
     };
 
     const handleSave = async () => {
@@ -149,7 +118,8 @@ export default function EditProfile() {
                     username,
                     wake_time: wakeTimeStr,
                     sleep_time: sleepTimeStr,
-                    manifest_time: manifestTimeStr
+                    manifest_time: manifestTimeStr,
+                    goals: goals // Save as JSONB array directly
                 })
                 .eq('id', user.id);
 
@@ -172,6 +142,7 @@ export default function EditProfile() {
             Alert.alert("Success", "Your sacred journey has been updated.");
             router.back();
         } catch (error) {
+            console.error('Save error:', error);
             Alert.alert("Error", "Failed to update cosmic settings.");
         } finally {
             setIsSaving(false);
@@ -201,51 +172,43 @@ export default function EditProfile() {
                         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                             <Ionicons name="close" size={24} color="#fff" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Edit Sacred Settings</Text>
+                        <Text style={styles.headerTitle}>Edit Profile</Text>
                         <TouchableOpacity onPress={handleSave} disabled={isSaving}>
                             {isSaving ? (
                                 <ActivityIndicator color="#fb923c" size="small" />
                             ) : (
-                                <Text style={styles.saveText}>Save</Text>
+                                <Text style={styles.saveText}>Done</Text>
                             )}
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                        <Animated.View entering={FadeInDown.duration(600)}>
-                            <Text style={styles.label}>Manifesting Name</Text>
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        {/* Name Section */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>YOUR NAME</Text>
                             <TextInput
                                 style={styles.input}
                                 value={username}
                                 onChangeText={setUsername}
-                                placeholder="Enter your name"
-                                placeholderTextColor="rgba(255,255,255,0.3)"
+                                placeholder="What should we call you?"
+                                placeholderTextColor="rgba(255,255,255,0.2)"
                             />
+                        </View>
 
-                            <Text style={styles.sectionTitle}>Sacred Rhythm</Text>
-
-                            <View style={styles.timeSection}>
-                                <Text style={styles.timeLabel}>Wake Up Time</Text>
-                                <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
-                            </View>
-
-                            <View style={styles.timeSection}>
-                                <Text style={styles.timeLabel}>Sleep Time</Text>
-                                <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
-                            </View>
-
-                            <View style={styles.timeSection}>
-                                <Text style={styles.timeLabel}>Manifestation Time</Text>
-                                <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
-                            </View>
-
-                            <Text style={styles.sectionTitle}>Your Goals</Text>
-                            <View style={styles.goalsContainer}>
-                                {goals.map((goal) => (
-                                    <View key={goal.id} style={styles.goalItem}>
-                                        <Text style={styles.goalText}>{goal.content}</Text>
-                                        <TouchableOpacity onPress={() => handleDeleteGoal(goal.id)}>
-                                            <Ionicons name="trash-outline" size={20} color="#f87171" />
+                        {/* Goals Section */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>YOUR GOALS</Text>
+                            <View style={styles.glassCard}>
+                                {goals.map((goal, index) => (
+                                    <View key={index} style={[styles.goalItem, index === goals.length - 1 && { borderBottomWidth: 0 }]}>
+                                        <Text style={styles.goalText}>{goal}</Text>
+                                        <TouchableOpacity onPress={() => handleDeleteGoal(index)} style={styles.deleteBtn}>
+                                            <Ionicons name="trash-outline" size={18} color="rgba(248, 113, 113, 0.6)" />
                                         </TouchableOpacity>
                                     </View>
                                 ))}
@@ -254,17 +217,38 @@ export default function EditProfile() {
                                         style={styles.addGoalInput}
                                         value={newGoal}
                                         onChangeText={setNewGoal}
-                                        placeholder="Add a new intention..."
-                                        placeholderTextColor="rgba(255,255,255,0.3)"
+                                        placeholder="Add a new goal..."
+                                        placeholderTextColor="rgba(255,255,255,0.2)"
                                         onSubmitEditing={handleAddGoal}
                                     />
                                     <TouchableOpacity style={styles.addGoalButton} onPress={handleAddGoal}>
-                                        <Ionicons name="add" size={24} color="#fff" />
+                                        <Ionicons name="add" size={20} color="#fff" />
                                     </TouchableOpacity>
                                 </View>
                             </View>
-                        </Animated.View>
-                        <View style={{ height: 40 }} />
+                        </View>
+
+                        {/* Rhythm Section */}
+                        <View style={styles.section}>
+                            <Text style={styles.sectionLabel}>SACRED RHYTHM</Text>
+
+                            <View style={styles.timeItem}>
+                                <Text style={styles.timeLabel}>Wake Up</Text>
+                                <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
+                            </View>
+
+                            <View style={styles.timeItem}>
+                                <Text style={styles.timeLabel}>Deep Sleep</Text>
+                                <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
+                            </View>
+
+                            <View style={styles.timeItem}>
+                                <Text style={styles.timeLabel}>Manifestation Hour</Text>
+                                <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
+                            </View>
+                        </View>
+
+                        <View style={{ height: 100 }} />
                     </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
@@ -281,59 +265,89 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingVertical: 35,
+        backgroundColor: 'rgba(15, 23, 42, 0.8)',
     },
     backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: 'rgba(255,255,255,0.05)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    headerTitle: { color: '#fff', fontSize: 18, fontFamily: 'Comfortaa_700Bold' },
-    saveText: { color: '#fb923c', fontSize: 16, fontFamily: 'Comfortaa_700Bold' },
-    scrollContent: { paddingHorizontal: 24, paddingTop: 20 },
-    label: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 8, fontFamily: 'Comfortaa_400Regular' },
-    input: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 16,
-        padding: 16,
+    headerTitle: {
         color: '#fff',
-        fontFamily: 'Comfortaa_500Medium',
         fontSize: 16,
-        marginBottom: 24,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        fontFamily: 'Comfortaa_700Bold',
+        letterSpacing: 1,
     },
-    sectionTitle: {
+    saveText: {
         color: '#fb923c',
-        fontSize: 14,
+        fontSize: 15,
+        fontFamily: 'Comfortaa_700Bold'
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 10
+    },
+    section: {
+        marginBottom: 32,
+    },
+    sectionLabel: {
+        color: 'rgba(255,255,255,0.3)',
+        fontSize: 10,
         fontFamily: 'Comfortaa_700Bold',
         letterSpacing: 2,
-        textTransform: 'uppercase',
-        marginTop: 10,
-        marginBottom: 20,
+        marginBottom: 12,
+        marginLeft: 4,
     },
-    timeSection: { marginBottom: 24 },
-    timeLabel: { color: '#fff', fontSize: 14, fontFamily: 'Comfortaa_600SemiBold', marginBottom: 12 },
-    goalsContainer: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        borderRadius: 24,
+    input: {
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: 16,
+        padding: 18,
+        color: '#fff',
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    glassCard: {
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderRadius: 20,
         padding: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.05)',
+        overflow: 'hidden',
     },
     goalItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.05)',
+        borderBottomColor: 'rgba(255,255,255,0.03)',
     },
-    goalText: { color: '#fff', fontFamily: 'Comfortaa_500Medium', flex: 1, marginRight: 10 },
-    addGoalRow: { flexDirection: 'row', alignItems: 'center', marginTop: 15 },
+    goalText: {
+        color: 'rgba(255,255,255,0.9)',
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 14,
+        flex: 1,
+        marginRight: 12
+    },
+    deleteBtn: {
+        padding: 4,
+    },
+    addGoalRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderRadius: 12,
+        paddingLeft: 12,
+        paddingRight: 6,
+        paddingVertical: 4,
+    },
     addGoalInput: {
         flex: 1,
         color: '#fff',
@@ -342,12 +356,22 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     addGoalButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#fb923c',
+        width: 30,
+        height: 30,
+        borderRadius: 10,
+        backgroundColor: 'rgba(251, 146, 60, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 10,
+    },
+    timeItem: {
+        marginBottom: 24,
+    },
+    timeLabel: {
+        color: '#fff',
+        fontSize: 13,
+        fontFamily: 'Comfortaa_600SemiBold',
+        marginBottom: 12,
+        marginLeft: 4,
+        opacity: 0.8,
     },
 });

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
+import { BreathingBackground } from '../../components/BreathingBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -26,7 +27,7 @@ export default function AcceptChallenge() {
         if (isProcessing) return;
         setIsProcessing(true);
         console.log("Signature captured");
-        router.replace('/onboarding/google_signin');
+        router.push('/onboarding/google_signin');
         setTimeout(() => setIsProcessing(false), 1000);
     };
 
@@ -73,13 +74,9 @@ export default function AcceptChallenge() {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
-            {/* Deep Emerald Gradient - Black -> Deep Emerald */}
-            <LinearGradient
-                colors={['#000000', '#022c22', '#064e3b']}
-                locations={[0, 0.5, 1]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1.2 }}
-                style={StyleSheet.absoluteFill}
+            <BreathingBackground
+                colors={['#02010a', '#78350f', '#f59e0b']}
+                opacity={0.8}
             />
 
             <SafeAreaView style={{ flex: 1 }}>
@@ -132,7 +129,7 @@ export default function AcceptChallenge() {
                     </Animated.View>
 
                     <View style={styles.instructionContainer}>
-                        <Ionicons name="shield-checkmark" size={18} color="#10b981" />
+                        <Ionicons name="shield-checkmark" size={18} color="#f59e0b" />
                         <Text style={styles.instructionText}>Your privacy is protected. Signature is only stored on your mobile phone only.</Text>
                     </View>
                 </View>
@@ -145,17 +142,19 @@ export default function AcceptChallenge() {
                             }
                         }}
                         disabled={!hasSigned || isProcessing}
-                        style={[
-                            styles.completeButton,
-                            hasSigned && !isProcessing ? styles.buttonActive : styles.buttonInactive
-                        ]}
+                        activeOpacity={0.85}
+                        style={[styles.buttonContainer, { opacity: hasSigned ? 1 : 0.4 }]}
                     >
-                        <Text style={[
-                            styles.completeButtonText,
-                            { color: hasSigned ? '#fff' : 'rgba(255,255,255,0.3)' }
-                        ]}>
-                            Confirm Commitment
-                        </Text>
+                        <LinearGradient
+                            colors={['#ffffff', '#f8f8f8', '#ffffff']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.completeButton}
+                        >
+                            <Text style={styles.completeButtonText}>
+                                Confirm Commitment
+                            </Text>
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
             </SafeAreaView>
@@ -266,32 +265,34 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingHorizontal: 32,
-        paddingBottom: 40,
+        paddingBottom: 48, // Lifted for iOS home bar
+    },
+    buttonContainer: {
+        width: '100%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        // White glow for white theme
+        shadowColor: '#ffffff',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+        elevation: 12,
     },
     completeButton: {
         width: '100%',
-        paddingVertical: 20,
-        borderRadius: 16,
+        paddingVertical: 16,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    buttonActive: {
-        backgroundColor: '#10b981',
-        shadowColor: '#10b981',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
-    },
-    buttonInactive: {
-        backgroundColor: 'rgba(255,255,255,0.05)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255, 255, 255, 0.8)',
     },
     completeButtonText: {
-        fontFamily: 'CormorantGaramond_600SemiBold',
-        fontSize: 16,
-        letterSpacing: 2,
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 13,
         fontWeight: 'bold',
+        letterSpacing: 1.2,
+        textTransform: 'uppercase',
+        color: '#000000',
     },
 });

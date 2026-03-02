@@ -16,31 +16,32 @@ const { height, width } = Dimensions.get('window');
 
 const PROOF_CARDS = [
     {
-        emoji: '🧬',
-        tag: 'NEUROSCIENCE',
-        title: 'Your brain spots what you train it to see',
-        desc: 'The RAS filters 11M signals/sec. Daily intention-setting rewires it toward your goals automatically.',
+        emoji: '🧠',
+        tag: 'MIND POWER',
+        title: 'You find what you focus on',
+        desc: 'Your brain filters out the noise. When you set a daily goal, you start seeing the right opportunities everywhere.',
     },
     {
         emoji: '👑',
-        tag: 'USED BY THE BEST',
-        title: 'Oprah. Jim Carrey. Conor McGregor.',
-        desc: 'All publicly credit daily visualization & intention rituals as the foundation of their success.',
+        tag: 'SUCCESS STORIES',
+        title: 'Used by the world’s best',
+        desc: 'Top athletes and leaders use daily rituals to stay at the top. This app gives you the same simple system.',
     },
     {
         emoji: '📊',
-        tag: 'RESEARCH-BACKED',
-        title: 'Written goals are 42% more likely to happen',
-        desc: 'Dominican University study. This app makes it a 5-min daily non-negotiable that stacks over time.',
+        tag: 'IT IS PROVEN',
+        title: 'Writing it down works',
+        desc: 'You are much more likely to reach your goals if you write them down daily. It turns a dream into a real plan.',
     },
     {
         emoji: '⚡',
-        tag: 'HABIT SCIENCE',
-        title: '66 days to a permanent mindset shift',
-        desc: 'UCL research shows it takes 66 days to form an automatic habit. The 7-day challenge is your ignition.',
+        tag: 'STAYING ON TRACK',
+        title: 'Consistency builds a new you',
+        desc: 'Doing this every day builds a strong habit. Our 7-day challenge is the perfect way to get you started.',
     },
 ];
 
+// Card width is set to a percentage to keep it centered and consistent
 const CARD_WIDTH = width - 48;
 
 // ── Rotating border card ──────────────────────────────────────────────────────
@@ -144,13 +145,13 @@ export default function Trust1() {
                     {/* ── HEADLINE ── */}
                     <View style={styles.headlineBlock}>
                         <Text style={styles.headline}>
-                            The system the world's{'\n'}
-                            <Text style={styles.headlineAccent}>most successful people{'\n'}</Text>
-                            quietly use every day.
+                            The secret of{'\n'}
+                            <Text style={styles.headlineAccent}>successful people{'\n'}</Text>
+                            is their daily routine.
                         </Text>
                         <Text style={styles.sub}>
-                            The people you admire didn't find a shortcut.{' '}
-                            <Text style={styles.subAccent}>They found a system. Yours starts in 7 days.</Text>
+                            Most people try to find a shortcut.{' '}
+                            <Text style={styles.subAccent}>Successful people find a system. Yours starts now.</Text>
                         </Text>
                     </View>
 
@@ -252,19 +253,19 @@ const styles = StyleSheet.create({
 
     // Rotating border card
     cardOuter: {
-        width: CARD_WIDTH,
+        width: width - 48,
+        height: 240,
         borderRadius: 18,
-        overflow: 'hidden',   // clips the spinning square to the card shape
-        padding: 1.5,         // this becomes the "border" thickness
+        overflow: 'hidden',
+        padding: 1.5,
     },
     // Large square that spins behind the card (native driver rotate ✅)
     spinnerSquare: {
         position: 'absolute',
-        // Must be big enough to cover all corners when rotating
-        width: CARD_WIDTH * 1.5,
-        height: CARD_WIDTH * 1.5,
-        top: -(CARD_WIDTH * 0.25),
-        left: -(CARD_WIDTH * 0.25),
+        width: width * 1.5,
+        height: width * 1.5,
+        top: -(width * 1.5 - 240) / 2,
+        left: -(width * 1.5 - (width - 48)) / 2,
         flexDirection: 'row',
         flexWrap: 'wrap',
     },
@@ -273,7 +274,9 @@ const styles = StyleSheet.create({
     },
     // The actual card content over the rotating spinner
     cardInner: {
+        flex: 1, // Fill fixed height
         flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', // Center content vertically
         backgroundColor: '#0d0527',
         borderRadius: 16.5,
         paddingHorizontal: 20, paddingVertical: 22,

@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Dimensions,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -13,33 +16,29 @@ import {
     View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { getCurrentUser, signOut } from '../services/authService';
 import { useUserStore } from '../store/userStore';
 
-interface UserProfile {
-    username: string;
-    wake_time: string;
-    sleep_time: string;
-    manifest_time: string;
-}
+const { width } = Dimensions.get('window');
 
 export default function Profile() {
     const router = useRouter();
-    const { profile, isLoading: isStoreLoading, fetchProfile } = useUserStore();
+    const { profile, fetchProfile } = useUserStore();
+    const [email, setEmail] = useState<string>('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
-    const [userEmail, setUserEmail] = useState<string | null>(null);
 
     useEffect(() => {
         const init = async () => {
             const user = await getCurrentUser();
-            if (!user) {
-                router.replace('/onboarding/Opening_Page');
-                return;
-            }
-            setUserEmail(user.email || null);
-            if (!profile) {
-                await fetchProfile(user.id);
+            if (user) {
+                setEmail(user.email || '');
+                if (!profile) {
+                    await fetchProfile(user.id);
+                }
+            } else {
+                router.replace('/onboarding/google_signin');
             }
         };
         init();
@@ -47,8 +46,8 @@ export default function Profile() {
 
     const handleLogout = async () => {
         Alert.alert(
-            "Cosmic Disconnect",
-            "Are you sure you want to log out of your manifestation journey?",
+            "Logout",
+            "Are you sure you want to logout?",
             [
                 { text: "Stay", style: "cancel" },
                 {
@@ -58,9 +57,9 @@ export default function Profile() {
                         setIsLoggingOut(true);
                         try {
                             await signOut();
-                            router.replace('/onboarding/Opening_Page');
+                            router.replace('/onboarding/google_signin');
                         } catch (error) {
-                            Alert.alert("Error", "Failed to sign out. Please try again.");
+                            Alert.alert("Error", "Failed to sign out.");
                         } finally {
                             setIsLoggingOut(false);
                         }
@@ -70,341 +69,250 @@ export default function Profile() {
         );
     };
 
-    if (isStoreLoading || isLoggingOut) {
-        return (
-            <View style={styles.loadingContainer}>
-                <BreathingBackground colors={['#0f172a', '#1e1b4b']} opacity={1} />
-                <ActivityIndicator size="large" color="#fb923c" />
-                <Text style={styles.loadingText}>{isLoggingOut ? "Closing Cosmic Portal..." : "Syncing Intensions..."}</Text>
+    const MenuRow = ({ icon, label, onPress, showBorder = true }: any) => (
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.7}
+            style={[styles.menuRow, !showBorder && { borderBottomWidth: 0 }]}
+        >
+            <View style={styles.menuLeft}>
+                <View style={styles.iconContainer}>
+                    <Ionicons name={icon} size={20} color="#fff" />
+                </View>
+                <Text style={styles.menuLabel}>{label}</Text>
             </View>
-        );
-    }
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+        </TouchableOpacity>
+    );
 
     return (
-        <View style={styles.container}>
+        <View style={styles.screen}>
             <StatusBar barStyle="light-content" />
+
             <BreathingBackground
-                colors={['#0f172a', '#1e1b4b', '#312e81']}
+                colors={['#0f172a', '#1c1917', '#451a03']}
                 opacity={0.8}
             />
 
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Cosmic Profile</Text>
-                    <View style={{ width: 40 }} />
-                </View>
+            <SafeAreaView style={styles.safe}>
+                <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
+                    <Text style={styles.headerTitle}>PROFILE</Text>
+                </Animated.View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                    {/* User Info Card */}
-                    <Animated.View entering={FadeInUp.duration(600)} style={styles.userCard}>
-                        <View style={styles.avatarContainer}>
-                            <View style={styles.avatarGlow} />
-                            <View style={styles.avatarInner}>
-                                <Text style={styles.avatarInitial}>
-                                    {profile?.username?.[0]?.toUpperCase() || 'S'}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+                    {/* Profile Hero */}
+                    <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroContainer}>
+                        <View style={styles.avatarOutline}>
+                            <LinearGradient
+                                colors={['#8b5cf6', '#d946ef', '#f97316']}
+                                style={styles.avatarGradient}
+                            >
+                                <Text style={styles.avatarText}>
+                                    {(profile?.username || 'S').charAt(0).toUpperCase()}
                                 </Text>
-                            </View>
+                            </LinearGradient>
                         </View>
-                        <Text style={styles.userName}>{profile?.username || 'Seeker'}</Text>
-                        <Text style={styles.userEmail}>{userEmail}</Text>
 
-                        <View style={styles.statsRow}>
-                            <View style={styles.statBox}>
-                                <Text style={styles.statValue}>{profile?.daily_message_count || 0}</Text>
-                                <Text style={styles.statLabel}>Rituals</Text>
-                            </View>
-                            <View style={[styles.statBox, styles.statBorder]}>
-                                <Text style={styles.statValue}>{profile?.streak_count || 0}</Text>
-                                <Text style={styles.statLabel}>Day Streak</Text>
-                            </View>
-                            <View style={styles.statBox}>
-                                <Text style={styles.statValue}>{profile?.challenge_day || 1}</Text>
-                                <Text style={styles.statLabel}>Day</Text>
-                            </View>
+                        <Text style={styles.username}>{profile?.username || 'Seeker'}</Text>
+                        <Text style={styles.emailTag}>{email}</Text>
+
+                        <View style={styles.streakBadge}>
+                            <Ionicons name="flame" size={14} color="#f97316" />
+                            <Text style={styles.streakText}>{profile?.streak_count || 0} Day Streak</Text>
                         </View>
                     </Animated.View>
 
-                    {/* Ritual Timing Section */}
-                    <Text style={styles.sectionTitle}>Your Sacred Rhythm</Text>
-                    <Animated.View entering={FadeInDown.delay(200)} style={styles.rhythmCard}>
-                        <View style={styles.rhythmItem}>
-                            <View style={[styles.iconBox, { backgroundColor: 'rgba(251, 146, 60, 0.1)' }]}>
-                                <Ionicons name="sunny" size={20} color="#fb923c" />
-                            </View>
-                            <View style={styles.rhythmInfo}>
-                                <Text style={styles.rhythmLabel}>Wake Up</Text>
-                                <Text style={styles.rhythmValue}>{profile?.wake_time?.substring(0, 5) || '07:00'} AM</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => router.push('/edit_profile' as any)}>
-                                <Text style={styles.editText}>Edit</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.rhythmItem}>
-                            <View style={[styles.iconBox, { backgroundColor: 'rgba(168, 85, 247, 0.1)' }]}>
-                                <Ionicons name="moon" size={20} color="#a855f7" />
-                            </View>
-                            <View style={styles.rhythmInfo}>
-                                <Text style={styles.rhythmLabel}>Sleep Time</Text>
-                                <Text style={styles.rhythmValue}>{profile?.sleep_time?.substring(0, 5) || '11:00'} PM</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => router.push('/edit_profile' as any)}>
-                                <Text style={styles.editText}>Edit</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.divider} />
-
-                        <View style={styles.rhythmItem}>
-                            <View style={[styles.iconBox, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
-                                <Ionicons name="sparkles" size={20} color="#22c55e" />
-                            </View>
-                            <View style={styles.rhythmInfo}>
-                                <Text style={styles.rhythmLabel}>Manifestation</Text>
-                                <Text style={styles.rhythmValue}>{profile?.manifest_time?.substring(0, 5) || '12:00'} AM</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => router.push('/edit_profile' as any)}>
-                                <Text style={styles.editText}>Edit</Text>
-                            </TouchableOpacity>
-                        </View>
+                    {/* Settings Section */}
+                    <Animated.View entering={FadeInDown.delay(400).duration(800)} style={styles.sectionWrapper}>
+                        <BlurView intensity={25} tint="dark" style={styles.glassCard}>
+                            <MenuRow
+                                icon="person-outline"
+                                label="Personal Information"
+                                onPress={() => router.push('/edit_profile')}
+                            />
+                            <MenuRow
+                                icon="card-outline"
+                                label="Subscription"
+                                onPress={() => { }}
+                            />
+                            <MenuRow
+                                icon="chatbubble-outline"
+                                label="Feedback"
+                                onPress={() => { }}
+                            />
+                            <MenuRow
+                                icon="information-circle-outline"
+                                label="About"
+                                onPress={() => Alert.alert("About Astral", "Your companion in the journey of manifestation.\nVersion 1.0.4")}
+                                showBorder={true}
+                            />
+                            <MenuRow
+                                icon="log-out-outline"
+                                label="Logout"
+                                onPress={handleLogout}
+                                showBorder={false}
+                            />
+                        </BlurView>
                     </Animated.View>
 
-                    {/* Menu Options */}
-                    <Text style={styles.sectionTitle}>Preferences</Text>
-                    <Animated.View entering={FadeInDown.delay(400)} style={styles.menuCard}>
-                        <TouchableOpacity style={styles.menuItem}>
-                            <Ionicons name="notifications-outline" size={22} color="#fff" />
-                            <Text style={styles.menuText}>Notification Settings</Text>
-                            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
-                        </TouchableOpacity>
+                    <View style={styles.footer}>
+                        <Text style={styles.versionText}>v1.0.4</Text>
+                    </View>
 
-                        <View style={styles.divider} />
-
-                        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-                            <Ionicons name="log-out-outline" size={22} color="#f87171" />
-                            <Text style={[styles.menuText, { color: '#f87171' }]}>Disconnect Portal</Text>
-                            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.2)" />
-                        </TouchableOpacity>
-                    </Animated.View>
-
-                    <Text style={styles.versionText}>Version 1.0.0 – Manifestation Engine</Text>
+                    <View style={{ height: 120 }} />
                 </ScrollView>
             </SafeAreaView>
+
+            <BottomBar />
+
+            {isLoggingOut && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator color="#fff" size="large" />
+                </View>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#0f172a',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        color: '#fb923c',
-        fontFamily: 'Comfortaa_500Medium',
-        marginTop: 20,
-        fontSize: 16,
-    },
-    safeArea: {
-        flex: 1,
-    },
+    screen: { flex: 1, backgroundColor: '#0f172a' },
+    safe: { flex: 1 },
     header: {
-        flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        paddingTop: 16,
+        paddingBottom: 8,
     },
     headerTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 18,
-        color: '#fff',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: 3,
+        paddingTop: 24,
+        textTransform: 'uppercase',
     },
     scrollContent: {
         paddingHorizontal: 24,
-        paddingBottom: 40,
+        paddingTop: 20,
     },
-    // User Card
-    userCard: {
-        backgroundColor: 'rgba(30, 41, 59, 0.4)',
-        borderRadius: 32,
-        padding: 24,
+    heroContainer: {
         alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        marginBottom: 32,
     },
-    avatarContainer: {
-        width: 90,
-        height: 90,
-        marginBottom: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    avatarGlow: {
-        position: 'absolute',
+    avatarOutline: {
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#fb923c',
-        opacity: 0.15,
+        padding: 3,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginBottom: 16,
     },
-    avatarInner: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: 'rgba(251, 146, 60, 0.1)',
-        borderWidth: 2,
-        borderColor: '#fb923c',
-        justifyContent: 'center',
+    avatarGradient: {
+        flex: 1,
+        borderRadius: 47,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    avatarInitial: {
-        color: '#fb923c',
-        fontSize: 32,
+    avatarText: {
         fontFamily: 'Comfortaa_700Bold',
+        fontSize: 42,
+        color: '#fff',
     },
-    userName: {
+    username: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 22,
+        fontSize: 24,
         color: '#fff',
         marginBottom: 4,
     },
-    userEmail: {
+    emailTag: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.4)',
-        marginBottom: 24,
-    },
-    statsRow: {
-        flexDirection: 'row',
-        width: '100%',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 20,
-        paddingVertical: 15,
-    },
-    statBox: {
-        flex: 1,
-        alignItems: 'center',
-    },
-    statBorder: {
-        borderLeftWidth: 1,
-        borderRightWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-    },
-    statValue: {
-        color: '#fff',
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 18,
-    },
-    statLabel: {
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontFamily: 'Comfortaa_400Regular',
-        fontSize: 11,
-        marginTop: 4,
-    },
-    // Sections
-    sectionTitle: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 14,
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginBottom: 12,
-        marginLeft: 4,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    // Rhythm Card
-    rhythmCard: {
-        backgroundColor: 'rgba(30, 41, 59, 0.4)',
-        borderRadius: 24,
-        padding: 16,
-        marginBottom: 30,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
-    },
-    rhythmItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-    },
-    iconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    rhythmInfo: {
-        flex: 1,
-    },
-    rhythmLabel: {
-        fontFamily: 'Comfortaa_400Regular',
-        color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: 12,
-    },
-    rhythmValue: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        color: '#fff',
-        fontSize: 16,
-        marginTop: 2,
-    },
-    editText: {
-        color: '#fb923c',
-        fontFamily: 'Comfortaa_600SemiBold',
         fontSize: 13,
+        color: 'rgba(255,255,255,0.3)',
+        marginBottom: 16,
     },
-    divider: {
-        height: 1,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        marginVertical: 4,
-    },
-    // Menu Card
-    menuCard: {
-        backgroundColor: 'rgba(30, 41, 59, 0.4)',
-        borderRadius: 24,
-        padding: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
-    },
-    menuItem: {
+    streakBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        gap: 15,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
     },
-    menuText: {
-        flex: 1,
-        fontFamily: 'Comfortaa_500Medium',
-        fontSize: 16,
-        color: '#fff',
+    streakText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.7)',
+    },
+    sectionWrapper: {
+        marginBottom: 20,
+        borderRadius: 20,
+        overflow: 'hidden',
+    },
+    glassCard: {
+        padding: 20,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    cardHeader: {
+        marginBottom: 8,
+    },
+    cardTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.3)',
+        textTransform: 'uppercase',
+        letterSpacing: 2,
+    },
+    aboutText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        lineHeight: 22,
+    },
+    menuRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.03)',
+    },
+    menuLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    iconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 10,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    menuLabel: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.8)',
+    },
+    footer: {
+        alignItems: 'center',
+        marginTop: 20,
     },
     versionText: {
-        textAlign: 'center',
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.2)',
-        marginTop: 30,
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.1)',
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
     },
 });
