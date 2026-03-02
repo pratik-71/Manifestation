@@ -41,14 +41,6 @@
           }
         }
       ],
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to record your affirmation.",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone to record your affirmation."
-        }
-      ],
-      "@react-native-google-signin/google-signin",
       "expo-notifications"
     ],
     "experiments": {

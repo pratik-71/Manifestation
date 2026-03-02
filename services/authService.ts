@@ -1,53 +1,58 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { supabase } from './supabase';
 
-// Configure Google Sign-in
-// Your Web Client ID: 989014890712-abl1i5lr67egfssram32of5ude7psjqa.apps.googleusercontent.com
-GoogleSignin.configure({
-    webClientId: '989014890712-abl1i5lr67egfssram32of5ude7psjqa.apps.googleusercontent.com',
-    offlineAccess: true, // if you want to access Google API on behalf of the user FROM YOUR SERVER
-});
+// Complete the auth session if we're in a web environment or redirecting
+WebBrowser.maybeCompleteAuthSession();
 
 export const signInWithGoogle = async (): Promise<any> => {
     try {
-        // Ensure configuration is set
-        GoogleSignin.configure({
-            webClientId: '989014890712-abl1i5lr67egfssram32of5ude7psjqa.apps.googleusercontent.com',
-            offlineAccess: true,
+        const redirectUrl = Linking.createURL('onboarding/trust1', { scheme: 'manifesation' });
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: redirectUrl,
+                skipBrowserRedirect: true,
+            },
         });
 
-        // Small delay to ensure Android Activity is attached and stable
-        // This is a common fix for "Current activity is null" on Android
-        await new Promise(resolve => setTimeout(resolve, 200));
+        if (error) throw error;
+        if (!data?.url) throw new Error('No authentication URL returned');
 
-        await GoogleSignin.hasPlayServices();
-        const userInfo = await GoogleSignin.signIn();
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
-        if (userInfo.data?.idToken) {
-            const { data, error } = await supabase.auth.signInWithIdToken({
-                provider: 'google',
-                token: userInfo.data.idToken,
-            });
+        if (result.type === 'success' && result.url) {
+            const url = result.url;
+            const params = Linking.parse(url);
+            
+            // Supabase returns access_token and refresh_token in the URL fragment
+            const fragment = url.split('#')[1];
+            if (fragment) {
+                const fragmentParams = Object.fromEntries(new URLSearchParams(fragment));
+                const accessToken = fragmentParams.access_token;
+                const refreshToken = fragmentParams.refresh_token;
 
-            if (error) throw error;
-            return { data, userInfo };
-        } else {
-            throw new Error('No ID Token found');
+                if (accessToken && refreshToken) {
+                    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken,
+                    });
+                    if (sessionError) throw sessionError;
+                    return { data: sessionData };
+                }
+            }
         }
+        
+        return null;
     } catch (error: any) {
-        // If it still fails with "activity is null", try one last time after a longer delay
-        if (error.message?.includes('activity is null')) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return await signInWithGoogle();
-        }
-        console.error('Google Sign-in Error:', error);
+        console.error('Web-based Sign-in Error:', error);
         throw error;
     }
 };
 
 export const signOut = async () => {
     try {
-        await GoogleSignin.signOut();
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     } catch (error) {
