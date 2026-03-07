@@ -4,10 +4,10 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    FlatList,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
-    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -182,74 +182,78 @@ export default function EditProfile() {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView
+                    <FlatList
+                        data={[{ id: 'form' }]}
+                        keyExtractor={item => item.id}
+                        renderItem={() => (
+                            <View>
+                                {/* Name Section */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionLabel}>YOUR NAME</Text>
+                                    <TextInput
+                                        style={styles.input}
+                                        value={username}
+                                        onChangeText={setUsername}
+                                        placeholder="What should we call you?"
+                                        placeholderTextColor="rgba(255,255,255,0.2)"
+                                    />
+                                </View>
+
+                                {/* Goals Section */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionLabel}>YOUR GOALS</Text>
+                                    <View style={styles.glassCard}>
+                                        {goals.map((goal, index) => (
+                                            <View key={index} style={[styles.goalItem, index === goals.length - 1 && { borderBottomWidth: 0 }]}>
+                                                <Text style={styles.goalText}>{goal}</Text>
+                                                <TouchableOpacity onPress={() => handleDeleteGoal(index)} style={styles.deleteBtn}>
+                                                    <Ionicons name="trash-outline" size={18} color="rgba(248, 113, 113, 0.6)" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                        <View style={styles.addGoalRow}>
+                                            <TextInput
+                                                style={styles.addGoalInput}
+                                                value={newGoal}
+                                                onChangeText={setNewGoal}
+                                                placeholder="Add a new goal..."
+                                                placeholderTextColor="rgba(255,255,255,0.2)"
+                                                onSubmitEditing={handleAddGoal}
+                                            />
+                                            <TouchableOpacity style={styles.addGoalButton} onPress={handleAddGoal}>
+                                                <Ionicons name="add" size={20} color="#fff" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                {/* Rhythm Section */}
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionLabel}>SACRED RHYTHM</Text>
+
+                                    <View style={styles.timeItem}>
+                                        <Text style={styles.timeLabel}>Wake Up</Text>
+                                        <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
+                                    </View>
+
+                                    <View style={styles.timeItem}>
+                                        <Text style={styles.timeLabel}>Deep Sleep</Text>
+                                        <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
+                                    </View>
+
+                                    <View style={styles.timeItem}>
+                                        <Text style={styles.timeLabel}>Manifestation Hour</Text>
+                                        <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
+                                    </View>
+                                </View>
+
+                                <View style={{ height: 100 }} />
+                            </View>
+                        )}
                         contentContainerStyle={styles.scrollContent}
                         showsVerticalScrollIndicator={false}
-                        nestedScrollEnabled={true}
                         keyboardShouldPersistTaps="handled"
-                    >
-                        {/* Name Section */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionLabel}>YOUR NAME</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={username}
-                                onChangeText={setUsername}
-                                placeholder="What should we call you?"
-                                placeholderTextColor="rgba(255,255,255,0.2)"
-                            />
-                        </View>
-
-                        {/* Goals Section */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionLabel}>YOUR GOALS</Text>
-                            <View style={styles.glassCard}>
-                                {goals.map((goal, index) => (
-                                    <View key={index} style={[styles.goalItem, index === goals.length - 1 && { borderBottomWidth: 0 }]}>
-                                        <Text style={styles.goalText}>{goal}</Text>
-                                        <TouchableOpacity onPress={() => handleDeleteGoal(index)} style={styles.deleteBtn}>
-                                            <Ionicons name="trash-outline" size={18} color="rgba(248, 113, 113, 0.6)" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                                <View style={styles.addGoalRow}>
-                                    <TextInput
-                                        style={styles.addGoalInput}
-                                        value={newGoal}
-                                        onChangeText={setNewGoal}
-                                        placeholder="Add a new goal..."
-                                        placeholderTextColor="rgba(255,255,255,0.2)"
-                                        onSubmitEditing={handleAddGoal}
-                                    />
-                                    <TouchableOpacity style={styles.addGoalButton} onPress={handleAddGoal}>
-                                        <Ionicons name="add" size={20} color="#fff" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Rhythm Section */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionLabel}>SACRED RHYTHM</Text>
-
-                            <View style={styles.timeItem}>
-                                <Text style={styles.timeLabel}>Wake Up</Text>
-                                <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
-                            </View>
-
-                            <View style={styles.timeItem}>
-                                <Text style={styles.timeLabel}>Deep Sleep</Text>
-                                <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
-                            </View>
-
-                            <View style={styles.timeItem}>
-                                <Text style={styles.timeLabel}>Manifestation Hour</Text>
-                                <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
-                            </View>
-                        </View>
-
-                        <View style={{ height: 100 }} />
-                    </ScrollView>
+                    />
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </View>

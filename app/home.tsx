@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { AppState, Dimensions, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { AppState, Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { NotificationPermissionModal } from '../components/NotificationPermissionModal';
@@ -68,7 +69,7 @@ export default function Home() {
                         </View>
 
                         <TouchableOpacity style={styles.streakBadge} activeOpacity={0.7}>
-                            <Ionicons name="flame" size={18} color="#f97316" />
+                            <Ionicons name="flame" size={18} color="#B45309" />
                             <Text style={styles.streakText}>{profile?.streak_count || 0}</Text>
                         </TouchableOpacity>
                     </View>
@@ -90,12 +91,12 @@ export default function Home() {
                                 {/* Primary CTA: Manifest */}
                                 <Animated.View entering={FadeInUp.delay(400).duration(800)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
-                                        onPress={() => router.push('/manifest_hub')}
+                                        onPress={() => router.push('/Manifestation/mani_home')}
                                         activeOpacity={0.9}
                                         style={[styles.actionCard, styles.cardBorderOrange]}
                                     >
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name="sparkles" size={22} color="#f97316" />
+                                            <Ionicons name="sparkles" size={22} color="#B45309" />
                                         </View>
                                         <Text style={styles.cardTitle}>Manifest</Text>
                                     </TouchableOpacity>
@@ -109,7 +110,7 @@ export default function Home() {
                                         style={[styles.actionCard, styles.cardBorderOrange]}
                                     >
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name="planet" size={22} color="#f97316" />
+                                            <Ionicons name="planet" size={22} color="#B45309" />
                                         </View>
                                         <Text style={styles.cardTitle}>Universe</Text>
                                     </TouchableOpacity>
@@ -125,7 +126,7 @@ export default function Home() {
                                         style={[styles.actionCard, styles.cardBorderOrange]}
                                     >
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name="chatbubble-ellipses" size={22} color="#f97316" />
+                                            <Ionicons name="chatbubble-ellipses" size={22} color="#B45309" />
                                         </View>
                                         <Text style={styles.cardTitle}>Affirmations</Text>
                                     </TouchableOpacity>
@@ -139,7 +140,7 @@ export default function Home() {
                                         style={[styles.actionCard, styles.cardBorderOrange]}
                                     >
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name="heart" size={22} color="#f97316" />
+                                            <Ionicons name="heart" size={22} color="#B45309" />
                                         </View>
                                         <Text style={styles.cardTitle}>Feeling Low?</Text>
                                     </TouchableOpacity>
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
     streakText: {
         fontFamily: 'Comfortaa_600SemiBold',
         fontSize: 12,
-        color: '#f97316',
+        color: '#B45309',
     },
 
     // Hero Section
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
     },
     cardBorderOrange: {
-        borderColor: 'rgba(249, 115, 22, 0.4)',
+        borderColor: 'rgba(180, 83, 9, 0.4)',
     },
     cardBorderSubtle: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+        backgroundColor: 'rgba(180, 83, 9, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,

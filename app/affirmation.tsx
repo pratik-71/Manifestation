@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Dimensions, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
     FadeInDown,
     interpolate,
+    runOnJS,
     useAnimatedStyle,
     useSharedValue,
     withSpring,
@@ -86,9 +87,32 @@ export default function AffirmationScreen() {
 
 
 
-    const tapGesture = Gesture.Pan()
+    const [direction, setDirection] = React.useState(0); // 1 for next, -1 for prev
+
+    const handleNext = () => {
+        setDirection(1);
+        setCurrentIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
+        charge.value = 0;
+    };
+
+    const handlePrev = () => {
+        setDirection(-1);
+        setCurrentIndex((prev) => (prev - 1 + AFFIRMATIONS.length) % AFFIRMATIONS.length);
+        charge.value = 0;
+    };
+
+    const panGesture = Gesture.Pan()
         .onBegin(() => {
             charge.value = withTiming(1, { duration: 2000 });
+        })
+        .onEnd((e) => {
+            if (e.translationY < -100) {
+                // Swipe Up -> Next
+                runOnJS(handleNext)();
+            } else if (e.translationY > 100) {
+                // Swipe Down -> Prev
+                runOnJS(handlePrev)();
+            }
         })
         .onFinalize(() => {
             if (charge.value < 1) {
@@ -122,29 +146,12 @@ export default function AffirmationScreen() {
         width: `${charge.value * 100}%`,
     }));
 
-    const containerStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: 1 + charge.value * 0.05 }],
-        borderWidth: interpolate(charge.value, [0, 1], [1, 2]),
-        borderColor: 'rgba(255, 255, 255, 0.15)',
-    }));
-
-
-
-    const handleNext = () => {
-        setCurrentIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
-        charge.value = 0; // Reset charge on next
-    };
-
-
-
-
-
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" />
 
             <BreathingBackground
-                colors={['#020617', '#0f172a', '#1e1b4b', '#020617']}
+                colors={['#0f172a', '#1c1917', '#451a03']} // Navy -> Dark Brown -> Mocha
                 opacity={0.8}
             />
 
@@ -161,47 +168,34 @@ export default function AffirmationScreen() {
                     <View style={{ width: 24 }} />
                 </View>
 
-                <GestureDetector gesture={tapGesture}>
+                <GestureDetector gesture={panGesture}>
                     <View style={styles.interactiveLayer}>
-                        <ScrollView
-                            contentContainerStyle={styles.scrollContent}
-                            showsVerticalScrollIndicator={false}
-                            bounces={false}
-                        >
-                            {/* Sacred Geometry Removed as per request */}
+                        <View style={styles.content}>
+                            <Animated.View
+                                key={currentIndex}
+                                entering={direction >= 0 ? FadeInDown.duration(800) : FadeInDown.duration(800)}
+                                style={styles.affirmationWrapper}
+                            >
+                                <Text style={styles.label}>SAY OUT LOUD</Text>
+                                <Animated.Text style={[styles.affirmationText, textStyle]}>
+                                    {dailyAffirmation}
+                                </Animated.Text>
+                                <View style={styles.separator} />
+                                <Text style={styles.instruction}>HOLD TO CHARGE & AFFIRM</Text>
 
-                            <View style={styles.cardWrapper}>
-                                <Animated.View
-                                    entering={FadeInDown.duration(800)}
-                                    style={[styles.affirmationCard, containerStyle]}
-                                >
-                                    <Text style={styles.label}>SAY OUT LOUD</Text>
-                                    <Animated.Text style={[styles.affirmationText, textStyle]}>
-                                        {dailyAffirmation}
-                                    </Animated.Text>
-                                    <View style={styles.separator} />
-                                    <Text style={styles.instruction}>HOLD TO CHARGE & AFFIRM</Text>
+                                <View style={styles.progressBarContainer}>
+                                    <Animated.View style={[styles.progressBar, progressBarStyle]} />
+                                </View>
+                            </Animated.View>
 
-                                    <View style={styles.progressBarContainer}>
-                                        <Animated.View style={[styles.progressBar, progressBarStyle]} />
-                                    </View>
-
-                                    <View style={styles.actionButtons}>
-
-
-                                        <TouchableOpacity
-                                            style={styles.nextButton}
-                                            onPress={handleNext}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text style={styles.nextButtonText}>Next Affirmation</Text>
-                                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </Animated.View>
-                            </View>
-
-                        </ScrollView>
+                            <Animated.View
+                                entering={FadeInDown.delay(1000).duration(800)}
+                                style={styles.scrollHint}
+                            >
+                                <Ionicons name="chevron-up" size={20} color="rgba(255,255,255,0.2)" />
+                                <Text style={styles.scrollHintText}>Scroll to move next</Text>
+                            </Animated.View>
+                        </View>
                     </View>
                 </GestureDetector>
             </SafeAreaView>
@@ -214,7 +208,7 @@ export default function AffirmationScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#020617',
+        backgroundColor: '#0f172a',
     },
     safeArea: {
         flex: 1,
@@ -246,79 +240,15 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         opacity: 0.6,
     },
-    scrollContent: {
-        flexGrow: 1,
+    content: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 40,
     },
-    sacredGeometryContainer: {
-        position: 'absolute',
-        top: height * 0.15,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: -1,
-    },
-    orbit1: {
-        width: 220,
-        height: 220,
-        borderRadius: 110,
-        borderWidth: 1,
-        position: 'absolute',
-    },
-    orbit2: {
-        width: 280,
-        height: 280,
-        borderRadius: 140,
-        borderWidth: 1,
-        position: 'absolute',
-    },
-    orbit3: {
-        width: 340,
-        height: 340,
-        borderRadius: 170,
-        borderWidth: 1,
-        position: 'absolute',
-    },
-    corePulse: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#f97316',
-        shadowColor: '#f97316',
-        shadowRadius: 20,
-        shadowOpacity: 1,
-    },
-    cardWrapper: {
+    affirmationWrapper: {
         width: '100%',
         alignItems: 'center',
-        marginTop: 20,
-    },
-    cardGlow: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: '#f97316',
-        borderRadius: 40,
-        shadowColor: '#f97316',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 40,
-    },
-    affirmationCard: {
-        backgroundColor: 'rgba(15, 23, 42, 0.4)',
-        borderRadius: 40,
-        paddingVertical: 40,
-        paddingHorizontal: 24,
-        width: '100%',
-        alignItems: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.05)',
+        paddingHorizontal: 30,
     },
     label: {
         fontFamily: 'Comfortaa_700Bold',
@@ -328,11 +258,11 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     affirmationText: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 18,
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 20,
         color: '#fff',
         textAlign: 'center',
-        lineHeight: 42,
+        lineHeight: 48,
     },
     separator: {
         width: 30,
@@ -360,23 +290,19 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#f97316',
     },
-    actionButtons: {
-        width: '100%',
-        marginTop: 40,
-        gap: 16,
-    },
-
-    nextButton: {
-        flexDirection: 'row',
+    scrollHint: {
+        position: 'absolute',
+        bottom: 50,
         alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 12,
+        opacity: 0.5,
     },
-    nextButtonText: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 12,
-        color: 'rgba(255, 255, 255, 0.4)',
-        marginRight: 6,
+    scrollHintText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: '#fff',
+        marginTop: 8,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
     },
     footer: {
         marginTop: 60,

@@ -23,6 +23,7 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BreathingBackground } from '../components/BreathingBackground';
 import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
 import { AppColors } from '../constants/Colors';
 import { getAIResponse } from '../services/aiService';
@@ -249,12 +250,27 @@ export default function UniverseChat() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+            <BreathingBackground
+                colors={['#0f172a', '#1c1917', '#451a03']}
+                opacity={0.7}
+            />
             <GlobalCosmicBackground />
+
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={AppColors.manifestation.accent} />
+                </TouchableOpacity>
+                <View style={styles.headerTitleContainer}>
+                    <Animated.View style={[styles.titleGlow, animatedPulseStyle]} />
+                    <Text style={styles.headerTitle}>CHAT</Text>
+                </View>
+                <View style={{ width: 40 }} />
+            </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 style={{ flex: 1 }}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 <ScrollView
                     ref={scrollViewRef}
@@ -264,17 +280,6 @@ export default function UniverseChat() {
                     keyboardDismissMode="on-drag"
                     onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
                 >
-                    <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                            <Ionicons name="chevron-back" size={24} color={AppColors.manifestation.accent} />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleContainer}>
-                            <Animated.View style={[styles.titleGlow, animatedPulseStyle]} />
-                            <Text style={styles.headerTitle}>CHAT</Text>
-                        </View>
-                        <View style={{ width: 40 }} />
-                    </View>
-
                     <View style={styles.messageList}>
                         {messages.map((item, index) => renderMessage(item, index))}
                         {isUniverseTyping && renderTypingIndicator()}
@@ -283,7 +288,7 @@ export default function UniverseChat() {
 
                 <View style={[
                     styles.inputWrapper,
-                    { paddingBottom: Math.max(insets.bottom, 15) }
+                    { paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 15) : 20 }
                 ]}>
                     <View style={styles.inputContainer}>
                         <TextInput
@@ -316,7 +321,7 @@ export default function UniverseChat() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0f0518',
+        backgroundColor: '#051139',
     },
     header: {
         flexDirection: 'row',

@@ -22,6 +22,11 @@ interface UserProfile {
     is_challenge_complete: boolean;
     onboarding_complete: boolean;
     about: string | null;
+    ai_roadmap: {
+        goal: string;
+        content: string[];
+        network: string[];
+    }[] | null;
 }
 
 interface UserState {

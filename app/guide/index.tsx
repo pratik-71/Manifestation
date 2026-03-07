@@ -27,7 +27,8 @@ const STAGE = {
         'Start living your dream life today',
         'Watch content around your goals',
         'Connect with like-minded people',
-        "Think and act as if it's already real"
+        "Think and act as if it's already real",
+        "Be Future Version of yourself"
     ],
     expandedPoints: [
         {
@@ -95,7 +96,7 @@ export default function GuideScreen() {
                             {/* 1. Header */}
                             <Animated.View entering={FadeInDown.delay(100).duration(800)} style={styles.stageHeader}>
                                 <Text style={styles.stageTitle}>{STAGE.title}</Text>
-                                <Text style={[styles.stageSubtitle, { color: STAGE.colors[0] }]}>{STAGE.subtitle}</Text>
+
                             </Animated.View>
 
                             {/* 2. Icon */}
@@ -261,15 +262,9 @@ const styles = StyleSheet.create({
     },
     stageTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 28,
+        fontSize: 22,
         color: '#fff',
         marginBottom: 8,
-    },
-    stageSubtitle: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 10,
-        letterSpacing: 2,
-        textTransform: 'uppercase',
     },
     iconContainer: {
         alignItems: 'center',
@@ -322,6 +317,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Comfortaa_600SemiBold',
         fontSize: 13,
         color: '#fb923c',
+    },
+    expandedContent: {
+        marginBottom: 10,
     },
     pointwiseItem: {
         flexDirection: 'row',

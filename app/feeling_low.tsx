@@ -36,543 +36,283 @@ type ResultContent = {
 
 // 4 Stages: Root -> Level 2 -> Level 3 -> Level 4 -> Result
 const QUESTION_TREE: Record<string, QuestionNode> = {
-    // --- STAGE 1 (ROOT) ---
     root: {
-        id: 'root',
-        text: "How are you feeling right now?",
+        id: "root",
+        text: "Which of these feels closest to the weight you are carrying today?",
         options: [
-            { text: "Sad or Heavy", icon: "cloud-outline", nextNodeId: 's2_sadness' },
-            { text: "Anxious or Overwhelmed", icon: "pulse-outline", nextNodeId: 's2_anxiety' },
-            { text: "Numb or Empty", icon: "ellipse-outline", nextNodeId: 's2_numbness' },
-            { text: "Angry or Frustrated", icon: "flame-outline", nextNodeId: 's2_anger' },
+            {
+                text: "I am questioning my value",
+                icon: "person-outline",
+                nextNodeId: "s2_worth_struggle"
+            },
+            {
+                text: "I feel stuck or driftless",
+                icon: "compass-outline",
+                nextNodeId: "s2_purpose_struggle"
+            },
+            {
+                text: "My connections feel heavy",
+                icon: "heart-outline",
+                nextNodeId: "s2_connection_struggle"
+            }
         ]
     },
 
-    // --- STAGE 2 (THE SOURCE) ---
-    s2_sadness: {
-        id: 's2_sadness',
-        text: "What is causing this sadness?",
+    // STAGE 2: Cause
+    s2_worth_struggle: {
+        id: "s2_worth_struggle",
+        text: "What shifted your sense of inner value?",
         options: [
-            { text: "Grieving a loss", icon: "heart-dislike-outline", nextNodeId: 's3_sad_grief' },
-            { text: "Feeling lonely", icon: "person-outline", nextNodeId: 's3_sad_lonely' },
-            { text: "Just tired of everything", icon: "battery-dead-outline", nextNodeId: 's3_sad_tired' },
-            { text: "Disappointed in myself", icon: "alert-circle-outline", nextNodeId: 's3_sad_disappointed' },
-        ]
-    },
-    s2_anxiety: {
-        id: 's2_anxiety',
-        text: "Where is your mind focused?",
-        options: [
-            { text: "The Future", icon: "arrow-forward-outline", nextNodeId: 's3_anx_future' },
-            { text: "The Past", icon: "arrow-back-outline", nextNodeId: 's3_anx_past' },
-            { text: "What people think", icon: "eye-outline", nextNodeId: 's3_anx_others' },
-            { text: "Too much to do", icon: "list-outline", nextNodeId: 's3_anx_overwhelm' },
-        ]
-    },
-    s2_numbness: {
-        id: 's2_numbness',
-        text: "Why do you feel this way?",
-        options: [
-            { text: "Too much pain", icon: "shield-outline", nextNodeId: 's3_numb_pain' },
-            { text: "Lost my way", icon: "compass-outline", nextNodeId: 's3_numb_purpose' },
-            { text: "Burned out", icon: "snow-outline", nextNodeId: 's3_numb_burnout' },
-        ]
-    },
-    s2_anger: {
-        id: 's2_anger',
-        text: "What triggered this anger?",
-        options: [
-            { text: "Unfair treatment", icon: "hand-left-outline", nextNodeId: 's3_ang_justice' },
-            { text: "Something blocked me", icon: "stop-circle-outline", nextNodeId: 's3_ang_blocked' },
-            { text: "Mad at myself", icon: "finger-print-outline", nextNodeId: 's3_ang_self' },
+            {
+                text: "Seeing someone else's path",
+                icon: "eye-outline",
+                nextNodeId: "s3_jealousy_reflection"
+            },
+            {
+                text: "A recent closed door",
+                icon: "close-circle-outline",
+                nextNodeId: "s3_rejection_reflection"
+            },
+            {
+                text: "The voice of my own critic",
+                icon: "volume-mute-outline",
+                nextNodeId: "s3_self_doubt_reflection"
+            }
         ]
     },
 
-    // --- STAGE 3 (THE DEEPER WHY) ---
-    // SADNESS BRANCH
-    s3_sad_grief: {
-        id: 's3_sad_grief',
-        text: "What kind of loss is it?",
+    s2_purpose_struggle: {
+        id: "s2_purpose_struggle",
+        text: "What does this lack of movement feel like?",
         options: [
-            { text: "A person", icon: "people-outline", nextNodeId: 's4_sad_grief_person' },
-            { text: "A dream or goal", icon: "star-outline", nextNodeId: 's4_sad_grief_dream' },
-            { text: "A part of myself", icon: "body-outline", nextNodeId: 's4_sad_grief_self' },
-        ]
-    },
-    s3_sad_lonely: {
-        id: 's3_sad_lonely',
-        text: "How does the loneliness feel?",
-        options: [
-            { text: "Misunderstood", icon: "ear-outline", nextNodeId: 's4_sad_lonely_und' },
-            { text: "Isolated", icon: "hand-left-outline", nextNodeId: 's4_sad_lonely_push' },
-            { text: "Craving connection", icon: "magnet-outline", nextNodeId: 's4_sad_lonely_crave' },
-        ]
-    },
-    s3_sad_tired: {
-        id: 's3_sad_tired',
-        text: "What kind of tired?",
-        options: [
-            { text: "Physical", icon: "bed-outline", nextNodeId: 's4_sad_tired_body' },
-            { text: "Emotional", icon: "infinite-outline", nextNodeId: 's4_sad_tired_soul' },
-            { text: "Mental", icon: "hardware-chip-outline", nextNodeId: 's4_sad_tired_mind' },
-        ]
-    },
-    s3_sad_disappointed: {
-        id: 's3_sad_disappointed',
-        text: "Where did it go wrong?",
-        options: [
-            { text: "Broke a promise", icon: "close-circle-outline", nextNodeId: 's4_sad_dis_promise' },
-            { text: "Behind in life", icon: "time-outline", nextNodeId: 's4_sad_dis_lagging' },
-            { text: "Made a mistake", icon: "alert-outline", nextNodeId: 's4_sad_dis_mistake' },
+            {
+                text: "I have lost the 'why'",
+                icon: "help-outline",
+                nextNodeId: "s3_lost_life_reflection"
+            },
+            {
+                text: "I have no fuel to start",
+                icon: "flame-outline",
+                nextNodeId: "s3_motivation_reflection"
+            },
+            {
+                text: "I am overwhelmed by choice",
+                icon: "layers-outline",
+                nextNodeId: "s3_overwhelm_reflection"
+            }
         ]
     },
 
-    // ANXIETY BRANCH
-    s3_anx_future: {
-        id: 's3_anx_future',
-        text: "What are you afraid of?",
+    s2_connection_struggle: {
+        id: "s2_connection_struggle",
+        text: "What is the nature of this heaviness in your relationships?",
         options: [
-            { text: "Failing", icon: "trending-down-outline", nextNodeId: 's4_anx_fut_fail' },
-            { text: "Losing something", icon: "lock-open-outline", nextNodeId: 's4_anx_fut_loss' },
-            { text: "The Unknown", icon: "help-outline", nextNodeId: 's4_anx_fut_unknown' },
-        ]
-    },
-    s3_anx_past: {
-        id: 's3_anx_past',
-        text: "What happened?",
-        options: [
-            { text: "A big mistake", icon: "alert-circle-outline", nextNodeId: 's4_anx_past_mistake' },
-            { text: "Missing the past", icon: "refresh-outline", nextNodeId: 's4_anx_past_nostalgia' },
-            { text: "Feeling ashamed", icon: "eye-off-outline", nextNodeId: 's4_anx_past_shame' },
-        ]
-    },
-    s3_anx_others: {
-        id: 's3_anx_others',
-        text: "Who are you worried about?",
-        options: [
-            { text: "Society in general", icon: "globe-outline", nextNodeId: 's4_anx_oth_society' },
-            { text: "Parents or Authority", icon: "person-outline", nextNodeId: 's4_anx_oth_parent' },
-            { text: "Myself", icon: "mic-off-outline", nextNodeId: 's4_anx_oth_self' },
-        ]
-    },
-    s3_anx_overwhelm: {
-        id: 's3_anx_overwhelm',
-        text: "What is the main problem?",
-        options: [
-            { text: "Too many tasks", icon: "layers-outline", nextNodeId: 's4_anx_over_volume' },
-            { text: "Need to be perfect", icon: "diamond-outline", nextNodeId: 's4_anx_over_perf' },
-            { text: "Can't start", icon: "shuffle-outline", nextNodeId: 's4_anx_over_start' },
+            {
+                text: "Unclear feelings or signals",
+                icon: "chatbubbles-outline",
+                nextNodeId: "s3_rel_confusion_reflection"
+            },
+            {
+                text: "Fear of being alone",
+                icon: "contract-outline",
+                nextNodeId: "s3_loneliness_reflection"
+            },
+            {
+                text: "A need for boundaries",
+                icon: "shield-half-outline",
+                nextNodeId: "s3_boundaries_reflection"
+            }
         ]
     },
 
-    // NUMBNESS
-    s3_numb_pain: { id: 's3_numb_pain', text: "What caused the pain?", options: [{ text: "Heartbreak", icon: "heart-dislike-outline", nextNodeId: 's4_gen_release' }, { text: "Failure", icon: "trending-down-outline", nextNodeId: 's4_gen_perspective' }, { text: "Everything", icon: "layers-outline", nextNodeId: 's4_gen_courage' }] },
-    s3_numb_purpose: { id: 's3_numb_purpose', text: "What is missing?", options: [{ text: "A Goal", icon: "compass-outline", nextNodeId: 's4_gen_action' }, { text: "Excitement", icon: "flame-outline", nextNodeId: 's4_gen_spark' }, { text: "Meaning", icon: "heart-outline", nextNodeId: 's4_gen_service' }] },
-    s3_numb_burnout: { id: 's3_numb_burnout', text: "How long has it been?", options: [{ text: "Too long", icon: "warning-outline", nextNodeId: 's4_gen_rest' }, { text: "Always felt like this", icon: "infinite-outline", nextNodeId: 's4_gen_identity' }, { text: "Since a recent event", icon: "arrow-down-outline", nextNodeId: 's4_gen_heal' }] },
-
-    // ANGER
-    s3_ang_justice: { id: 's3_ang_justice', text: "What felt wrong?", options: [{ text: "Review: Trust Broken", icon: "shield-outline", nextNodeId: 's4_gen_boundaries' }, { text: "My Worth", icon: "diamond-outline", nextNodeId: 's4_gen_worth' }, { text: "The Truth", icon: "eye-outline", nextNodeId: 's4_gen_truth' }] },
-    s3_ang_blocked: { id: 's3_ang_blocked', text: "What stopped you?", options: [{ text: "Someone else", icon: "person-outline", nextNodeId: 's4_gen_navigate' }, { text: "Bad luck", icon: "alert-circle-outline", nextNodeId: 's4_gen_adapt' }, { text: "Fear", icon: "help-circle-outline", nextNodeId: 's4_gen_confront' }] },
-    s3_ang_self: { id: 's3_ang_self', text: "Why are you mad at yourself?", options: [{ text: "I knew better", icon: "book-outline", nextNodeId: 's4_gen_growth' }, { text: "I feel weak", icon: "body-outline", nextNodeId: 's4_gen_strength' }, { text: "Wasted time", icon: "time-outline", nextNodeId: 's4_gen_now' }] },
-
-
-    // --- STAGE 4 (THE TRANSITION) & RESULTS ---
-    s4_sad_grief_person: {
-        id: 's4_sad_grief_person',
-        text: "What do you want to do with your love for them?",
+    // STAGE 3: Deeper Reflection leading to STAGE 4: Results
+    s3_jealousy_reflection: {
+        id: "s3_jealousy_reflection",
+        text: "Does their light feel like it is highlighting your shadow?",
         options: [
-            { text: "Keep it inside", result: { title: "It's Okay to Hold On", explanation: "That love isn't gone just because they are. It's living safely inside you now. You don't have to let go until you're ready. Carry it gently.", quote: "Love knows not its own depth until the hour of separation." } },
-            { text: "Share it", result: { title: "Share Your Love", explanation: "The most beautiful tribute you can offer is to let their love flow through you into the world. Be kind, be generous, be them for someone else.", quote: "The only cure for grief is action." } },
-            { text: "Not sure yet", result: { title: "Take Your Time", explanation: "There is no map for this landscape. It's okay to stand still and just breathe for a while. You don't need to know the next step today.", quote: "Breathe. You are doing enough." } }
+            {
+                text: "I feel I am lagging",
+                result: {
+                    title: "Your Time is Coming",
+                    explanation: "Seeing someone else succeed just shows that it can happen! For example, if a friend gets a great job, it's a sign that success is possible for you too. You aren't 'late'—you're just on your own special timeline. Some people become famous at 20, while others like Vera Wang start their biggest dreams at 40! Your path is uniquely yours, and the universe hasn't forgotten you.",
+                    quote: "Every flower blooms at its own time."
+                }
+            },
+            {
+                text: "I want what they have",
+                result: {
+                    title: "Clear Your Vision",
+                    explanation: "That 'sting' of jealousy is actually your heart telling you what you want. For example, if you're jealous of a traveler, it means you're ready for adventure! Use that energy to start planning your own next move. Instead of looking at their plate, start looking at what you can cook in your own kitchen. This feeling is a compass, not a curse, pointing you toward your true desires.",
+                    quote: "Let their success inspire your action."
+                }
+            },
+            {
+                text: "I feel invisible",
+                result: {
+                    title: "Be Your Own Fan",
+                    explanation: "You don't need everyone to clap for you to be doing a great job. For example, even if nobody saw you workout today, your body still feels stronger. Be proud of the work you do when no one is looking. Just like a beautiful forest grows quietly without needing an audience, your personal growth is happening every single day. You are the most important person in your life—start noticing your own wins!",
+                    quote: "Valuing yourself is the best validation."
+                }
+            }
         ]
     },
 
-    s4_sad_grief_dream: {
-        id: 's4_sad_grief_dream',
-        text: "Is the dream gone forever?",
+    s3_rejection_reflection: {
+        id: "s3_rejection_reflection",
+        text: "How are you interpreting this closed door?",
         options: [
-            { text: "Yes", result: { title: "New Beginnings", explanation: "When one door closes, it doesn't mean the house is empty. It means there's a different room waiting for you to discover it. This end is the soil for a new seed.", quote: "Every end is a new beginning in disguise." } },
-            { text: "Not sure", result: { title: "Change Direction", explanation: "Sometimes the destination isn't what matters, but who you become on the journey. You aren't lost; you are just recalibrating.", quote: "Rejection is often redirection." } },
-            { text: "No, just delayed", result: { title: "Patience", explanation: "The timeline might be different than you planned, but the dream is still yours. Rest, then keep going.", quote: "Rivers know this: there is no hurry. We shall get there some day." } }
-        ]
-    },
-    s4_sad_grief_self: {
-        id: 's4_sad_grief_self',
-        text: "Do you miss who you were?",
-        options: [
-            { text: "Yes", result: { title: "Growing Pains", explanation: "You are shedding a skin that no longer fits. It hurts to leave the old you behind, but the you that is emerging is stronger, wiser, and more capable.", quote: "You must be willing to let go of the life you planned so as to have the life that is waiting for you." } },
-            { text: "Maybe", result: { title: "Be Yourself", explanation: "You don't have to be who you were yesterday. You only have to be true to who you are in this exact moment. That is enough.", quote: "Become who you are." } },
-            { text: "I don't know who I am", result: { title: "Discovery", explanation: "That's a beautiful place to be. You are a blank canvas. You get to decide who you want to be now.", quote: "Life isn't about finding yourself. Life is about creating yourself." } }
-        ]
-    },
-
-    // Default/Generic S4s for coverage - UPGRADED TO 3 OPTIONS
-    s4_gen_release: {
-        id: 's4_gen_release',
-        text: "Ready to let go?",
-        options: [
-            { text: "Yes", result: { title: "Let It Out", explanation: "Crying is not weakness; it is the soul's way of cleaning the windows so you can see the light again. Let it flow. You are safe.", quote: "The cure for anything is salt water: sweat, tears or the sea." } },
-            { text: "No", result: { title: "Be Patient", explanation: "If you need to hold on a little longer, that is okay. Healing happens on its own timeline, not a schedule. Be gentle with your heart.", quote: "Patience is power." } },
-            { text: "I don't know how", result: { title: "Just Breathe", explanation: "You don't need a technique. Just sit with the feeling. Acknowledge it. Giving it space is the first step to letting it go.", quote: "What you resist, persists." } }
-        ]
-    },
-    s4_gen_perspective: {
-        id: 's4_gen_perspective',
-        text: "Can you learn from this?",
-        options: [
-            { text: "Yes", result: { title: "Learn and Grow", explanation: "Every scar is a lesson, and every lesson makes you wiser. You are turning pain into power. This experience is refining you.", quote: "I have not failed. I've just found 10,000 ways that won't work." } },
-            { text: "It's hard", result: { title: "Growing Stronger", explanation: "The strongest steel is forged in the hottest fire. This difficulty is building muscles you didn't know you had. Keep standing.", quote: "Pain is weakness leaving the body." } },
-            { text: "Not yet", result: { title: "Survive First", explanation: "You don't need to find the lesson right now. Just getting through the day is victory enough. Wisdom will come later.", quote: "Survival is a form of resistance." } }
-        ]
-    },
-    s4_gen_courage: {
-        id: 's4_gen_courage',
-        text: "Just take one step.",
-        options: [
-            { text: "Okay", result: { title: "Start Small", explanation: "A massive mountain is climbed one small step at a time. Ignore the peak. Just look at your feet and take one step.", quote: "Just start." } },
-            { text: "I'm stuck", result: { title: "Wiggle", explanation: "If you can't walk, crawl. If you can't crawl, just wiggle your toes. Any movement breaks the paralysis of fear.", quote: "Action cures fear." } },
-            { text: "I needs rest", result: { title: "Rest is Action", explanation: "Sometimes the most courageous thing you can do is stop and recharge. Rest so you can rise again.", quote: "Rest is resistance." } }
-        ]
-    },
-    s4_gen_action: {
-        id: 's4_gen_action',
-        text: "Can you do one small thing?",
-        options: [
-            { text: "Move a little", result: { title: "Move Your Body", explanation: "Your emotions are physical. Shake your hands, take a walk, or just stretch. Changing your body changes your mind.", quote: "Motion creates emotion." } },
-            { text: "Drink water", result: { title: "Nourish", explanation: "Start with the basics. Hydrate. It's a small act of love for yourself that tells your body you care.", quote: "Self-care is divine." } },
-            { text: "Tidy up", result: { title: "Clear Space", explanation: "Cleaning just one corner of your room can clear a corner of your mind. Outer order brings inner calm.", quote: "As within, so without." } }
-        ]
-    },
-    s4_gen_spark: {
-        id: 's4_gen_spark',
-        text: "What did you enjoy before?",
-        options: [
-            { text: "Making things", result: { title: "Create Something", explanation: "You were born to create. Draw, write, cook, build. It doesn't have to be good; it just has to be yours.", quote: "Art is the survival of the soul." } },
-            { text: "Nature", result: { title: "Connect", explanation: "Go outside. touch a tree, look at the sky. Remember that you are part of a vast, beautiful living system.", quote: "Nature does not hurry, yet everything is accomplished." } },
-            { text: "Music", result: { title: "Listen", explanation: "Let music carry the weight for a while. Put on your favorite song and let it wash over you.", quote: "Music begins where words end." } }
-        ]
-    },
-    s4_gen_service: {
-        id: 's4_gen_service',
-        text: "Can you help someone?",
-        options: [
-            { text: "Yes", result: { title: "Help Others", explanation: "When we help others, we forget our own troubles for a moment. We realize we still have power to bring light.", quote: "Service is the rent we pay for being." } },
-            { text: "No energy", result: { title: "Help Yourself", explanation: "If you can't help others right now, you are the one who needs help. Be the person you would save.", quote: "You cannot pour from an empty cup." } },
-            { text: "Maybe later", result: { title: "Intention", explanation: "Just the wish to be helpful is a beautiful thing. Hold that intention until you have the strength to act.", quote: "Kindness is a language which the deaf can hear and the blind can see." } }
-        ]
-    },
-    s4_gen_rest: {
-        id: 's4_gen_rest',
-        text: "Can you rest now?",
-        options: [
-            { text: "Yes", result: { title: "Rest Now", explanation: "Close your eyes. Drop your shoulders. The world will keep spinning without you for a few minutes. You are allowed to stop.", quote: "Rest is resistance." } },
-            { text: "Too busy", result: { title: "Micro-Rest", explanation: "Take 60 seconds. Just 60. Close your eyes and breathe deep. You have one minute to spare for your sanity.", quote: "Pause." } },
-            { text: "Feel guilty", result: { title: "You Are Worthy", explanation: "Productivity is not your value. You deserve rest simply because you exist, not because you earned it.", quote: "You are a human being, not a human doing." } }
-        ]
-    },
-    s4_gen_identity: {
-        id: 's4_gen_identity',
-        text: "Is your job everything?",
-        options: [
-            { text: "No", result: { title: "You Are More", explanation: "You are a universe of thoughts, feelings, and dreams. Your job is just one small planet in your galaxy.", quote: "Your worth is inherent." } },
-            { text: "It feels like it", result: { title: "Expand", explanation: "Rediscover the parts of you that don't have a price tag. Who are you when no one is watching? That is the real you.", quote: "I am large, I contain multitudes." } },
-            { text: "I want purpose", result: { title: "Purpose is Being", explanation: "Your purpose isn't a job title. It's how you love, how you listen, and how you show up. You are already living it.", quote: "To be is to do." } }
-        ]
-    },
-    s4_gen_heal: {
-        id: 's4_gen_heal',
-        text: "Does it still hurt?",
-        options: [
-            { text: "Yes", result: { title: "Healing Takes Time", explanation: "A wound doesn't heal the moment you bandage it. Treat yourself with the care you'd give a physical injury. Time is the medicine.", quote: "Time heals what reason cannot." } },
-            { text: "A little", result: { title: "Progress", explanation: "The sharpness is fading. That means you are healing. Celebrate the small relief; it will grow.", quote: "This too shall pass." } },
-            { text: "I'm numb", result: { title: "Feel Again", explanation: "Numbness is a shield. When you are safe, you can slowly lower it and let yourself feel again. It's safe to feel.", quote: "The only way out is through." } }
+            {
+                text: "As proof of unworthiness",
+                result: {
+                    title: "The Wrong Key",
+                    explanation: "A 'no' doesn't mean you're not good enough; it just means that specific door wasn't yours. Like a key that doesn't fit a lock, you just need to find the doorway that matches your unique shape. Maybe you were rejected for a job you wanted, but it's only because a much better role is waiting for you around the corner. The universe is just making sure you don't settle for less than you deserve.",
+                    quote: "When one door closes, the right one opens."
+                }
+            },
+            {
+                text: "As a personal failure",
+                result: {
+                    title: "A Lesson, Not a Loss",
+                    explanation: "One mistake doesn't make you a failure. For example, a baby falls many times before walking. This 'fail' is just a step on your way to winning. Keep your head up and try a new way! Think of yourself like a scientist: every experiment that doesn't work is just more data to help you find the right answer. You are learning what doesn't work so you can finally discover what does.",
+                    quote: "Failures are stepping stones to success."
+                }
+            },
+            {
+                text: "As a loss of time",
+                result: {
+                    title: "Nothing is Wasted",
+                    explanation: "You didn't 'waste' time; you gained experience. For example, even if a relationship ends, you learned what you truly need now. Everything you've been through is making you wiser for what's next. Like a farmer who waits all winter for the seeds to grow, you are growing underground even when you can't see it yet. Every hour spent trying is an hour spent building your inner strength.",
+                    quote: "Experience is the best teacher."
+                }
+            }
         ]
     },
 
-    // Anxiety Specific S4s
-    s4_anx_fut_fail: {
-        id: 's4_anx_fut_fail',
-        text: "What if it works out?",
+    s3_self_doubt_reflection: {
+        id: "s3_self_doubt_reflection",
+        text: "Is this doubt trying to protect you from the risk of trying?",
         options: [
-            { text: "That would be good", result: { title: "Think Positive", explanation: "Your brain is designed to protect you by showing danger. Hack it by forcing it to visualize success. Visualizing the best case releases the same chemistry as experiencing it.", quote: "What if it turns out better than you could have ever imagined?" } },
-            { text: "It won't", result: { title: "Challenge It", explanation: "That is fear talking, not fact. You cannot predict the future. Leave room for the possibility of a miracle.", quote: "Worry is a misuse of imagination." } },
-            { text: "I'll survive", result: { title: "Resilience", explanation: "Even if the worst happens, you have survived 100% of your bad days so far. You are stronger than you think.", quote: "You can handle it." } }
-        ]
-    },
-    s4_anx_fut_loss: {
-        id: 's4_anx_fut_loss',
-        text: "Can you keep everything?",
-        options: [
-            { text: "No", result: { title: "Let Go", explanation: "Clinging to things causes blisters. Loosening your grip brings relief. Nothing in this world is permanent except your soul.", quote: "This too shall pass." } },
-            { text: "I want to", result: { title: "Appreciate", explanation: "Love what you have while you have it, but hold it lightly. Gratitude turns what we have into enough.", quote: "Gratitude is the memory of the heart." } },
-            { text: "It hurts", result: { title: "Grief is Love", explanation: "The pain of losing something is the shadow of the love you had for it. Honor the love, not the loss.", quote: "Grief is the price we pay for love." } }
-        ]
-    },
-    s4_anx_fut_unknown: {
-        id: 's4_anx_fut_unknown',
-        text: "Can you trust the process?",
-        options: [
-            { text: "I'll try", result: { title: "Trust", explanation: "Life has supported you this far. Trust that the ground will be there when you take the next step.", quote: "Leap and the net will appear." } },
-            { text: "It's dark", result: { title: "Inner Light", explanation: "When you can't see the path outside, look inside. Your intuition is a compass that works in the dark.", quote: "You are the light." } },
-            { text: "I need a plan", result: { title: "One Step", explanation: "You don't need to see the whole staircase. You just need to see the first step. Take that one.", quote: "A journey of a thousand miles begins with a single step." } }
-        ]
-    },
-
-    s4_anx_past_mistake: {
-        id: 's4_anx_past_mistake',
-        text: "Did you learn something?",
-        options: [
-            { text: "Yes", result: { title: "A Lesson", explanation: "Then it wasn't a mistake; it was a masterclass. You paid for wisdom with that experience. Keep the wisdom, lose the guilt.", quote: "Experience is what you get when you didn't get what you wanted." } },
-            { text: "No", result: { title: "Look Closer", explanation: "There is always something to learn. Even if it's just 'I don't want to do that again.' That is valuable knowledge.", quote: "Failure is success in progress." } },
-            { text: "I regret it", result: { title: "Forgive Yourself", explanation: "You did the best you could with what you knew then. You know more now. Be kind to your younger self.", quote: "Forgiveness is giving up the hope that the past could have been any different." } }
-        ]
-    },
-    s4_anx_past_nostalgia: {
-        id: 's4_anx_past_nostalgia',
-        text: "Do you miss the feeling?",
-        options: [
-            { text: "Yes", result: { title: "Feel Good Again", explanation: "You felt that happiness once, which means you are capable of feeling it. You are the source, not the past.", quote: "The best is yet to come." } },
-            { text: "I miss them", result: { title: "Cherish", explanation: "Be glad it happened, not sad it's over. The love you felt is still yours to keep.", quote: "Don't cry because it's over, smile because it happened." } },
-            { text: "It was better", result: { title: "Now is Power", explanation: "The past is a memory. THe future is a fantasy. The only reality is now. Make this moment beautiful.", quote: "Be here now." } }
-        ]
-    },
-    s4_anx_past_shame: {
-        id: 's4_anx_past_shame',
-        text: "Does shame help?",
-        options: [
-            { text: "No", result: { title: "Let Shame Go", explanation: "Shame is a heavy coat that keeps you warm but weighs you down. It's time to take it off. You are not your actions.", quote: "You are enough." } },
-            { text: "I deserve it", result: { title: "Compassion", explanation: "No one 'deserves' to suffer. Punishing yourself won't fix the past. Healing yourself will fix the future.", quote: "Be kind to yourself." } },
-            { text: "I can't hide", result: { title: "Vulnerability", explanation: "You don't need to hide. Your flaws make you human, and your humanity makes you beautiful.", quote: "There is a crack in everything, that's how the light gets in." } }
+            {
+                text: "Fear of judgment",
+                result: {
+                    title: "Be Brave Anyway",
+                    explanation: "It's normal to feel scared of what others think, but most people are just worried about themselves! For example, nobody remembers your small mistakes. Your voice is important, so keep using it. Think of the 'spotlight effect'—you feel like everyone is watching your flaws, but really, they are all busy looking at their own reflections. You are free to be yourself without the weight of their opinions.",
+                    quote: "What others think is none of your business."
+                }
+            },
+            {
+                text: "Fear of mistakes",
+                result: {
+                    title: "Messy is Okay",
+                    explanation: "You don't have to be perfect to start. For example, a first draft of a book is always messy! Give yourself permission to make mistakes as you learn. It means you're actually doing something! Just like a painter puts down a messy first layer of color before the beautiful picture emerges, your 'mess' is the foundation of your future success. Every mistake is just you being brave enough to try.",
+                    quote: "Progress over perfection."
+                }
+            },
+            {
+                text: "I just feel small",
+                result: {
+                    title: "You Are Special",
+                    explanation: "You don't have to 'do' anything to be valuable. Just like a beautiful sunset is amazing without 'working,' you are enough just by being alive. You are unique and have so much to offer. Think about a small seed: it looks tiny and unimportant, but inside it has everything it needs to become a giant tree. You have that same magic inside of you right now, waiting to bloom.",
+                    quote: "You are a masterpiece in progress."
+                }
+            }
         ]
     },
 
-    s4_anx_oth_society: {
-        id: 's4_anx_oth_society',
-        text: "Does it really matter?",
+    s3_lost_life_reflection: {
+        id: "s3_lost_life_reflection",
+        text: "Does the path ahead look foggy or entirely empty?",
         options: [
-            { text: "No", result: { title: "Ignore Them", explanation: "The opinions of others are none of your business. Live your truth. Those who matter don't mind, and those who mind don't matter.", quote: "Lions don't lose sleep over sheep." } },
-            { text: "Yes", result: { title: "Perspective", explanation: "In 100 years, no one will remember this awkward moment. You are free to make mistakes.", quote: "This too shall pass." } },
-            { text: "I want to belong", result: { title: "Find Your Tribe", explanation: "Don't change to fit in. Be yourself to stand out. Your vibe attracts your tribe.", quote: "Belong to yourself first." } }
-        ]
-    },
-    s4_anx_oth_parent: {
-        id: 's4_anx_oth_parent',
-        text: "Are you an adult?",
-        options: [
-            { text: "Yes", result: { title: "Take Charge", explanation: "You are the author of your story now. You hold the pen. Write a chapter that makes YOU happy.", quote: "You are the captain of your soul." } },
-            { text: "Kind of", result: { title: "Independence", explanation: "It's time to cut the cord. Respect their advice, but follow your own intuition. You know what's best for you.", quote: "Trust yourself." } },
-            { text: "No", result: { title: "Patience", explanation: "One day you will be free to make all your own choices. For now, cultivate your inner world. That is always yours.", quote: "Freedom is a state of mind." } }
-        ]
-    },
-    s4_anx_oth_self: {
-        id: 's4_anx_oth_self',
-        text: "Be kind to yourself?",
-        options: [
-            { text: "I will", result: { title: "Love Yourself", explanation: "Talk to yourself like you would talk to a best friend. Be gentle. Be encouraging. You are doing great.", quote: "Self-love is the best love." } },
-            { text: "It's hard", result: { title: "Practice", explanation: "Self-love is a practice, not a destination. Start with one kind thought today.", quote: "You are a work of art." } },
-            { text: "I'm trying", result: { title: "Keep Going", explanation: "Trying is enough. Every effort counts. You are planting seeds of kindness that will harvest later.", quote: "A little progress each day adds up to big results." } }
-        ]
-    },
-
-    s4_anx_over_volume: {
-        id: 's4_anx_over_volume',
-        text: "Can you do one thing?",
-        options: [
-            { text: "Yes", result: { title: "One Thing", explanation: "Forget the mountain. Pick up one pebble. Do that one email, wash that one dish. Momentum starts with one thing.", quote: "A journey of a thousand miles begins with a single step." } },
-            { text: "Where to start?", result: { title: "Anywhere", explanation: "It doesn't matter where you start, only that you start. Pick the easiest thing and do it badly if you have to.", quote: "Done is better than perfect." } },
-            { text: "No", result: { title: "Rest", explanation: "If you can't do one thing, then your one thing is to rest. Recharge untl you can.", quote: "Rest to rebuild." } }
-        ]
-    },
-    s4_anx_over_perf: {
-        id: 's4_anx_over_perf',
-        text: "Does it need to be perfect?",
-        options: [
-            { text: "No", result: { title: "Good Enough", explanation: "Perfection is the enemy of done. Embrace the messy, imperfect action. That's where life happens.", quote: "Strive for progress, not perfection." } },
-            { text: "Yes", result: { title: "Why?", explanation: "Who are you trying to impress? You are worthy even if you make mistakes. Your value is not in your performance.", quote: "You are enough." } },
-            { text: "I fear judgment", result: { title: "Be Brave", explanation: "Create for yourself, not for the audience. Their judgment says more about them than you.", quote: "Dance like nobody's watching." } }
-        ]
-    },
-    s4_anx_over_start: {
-        id: 's4_anx_over_start',
-        text: "What's the first step?",
-        options: [
-            { text: "Breathe", result: { title: "Just Breathe", explanation: "Before you do, be. Take a deep breath. Center yourself. Action effectively comes from calm.", quote: "Breathe." } },
-            { text: "Make a list", result: { title: "Brain Dump", explanation: "Get it all out of your head onto paper. You don't have to do it all, just capture it. Your mind needs space.", quote: "Clear your mind." } },
-            { text: "Set a timer", result: { title: "5 Minutes", explanation: "Commit to just 5 minutes of work. You can do anything for 5 minutes. Often, that's all you need to keep going.", quote: "Small starts lead to big finishes." } }
+            {
+                text: "Meaningless void",
+                result: {
+                    title: "A Fresh Start",
+                    explanation: "Feeling lost means you're ready for something new! For example, before a new building goes up, the old one must be cleared away. This empty feeling is just space for your new life to begin. Don't be afraid of the quiet; it’s just the universe hitting the 'reset' button so you can build something even better. This is your chance to decide exactly who you want to be next.",
+                    quote: "To find yourself, you must first be lost."
+                }
+            },
+            {
+                text: "I am just drifting",
+                result: {
+                    title: "Take a Breather",
+                    explanation: "It's okay to not have a plan right now. For example, even the ocean has a tide that goes out before coming back in. Use this 'slow' time to rest. You'll know when it's time to move again. Think of a leaf floating on a river—it might look like it’s just drifting, but the current is still carrying it exactly where it needs to go. Sometimes you grow the most when you’re standing still.",
+                    quote: "It's okay to just 'be' for a while."
+                }
+            },
+            {
+                text: "I missed my turn",
+                result: {
+                    title: "No Wrong Turns",
+                    explanation: "In life, every road leads somewhere useful. For example, getting lost on a drive can lead you to a beautiful place you didn't know existed. Trust that where you are is safe and you're learning. You haven't fallen behind; you are just taking the scenic route. This 'wrong' turn might introduce you to people and experiences that the 'right' path never could have given you.",
+                    quote: "Trust your journey."
+                }
+            }
         ]
     },
 
-    // Anger Specific S4s
-    s4_gen_boundaries: {
-        id: 's4_gen_boundaries',
-        text: "Need to say no?",
+    s3_motivation_reflection: {
+        id: "s3_motivation_reflection",
+        text: "Is your spirit tired or just your nervous system?",
         options: [
-            { text: "Yes", result: { title: "Say No", explanation: "No is a complete sentence. You protect your energy by defining what you allow into your life.", quote: "Givers need to set limits because takers rarely do." } },
-            { text: "I feel guilty", result: { title: "It's Okay", explanation: "Disappointing others is better than destroying yourself. Your well-being is your priority.", quote: "You can't pour from an empty cup." } },
-            { text: "They will be mad", result: { title: "Let Them", explanation: "Their reaction is their responsibility. Your boundary is your responsibility. Stand firm.", quote: "Peace over popularity." } }
-        ]
-    },
-    s4_gen_worth: {
-        id: 's4_gen_worth',
-        text: "Does this change your worth?",
-        options: [
-            { text: "No", result: { title: "You Are Valuable", explanation: "Your value is not determined by how people treat you. You are a diamond even if they treat you like rocks.", quote: "Know your worth." } },
-            { text: "It feels like it", result: { title: "Reclaim It", explanation: "Take back your power. Do not give them the remote control to your self-esteem.", quote: "No one can make you feel inferior without your consent." } },
-            { text: "I'm angry", result: { title: "Use Anger", explanation: "Anger is fuel. Use it to build a better boundary, not to burn down the house.", quote: "Channel your fire." } }
-        ]
-    },
-    s4_gen_truth: {
-        id: 's4_gen_truth',
-        text: "Speak up?",
-        options: [
-            { text: "Yes", result: { title: "Speak Truth", explanation: "Your voice matters. Speak clearly, calmly, and firmly. The truth has its own power.", quote: "The truth will set you free." } },
-            { text: "Later", result: { title: "Cool Down", explanation: "Write it down first. Speak when you are calm so you can be heard, not just reacted to.", quote: "Respond, don't react." } },
-            { text: "Scared", result: { title: "Be Brave", explanation: "Do it afraid. Your integrity is worth the temporary discomfort of confrontation.", quote: "Silence is consent." } }
-        ]
-    },
-    s4_gen_navigate: {
-        id: 's4_gen_navigate',
-        text: "Find another way?",
-        options: [
-            { text: "Maybe", result: { title: "Be Flexible", explanation: "Water flows around the rock. Be like water. If the door is locked, look for a window.", quote: "Be like water." } },
-            { text: "I'm stuck", result: { title: "Pivot", explanation: "This isn't a dead end; it's a detour. Detours often lead to better scenic routes.", quote: "Rejection is redirection." } },
-            { text: "Force it", result: { title: "Don't Force", explanation: "If it doesn't open, it's not your door. forcing it breaks the key. Step back.", quote: "Flow, don't force." } }
-        ]
-    },
-    s4_gen_adapt: {
-        id: 's4_gen_adapt',
-        text: "Can you adapt?",
-        options: [
-            { text: "Yes", result: { title: "Adapt", explanation: "Biology says the most adaptable survive. You are evolving effectively right now.", quote: "Bend so you don't break." } },
-            { text: "It's unfair", result: { title: "Acceptance", explanation: "Accepting reality doesn't mean liking it. It means you stop fighting the rain and open an umbrella.", quote: "It is what it is." } },
-            { text: "I hate change", result: { title: "Growth", explanation: "Change is the only constant. Embrace the new energy. It brings new gifts.", quote: "Change is good." } }
-        ]
-    },
-    s4_gen_confront: {
-        id: 's4_gen_confront',
-        text: "What's the worst that can happen?",
-        options: [
-            { text: "Not much", result: { title: "Be Brave", explanation: "The fear of the thing is often worse than the thing itself. Face it and the ghost disappears.", quote: "Daring greatly." } },
-            { text: "Rejection", result: { title: "So What?", explanation: "If they reject you, they are clearing space for people who accept you. It's a favor.", quote: "Rejection is protection." } },
-            { text: "Conflict", result: { title: "Peace", explanation: "Conflict is sometimes the price of peace. Clear the air so you can breathe freely.", quote: "Peace requires courage." } }
-        ]
-    },
-    s4_gen_growth: {
-        id: 's4_gen_growth',
-        text: "Are you learning?",
-        options: [
-            { text: "Yes", result: { title: "Growing", explanation: "You are not the same person you were yesterday. You are wiser. That is worth the pain.", quote: "Growth is painful but necessary." } },
-            { text: "It hurts", result: { title: "Expansion", explanation: "Your heart is not breaking; it is stretching to hold more compassion and wisdom.", quote: "The wound is the place where the light enters you." } },
-            { text: "Why me?", result: { title: "For You", explanation: "Life doesn't happen to you; it happens for you. This challenge is your gym.", quote: "Amor Fati - Love your fate." } }
-        ]
-    },
-    s4_gen_strength: {
-        id: 's4_gen_strength',
-        text: "Ask for help?",
-        options: [
-            { text: "Okay", result: { title: "Connect", explanation: "We are social creatures. Asking for help is not weakness; it is wisdom. Let others support you.", quote: "Together we go far." } },
-            { text: "I'm alone", result: { title: "Reach Out", explanation: "You are never as alone as you think. Reach out. People want to help.", quote: "You are not alone." } },
-            { text: "I can do it", result: { title: "Stronger Together", explanation: "You can do it alone, but you don't have to. Shared burdens are lighter.", quote: "Ideally, we carry each other." } }
-        ]
-    },
-    s4_gen_now: {
-        id: 's4_gen_now',
-        text: "Focus on now?",
-        options: [
-            { text: "Yes", result: { title: "Be Here", explanation: "The past is gone. The future is not here. Your power is in this exact second. Breathe into it.", quote: "Be here now." } },
-            { text: "Mind racing", result: { title: "Grounding", explanation: "Name 5 things you can see. 4 things you can hear. Bring your mind back to your body.", quote: "Ground yourself." } },
-            { text: "I'm angry", result: { title: "Release", explanation: "Feel the anger, then release it. Holding it is drinking poison and expecting the other to die.", quote: "Let it go." } }
+            {
+                text: "Spiritually drained",
+                result: {
+                    title: "Soul Recharge",
+                    explanation: "If you've lost interest, your soul might just be tired. For example, even a phone needs to be plugged in to keep working! Stop forcing yourself and do something that makes you happy today. When you stop pushing, you give your inner battery a chance to fill back up. Whether it’s listening to your favorite song or just sitting in the sun, little acts of joy are the best medicine for a tired soul.",
+                    quote: "Rest is a productive activity."
+                }
+            },
+            {
+                text: "The tasks feel too big",
+                result: {
+                    title: "Tiny Steps Win",
+                    explanation: "Don't look at the whole mountain; just look at your feet. For example, instead of 'cleaning the whole house,' just clean one small shelf. One tiny thing leads to the next! Think of a giant Lego castle—it looks impossible to build, but it’s really just one brick at a time. Once you get that first brick down, the second one is much easier. You don't need to finish today; you just need to start.",
+                    quote: "Small wins add up to big victories."
+                }
+            },
+            {
+                text: "I have lost passion",
+                result: {
+                    title: "Follow the Spark",
+                    explanation: "Passions change as we grow, and that's okay! For example, you might have loved drawing as a kid but now you love cooking. Don't feel bad—just follow whatever makes you feel excited today. Like a tree that changes colors in the fall, you are allowed to have different 'seasons' in your life. Your old interests aren't gone; they are just making room for the new, exciting things you are becoming.",
+                    quote: "Grow along with your interests."
+                }
+            }
         ]
     },
 
-    // SADNESS > LONELY S4s
-    s4_sad_lonely_und: {
-        id: 's4_sad_lonely_und',
-        text: "Can you be real?",
+    s3_rel_confusion_reflection: {
+        id: "s3_rel_confusion_reflection",
+        text: "Are you listening to your gut or your fear of change?",
         options: [
-            { text: "Scary", result: { title: "Be Real", explanation: "Vulnerability is the price of admission for intimacy. If you want connection, you must be seen.", quote: "Authenticity attracts." } },
-            { text: "I try", result: { title: "Keep Trying", explanation: "The right people will love the real you. Don't dim your light to fit into small rooms.", quote: "Shine bright." } },
-            { text: "No one cares", result: { title: "You Care", explanation: "You care. Start there. Be your own best audience. The world will catch up.", quote: "You matter." } }
+            {
+                text: "My gut feels heavy",
+                result: {
+                    title: "Listen Inside",
+                    explanation: "That heavy feeling in your stomach is your intuition talking to you. For example, if you feel nervous around someone, your body is telling you to be careful. Trust your feelings—they protect you. Your gut is like a built-in radar that knows the truth before your mind does. It’s okay to pause and listen to that inner voice, even if it’s telling you something hard to hear.",
+                    quote: "Your gut never lies."
+                }
+            },
+            {
+                text: "I fear the ending",
+                result: {
+                    title: "Be Your Own Bestie",
+                    explanation: "Being alone isn't the same as being lonely. For example, you can have a great time watching a movie by yourself! When you enjoy your own company, you don't have to stay in confusion. Think about the person you love most in the world—you deserve to treat yourself with that same kindness. You are a complete person all on your own, and you don't need anyone else to be whole.",
+                    quote: "You are your own home."
+                }
+            },
+            {
+                text: "Words aren't working",
+                result: {
+                    title: "Silent Wisdom",
+                    explanation: "Sometimes talking more doesn't help. For example, if two people are shouting, nobody hears anything. Take a step back and just observe quietly. The answer will come when you're calm. Think about two magnets—if they are pushing apart, no amount of force will make them stick. Sometimes you just need to stop, rotate, and give things space to settle on their own.",
+                    quote: "Silence can be the best answer."
+                }
+            }
         ]
-    },
-    s4_sad_lonely_push: {
-        id: 's4_sad_lonely_push',
-        text: "Putting up walls?",
-        options: [
-            { text: "Yes", result: { title: "Open Up", explanation: "Walls keep pain out, but they also keep love out. Put a door in that wall.", quote: "Open your heart." } },
-            { text: "Trapped", result: { title: "Freedom", explanation: "The door is unlocked from the inside. You can step out whenever you are ready.", quote: "Free yourself." } },
-            { text: "Safe", result: { title: "Venture Out", explanation: "Safety is good for a while, but ships aren't built to stay in the harbor. Sail out.", quote: "Courage, dear heart." } }
-        ]
-    },
-    s4_sad_lonely_crave: {
-        id: 's4_sad_lonely_crave',
-        text: "Give love?",
-        options: [
-            { text: "I'll try", result: { title: "Be a Friend", explanation: "The best way to find a friend is to be one. Radiate the warmth you wish to feel.", quote: "Attract what you are." } },
-            { text: "Empty", result: { title: "Self-Love", explanation: "Fill your own cup first. Treat yourself to a date. Fall in love with your own life.", quote: "You are the one." } },
-            { text: "How?", result: { title: "Small Acts", explanation: "Smile at a stranger. Text a friend. Appreciation is love in action.", quote: "Love is a verb." } }
-        ]
-    },
-
-    // SADNESS > TIRED S4s
-    s4_sad_tired_body: {
-        id: 's4_sad_tired_body',
-        text: "Sleep soon?",
-        options: [
-            { text: "Yes", result: { title: "Sleep Well", explanation: "Your body is a temple, and it needs maintenance. Wrap yourself in blankets and drift away.", quote: "Rest to rebuild." } },
-            { text: "Can't sleep", result: { title: "Rest Eyes", explanation: "Just lying in the dark with your eyes closed is mostly as good as sleep. No pressure.", quote: "Drift." } },
-            { text: "Too wired", result: { title: "Unplug", explanation: "Turn off the screens. Let your nervous system settle down. The digital world can wait.", quote: "Disconnect to reconnect." } }
-        ]
-    },
-    s4_sad_tired_soul: {
-        id: 's4_sad_tired_soul',
-        text: "Stop pretending?",
-        options: [
-            { text: "Yes", result: { title: "Be You", explanation: "It is exhausting to wear a mask. Take it off. The air feels better on your own skin.", quote: "Just be you." } },
-            { text: "Safety", result: { title: "Safe Space", explanation: "Find one place or person where you don't have to perform. Be messy there.", quote: "Come as you are." } },
-            { text: "I forget how", result: { title: "Rediscover", explanation: "Listen to the quiet voice inside. That is you. Follow it.", quote: "Listen to your soul." } }
-        ]
-    },
-    s4_sad_tired_mind: {
-        id: 's4_sad_tired_mind',
-        text: "Quiet time?",
-        options: [
-            { text: "Yes", result: { title: "Quiet", explanation: "Silence is not empty; it is full of answers. Give yourself the gift of silence.", quote: "Silence is golden." } },
-            { text: "Racing thoughts", result: { title: "Observe", explanation: "Watch your thoughts like clouds passing in the sky. You are the sky, not the clouds.", quote: "Observe, don't absorb." } },
-            { text: "Bored", result: { title: "Be Bored", explanation: "Boredom is the birthplace of creativity. Let yourself be bored.", quote: "Stillness speaks." } }
-        ]
-    },
-
-    // SADNESS > DISAPPOINTED S4s
-    s4_sad_dis_promise: {
-        id: 's4_sad_dis_promise',
-        text: "Try again?",
-        options: [
-            { text: "Yes", result: { title: "Start Again", explanation: "The sun rises every morning, and so can you. Nothing is wasted if you start again.", quote: "Begin again." } },
-            { text: "Too hard", result: { title: "Gentle Start", explanation: "You don't have to sprint. Just stand up. That is enough for today.", quote: "One day at a time." } },
-            { text: "Scared", result: { title: "Courage", explanation: "Courage is not the absence of fear, but walking forward while your knees shake.", quote: "Feel the fear and do it anyway." } }
-        ]
-    },
-    s4_sad_dis_lagging: {
-        id: 's4_sad_dis_lagging',
-        text: "Your own pace?",
-        options: [
-            { text: "Yes", result: { title: "Your Pace", explanation: "You are not late. You are exactly where you are supposed to be. Flowers bloom when they are ready, not when you tell them to.", quote: "Trust the timing." } },
-            { text: "Feeling behind", result: { title: "No Race", explanation: "Life is a journey, not a race. There is no one to catch up to.", quote: "Run your own race." } },
-            { text: "Comparison", result: { title: "Focus Inward", explanation: "Comparison is the thief of joy. Look at your own path; it's beautiful.", quote: "Stay in your lane." } }
-        ]
-    },
-    s4_sad_dis_mistake: {
-        id: 's4_sad_dis_mistake',
-        text: "Does it define you?",
-        options: [
-            { text: "No", result: { title: "Move On", explanation: "You are not your mistakes. You are the person who learns from them.", quote: "Fail forward." } },
-            { text: "Yes", result: { title: "Release Label", explanation: "Peel that label off. You are a complex, growing human being, not a single error.", quote: "I am not what happened to me." } },
-            { text: "Guilt", result: { title: "Make Amends", explanation: "If you need to apologize, do it. Then forgive yourself. Punishment is not penance.", quote: "Forgive yourself." } }
-        ]
-    },
-
+    }
 };
+
 
 // --- Stage Progress Component ---
 const STAGE_TITLES = ['The Feeling', 'The Source', 'The Insight', 'The Shift'];
@@ -664,8 +404,8 @@ export default function FeelingLowScreen() {
             <StatusBar barStyle="light-content" />
 
             <BreathingBackground
-                colors={['#0f172a', '#1e1b4b', '#020617']}
-                opacity={0.95}
+                colors={['#0f172a', '#1c1917', '#451a03']} // Deep Navy -> Dark Brown -> Mocha
+                opacity={0.8}
             />
             <GlobalCosmicBackground />
 
@@ -783,7 +523,7 @@ export default function FeelingLowScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#020617',
+        backgroundColor: '#0f172a',
     },
     safeArea: {
         flex: 1,

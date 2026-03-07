@@ -21,9 +21,9 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
         },
         {
             name: 'Manifest',
-            icon: 'flash-outline' as const, // Bolt icon for action-oriented manifestation
+            icon: 'flash-outline' as const,
             activeIcon: 'flash' as const,
-            route: '/manifest_hub',
+            route: '/manifestation',
         },
         {
             name: 'Space',
@@ -53,7 +53,7 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
                             <Ionicons
                                 name={isActive ? tab.activeIcon : tab.icon}
                                 size={22}
-                                color={isActive ? '#f97316' : 'rgba(255,255,255,0.4)'}
+                                color={isActive ? '#B45309' : 'rgba(255,255,255,0.4)'}
                             />
                             {isActive && <Text style={styles.activeDot}>•</Text>}
                         </TouchableOpacity>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
         height: 44,
     },
     activeDot: {
-        color: '#f97316',
+        color: '#B45309',
         fontSize: 20,
         position: 'absolute',
         bottom: -10,

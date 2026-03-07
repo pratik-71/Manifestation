@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Dimensions, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../../components/TimeWheelPicker';
 import { AppColors } from '../../constants/Colors';

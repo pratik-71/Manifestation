@@ -14,6 +14,7 @@ import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-get-random-values';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
 import "../global.css";
 
@@ -48,9 +49,11 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
-      <GlobalCosmicBackground />
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
+        <GlobalCosmicBackground />
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
