@@ -1,16 +1,16 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     Easing,
     FadeIn,
+    interpolate,
     useAnimatedStyle,
     useSharedValue,
     withRepeat,
     withTiming
 } from 'react-native-reanimated';
-import { getCurrentUser } from '../../services/authService';
 
 const { width } = Dimensions.get('window');
 
@@ -18,7 +18,6 @@ export default function OpeningPage() {
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [isFinished, setIsFinished] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [isNavigating, setIsNavigating] = useState(false);
 
     // Shared Values for animations
@@ -88,22 +87,7 @@ export default function OpeningPage() {
     };
 
     useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const user = await getCurrentUser();
-                if (user) {
-                    router.replace('/home');
-                    return;
-                }
-            } catch (err) {
-                console.error("Auth check failed", err);
-            } finally {
-                setIsCheckingAuth(false);
-                runSequence();
-            }
-        };
-
-        checkAuth();
+        runSequence();
     }, []);
 
     const getStepContent = () => {
@@ -119,9 +103,6 @@ export default function OpeningPage() {
         setIsFinished(true);
     };
 
-    if (isCheckingAuth) {
-        return <View className="flex-1 bg-black" />; // Splash-like while checking auth
-    }
 
     return (
         <View className="flex-1 bg-slate-900">
@@ -135,6 +116,8 @@ export default function OpeningPage() {
             />
 
             <View className="flex-1 items-center justify-center">
+                {/* Top Logo */}
+              
 
                 {/* Breathing Sun / Orb Effect */}
                 <Animated.View style={[animatedOrbStyle, { position: 'absolute' }]}>
@@ -196,7 +179,7 @@ export default function OpeningPage() {
                         if (isNavigating) return;
                         if (isFinished) {
                             setIsNavigating(true);
-                            router.push('/onboarding/questionnaire');
+                            router.push('/onboarding/google_signin');
                             setTimeout(() => setIsNavigating(false), 1000);
                         } else {
                             handleSkip();

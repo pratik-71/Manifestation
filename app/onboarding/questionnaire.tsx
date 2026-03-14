@@ -21,12 +21,16 @@ type HeaderProps = {
 
 const Header = memo(({ currentStep, totalSteps, onBack }: HeaderProps) => (
     <View style={styles.header}>
-        <TouchableOpacity
-            onPress={onBack}
-            style={{ padding: 8, marginRight: 8, marginLeft: -8 }}
-        >
-            <Ionicons name="chevron-back" size={28} color="#fff" />
-        </TouchableOpacity>
+        {currentStep > 1 ? (
+            <TouchableOpacity
+                onPress={onBack}
+                style={{ padding: 8, marginRight: 8, marginLeft: -8 }}
+            >
+                <Ionicons name="chevron-back" size={28} color="#fff" />
+            </TouchableOpacity>
+        ) : (
+            <View style={{ width: 28, marginRight: 8, marginLeft: -8 }} />
+        )}
         <View style={styles.progressBarContainer}>
             <View
                 style={[styles.progressBar, { width: `${(currentStep / totalSteps) * 100}%` }]}

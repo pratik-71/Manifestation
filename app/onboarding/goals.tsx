@@ -2,7 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+    ActivityIndicator,
+    Dimensions,
+    Keyboard,
+    KeyboardAvoidingView,
     Modal,
+    Platform,
     SafeAreaView,
     ScrollView,
     StatusBar,
@@ -10,7 +15,7 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
 } from 'react-native';
 import Animated, {
     Easing,
@@ -24,7 +29,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { requestNotificationPermissions } from '../../services/notificationService';
+import { updateGoals } from '../../services/profileService';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useUserStore } from '../../store/userStore';
 
 const LOADING_MESSAGES = [
     "Analyzing your vision...",
@@ -98,9 +105,16 @@ export default function Goals() {
     const [aiLoading, setAiLoading] = useState(false);
     const [isCoachVisible, setIsCoachVisible] = useState(false);
 
+    const { profile, fetchProfile } = useUserStore();
+    const isUpdateMode = profile?.onboarding_complete === true;
+
     useEffect(() => {
         requestNotificationPermissions();
-    }, []);
+        // If we have existing goals, pre-fill them
+        if (profile?.goals && profile.goals.length > 0) {
+            setGoalTags(profile.goals);
+        }
+    }, [profile?.goals]);
 
     const handleAddGoal = () => {
         if (currentGoal.trim().length >= 3) {
@@ -421,13 +435,33 @@ export default function Goals() {
                                             </TouchableOpacity>
                                         ) : (
                                             <TouchableOpacity
-                                                onPress={() => {
+                                                onPress={async () => {
                                                     setIsCoachVisible(false);
-                                                    router.push('/onboarding/accept_challenge');
+                                                    if (isUpdateMode && profile?.id) {
+                                                        setIsSubmitting(true);
+                                                        try {
+                                                            await updateGoals(profile.id, goalTags);
+                                                            await fetchProfile(profile.id);
+                                                            router.replace('/manifestation');
+                                                        } catch (err) {
+                                                            console.error(err);
+                                                        } finally {
+                                                            setIsSubmitting(false);
+                                                        }
+                                                    } else {
+                                                        router.push('/onboarding/accept_challenge');
+                                                    }
                                                 }}
-                                                style={[styles.finishModalButton, { flex: 1 }]}
+                                                disabled={isSubmitting}
+                                                style={[styles.finishModalButton, { flex: 1, opacity: isSubmitting ? 0.7 : 1 }]}
                                             >
-                                                <Text style={styles.finishModalButtonText}>Accept Challenge</Text>
+                                                {isSubmitting ? (
+                                                    <ActivityIndicator color="#1c160c" />
+                                                ) : (
+                                                    <Text style={styles.finishModalButtonText}>
+                                                        {isUpdateMode ? "Update Goals" : "Accept Challenge"}
+                                                    </Text>
+                                                )}
                                             </TouchableOpacity>
                                         )}
                                     </View>

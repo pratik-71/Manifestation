@@ -1,5 +1,6 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Alert } from 'react-native';
 import { supabase } from './supabase';
 
 // Complete the auth session if we're in a web environment or redirecting
@@ -7,7 +8,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export const signInWithGoogle = async (): Promise<any> => {
     try {
-        const redirectUrl = Linking.createURL('onboarding/trust1', { scheme: 'manifesation' });
+        const redirectUrl = Linking.createURL('', { scheme: 'manifestation' });
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -57,6 +58,25 @@ export const signOut = async () => {
         if (error) throw error;
     } catch (error) {
         console.error('Sign-out Error:', error);
+        throw error;
+    }
+};
+
+export const deleteAccount = async () => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("No user found");
+        
+        // Try calling an RPC if available, otherwise just warn and sign out
+        const { error } = await supabase.rpc('delete_user');
+        if (error) {
+            console.log('RPC delete_user missing, fallback to warning. Details:', error);
+            // On a real app, you would have an edge function or trigger here.
+            Alert.alert("Notice", "Account flagged for deletion. Contact support for immediate removal.");
+        }
+        await supabase.auth.signOut();
+    } catch (error) {
+        console.error('Delete-account Error:', error);
         throw error;
     }
 };

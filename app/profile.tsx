@@ -18,7 +18,7 @@ import {
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
-import { getCurrentUser, signOut } from '../services/authService';
+import { deleteAccount, getCurrentUser, signOut } from '../services/authService';
 import { useUserStore } from '../store/userStore';
 
 const { width } = Dimensions.get('window');
@@ -57,6 +57,7 @@ export default function Profile() {
                         setIsLoggingOut(true);
                         try {
                             await signOut();
+                            useUserStore.getState().clearProfile();
                             router.replace('/onboarding/google_signin');
                         } catch (error) {
                             Alert.alert("Error", "Failed to sign out.");
@@ -69,17 +70,43 @@ export default function Profile() {
         );
     };
 
-    const MenuRow = ({ icon, label, onPress, showBorder = true }: any) => (
+    const handleDeleteAccount = async () => {
+        Alert.alert(
+            "Delete Account",
+            "This action is permanent and will remove all of your progress, data, and settings. Are you absolutely sure?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        setIsLoggingOut(true);
+                        try {
+                            await deleteAccount();
+                            useUserStore.getState().clearProfile();
+                            router.replace('/onboarding/google_signin');
+                        } catch (error) {
+                            Alert.alert("Error", "Failed to delete account.");
+                        } finally {
+                            setIsLoggingOut(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const MenuRow = ({ icon, label, onPress, showBorder = true, color = '#fff' }: any) => (
         <TouchableOpacity
             onPress={onPress}
             activeOpacity={0.7}
             style={[styles.menuRow, !showBorder && { borderBottomWidth: 0 }]}
         >
             <View style={styles.menuLeft}>
-                <View style={styles.iconContainer}>
-                    <Ionicons name={icon} size={20} color="#fff" />
+                <View style={[styles.iconContainer, color !== '#fff' && { backgroundColor: `${color}15` }]}>
+                    <Ionicons name={icon} size={20} color={color} />
                 </View>
-                <Text style={styles.menuLabel}>{label}</Text>
+                <Text style={[styles.menuLabel, { color }]}>{label}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
         </TouchableOpacity>
@@ -103,16 +130,7 @@ export default function Profile() {
 
                     {/* Profile Hero */}
                     <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroContainer}>
-                        <View style={styles.avatarOutline}>
-                            <LinearGradient
-                                colors={['#8b5cf6', '#d946ef', '#f97316']}
-                                style={styles.avatarGradient}
-                            >
-                                <Text style={styles.avatarText}>
-                                    {(profile?.username || 'S').charAt(0).toUpperCase()}
-                                </Text>
-                            </LinearGradient>
-                        </View>
+                        
 
                         <Text style={styles.username}>{profile?.username || 'Seeker'}</Text>
                         <Text style={styles.emailTag}>{email}</Text>
@@ -151,6 +169,12 @@ export default function Profile() {
                                 icon="log-out-outline"
                                 label="Logout"
                                 onPress={handleLogout}
+                            />
+                            <MenuRow
+                                icon="trash-outline"
+                                label="Delete Account"
+                                onPress={handleDeleteAccount}
+                                color="#ef4444"
                                 showBorder={false}
                             />
                         </BlurView>

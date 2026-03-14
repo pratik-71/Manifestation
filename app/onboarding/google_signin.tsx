@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
-import { signInWithGoogle } from '../../services/authService';
-import { saveOnboardingProfile } from '../../services/profileService';
+import { getCurrentUser, signInWithGoogle } from '../../services/authService';
+import { hasCompletedOnboarding, saveOnboardingProfile } from '../../services/profileService';
+import { identifyUser } from '../../services/purchaseService';
 import { useOnboardingStore } from '../../store/onboardingStore';
 
 const { width, height } = Dimensions.get('window');
@@ -14,16 +15,30 @@ export default function GoogleSignIn() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 
-    // ⚠️ IMPORTANT: Select each value individually with separate calls.
-    // Using (s) => ({ key: s.key }) creates a NEW object on every render,
-    // which breaks useSyncExternalStore and causes an infinite loop.
-    const ob_username = useOnboardingStore((s) => s.username);
-    const ob_wakeTime = useOnboardingStore((s) => s.wakeTime);
-    const ob_sleepTime = useOnboardingStore((s) => s.sleepTime);
-    const ob_manifestTime = useOnboardingStore((s) => s.manifestTime);
-    const ob_goals = useOnboardingStore((s) => s.goals);
-    const ob_aiRoadmap = useOnboardingStore((s) => s.aiRoadmap);
-    const resetOnboarding = useOnboardingStore((s) => s.reset);
+    // Pure navigation and auth check logic
+    React.useEffect(() => {
+        const checkExisting = async () => {
+            setIsLoading(true);
+            try {
+                const user = await getCurrentUser();
+                if (user) {
+                    await identifyUser(user.id); // 🔥 Link with RevenueCat
+                    const complete = await hasCompletedOnboarding(user.id);
+                    if (complete) {
+                        router.replace('/home');
+                    } else {
+                        // Already logged in but no profile data/onboarding
+                        router.replace('/onboarding/questionnaire');
+                    }
+                }
+            } catch (err) {
+                console.error("Initial check fail:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        checkExisting();
+    }, []);
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
@@ -32,26 +47,17 @@ export default function GoogleSignIn() {
             const userId = result?.data?.user?.id;
 
             if (userId) {
-                // Save all onboarding data to Supabase
-                try {
-                    await saveOnboardingProfile({
-                        userId,
-                        username: ob_username || result?.data?.user?.email?.split('@')[0] || 'Seeker',
-                        wakeTime: ob_wakeTime || '07:00',
-                        sleepTime: ob_sleepTime || '23:00',
-                        manifestTime: ob_manifestTime || '10:00',
-                        goals: ob_goals,
-                        aiRoadmap: ob_aiRoadmap,
-                    });
-                    console.log('✅ Onboarding profile saved to Supabase');
-                    resetOnboarding();
-                } catch (saveErr) {
-                    console.error('⚠️ Failed to save onboarding profile:', saveErr);
-                    // Non-fatal — user still proceeds to trust screens
+                await identifyUser(userId); // 🔥 Link with RevenueCat
+                
+                // Check if user is already onboarded
+                const complete = await hasCompletedOnboarding(userId);
+                if (complete) {
+                    router.replace('/home');
+                    return;
                 }
             }
 
-            router.replace('/onboarding/trust1');
+            router.replace('/onboarding/questionnaire');
         } catch (error: any) {
             console.error('Login failed', error);
             if (error.code !== 'SIGN_IN_CANCELLED') {
@@ -82,13 +88,7 @@ export default function GoogleSignIn() {
             <View style={styles.overlay} pointerEvents="none" />
 
             <SafeAreaView style={styles.safeArea}>
-                <TouchableOpacity
-                    style={styles.floatingBackButton}
-                    onPress={() => router.back()}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="chevron-back" size={28} color="#fff" />
-                </TouchableOpacity>
+                
 
                 <View style={styles.contentContainer}>
 
@@ -99,7 +99,7 @@ export default function GoogleSignIn() {
                             style={styles.logoImage}
                             resizeMode="contain"
                         />
-                        <Text style={styles.brandTitle}>Manifest</Text>
+                        <Text style={styles.brandTitle}>Manifestation</Text>
                     </View>
 
                     {/* Central Visual */}
@@ -179,6 +179,14 @@ export default function GoogleSignIn() {
                     </View>
                 </View>
             </SafeAreaView >
+            
+            {/* Full-screen Loading Overlay */}
+            {isLoading && (
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#f59e0b" />
+                    <Text style={styles.loadingText}>Connecting to Universe...</Text>
+                </View>
+            )}
         </View >
     );
 }
@@ -194,19 +202,6 @@ const styles = StyleSheet.create({
     },
     safeArea: {
         flex: 1,
-    },
-    floatingBackButton: {
-        position: 'absolute',
-        top: 20,
-        left: 20,
-        zIndex: 100,
-        width: 44,
-        height: 44,
-
-        backgroundColor: 'rgba(255, 255, 255, 0.08)',
-        justifyContent: 'center',
-        alignItems: 'center',
-
     },
     contentContainer: {
         flex: 1,
@@ -224,7 +219,6 @@ const styles = StyleSheet.create({
     logoImage: {
         width: 64,
         height: 64,
-        tintColor: '#fff',
     },
     brandTitle: {
         fontFamily: 'DancingScript_400Regular',
@@ -378,5 +372,18 @@ const styles = StyleSheet.create({
         color: 'rgba(190, 18, 60, 0.6)', // Muted Ruby
         textAlign: 'center',
         letterSpacing: 0.5,
+    },
+    loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(2, 1, 10, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    loadingText: {
+        marginTop: 15,
+        color: '#f59e0b',
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 16,
     },
 });

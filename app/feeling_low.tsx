@@ -2,7 +2,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Dimensions, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     FadeIn,
     FadeInDown,
@@ -418,7 +418,14 @@ export default function FeelingLowScreen() {
                     >
                         <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.8)" />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Soul Space</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Image
+                            source={require('../assets/logo.png')}
+                            style={{ width: 24, height: 24 }}
+                            resizeMode="contain"
+                        />
+                        <Text style={styles.headerTitle}>Soul Space</Text>
+                    </View>
                     <View style={{ width: 32 }} />
                 </View>
 
@@ -427,23 +434,47 @@ export default function FeelingLowScreen() {
 
                 <ScrollView contentContainerStyle={styles.scrollContent}>
                     {result ? (
-                        <Animated.View
-                            entering={FadeInDown.duration(800).springify()}
-                            style={styles.resultContainer}
-                        >
-                            {/* REMOVED BIG FANCY ICON AS REQUESTED */}
+                        <>
+                            <Animated.View
+                                entering={FadeIn.duration(1200)}
+                                style={styles.resultContainer}
+                            >
+                                <View style={styles.resultHeader}>
+                                 
+                                    <Text style={styles.resultTitle}>{result.title}</Text>
+                                    
+                                </View>
 
-                            <Text style={styles.resultTitle}>{result.title}</Text>
+                                <View style={styles.masterplanCard}>
+                                    <Text style={styles.explanationText}>{result.explanation}</Text>
+                                </View>
 
-                            <View style={styles.explanationContainer}>
-                                <Text style={styles.explanationText}>{result.explanation}</Text>
-                            </View>
+                                <View style={styles.finalQuoteSection}>
+                                    <Text style={styles.quoteText}>"{result.quote}"</Text>
+                                </View>
+                            </Animated.View>
 
-                            <View style={styles.quoteContainer}>
-                                <MaterialIcons name="format-quote" size={32} color="rgba(249,115,22,0.6)" style={{ marginBottom: 16 }} />
-                                <Text style={styles.quoteText}>{result.quote}</Text>
-                            </View>
-                        </Animated.View>
+                            <Animated.View
+                                entering={FadeInDown.delay(800).duration(400)}
+                                style={styles.footerContainer}
+                            >
+                                <TouchableOpacity
+                                    style={styles.helpButton}
+                                    onPress={navigateToChat}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.helpButtonText}>Still feeling it? Talk to Universe</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.homeButton}
+                                    onPress={() => router.replace('/home')}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={styles.homeButtonText}>Go Home</Text>
+                                </TouchableOpacity>
+                            </Animated.View>
+                        </>
                     ) : (
                         <Animated.View
                             key={currentNodeId}
@@ -485,36 +516,6 @@ export default function FeelingLowScreen() {
                         </Animated.View>
                     )}
                 </ScrollView>
-
-                {result && (
-                    <Animated.View
-                        entering={FadeInDown.delay(800).duration(400)}
-                        style={styles.footerContainer}
-                    >
-                        <TouchableOpacity
-                            style={styles.helpButton}
-                            onPress={navigateToChat}
-                            activeOpacity={0.9}
-                        >
-                            <LinearGradient
-                                colors={['rgba(56, 189, 248, 0.2)', 'rgba(56, 189, 248, 0.05)']}
-                                style={styles.helpButtonGradient}
-                            >
-                                <Text style={styles.helpButtonText}>Still feeling it? Talk to Universe</Text>
-                                <Ionicons name="chatbubble-ellipses-outline" size={18} color="#38bdf8" />
-                            </LinearGradient>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.homeButton}
-                            onPress={() => router.replace('/home')}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.homeButtonText}>Go Home</Text>
-                            <Ionicons name="home-outline" size={16} color="rgba(255,255,255,0.6)" />
-                        </TouchableOpacity>
-                    </Animated.View>
-                )}
             </SafeAreaView>
         </View>
     );
@@ -592,7 +593,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
         justifyContent: 'center',
         paddingHorizontal: 24,
-        paddingBottom: 120,
+        paddingBottom: 60,
     },
 
     // Question & Options
@@ -650,94 +651,87 @@ const styles = StyleSheet.create({
         lineHeight: 24,
     },
 
-    // Result
+    // Result Redesign
     resultContainer: {
         alignItems: 'center',
         width: '100%',
-        paddingTop: 20,
+        paddingTop: 10,
+    },
+    resultHeader: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    resultOverline: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 10,
+        color: '#f97316',
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+        marginBottom: 12,
+        opacity: 0.8,
     },
     resultTitle: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 32,
+        fontFamily: 'CormorantGaramond_700Bold',
+        fontSize: 22,
         color: '#fff',
-        marginBottom: 32,
         textAlign: 'center',
+        lineHeight: 48,
     },
-    explanationContainer: {
+    masterplanCard: {
         width: '100%',
-        marginBottom: 32,
-        paddingHorizontal: 10,
+        padding: 24,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.06)',
+        marginBottom: 40,
     },
     explanationText: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 20, // Bigger
-        color: '#e2e8f0',
-        lineHeight: 34,
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.85)',
+        lineHeight: 28,
         textAlign: 'center',
     },
-    quoteContainer: {
+    finalQuoteSection: {
         width: '100%',
+        paddingHorizontal: 20,
         alignItems: 'center',
-        paddingVertical: 20,
-        marginBottom: 40,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(255,255,255,0.1)',
     },
     quoteText: {
-        fontFamily: 'Comfortaa_700BoldItalic',
-        fontSize: 20,
-        color: '#f97316',
+        fontFamily: 'CormorantGaramond_700Bold_Italic',
+        fontSize: 22,
+        color: '#fbbf24', // Amber/Gold
         textAlign: 'center',
-        lineHeight: 32,
+        lineHeight: 34,
         opacity: 0.9,
     },
 
     // Footer
     footerContainer: {
-        position: 'absolute',
-        bottom: 40,
-        left: 0,
-        right: 0,
-        paddingHorizontal: 24,
+        width: '100%',
+        marginTop: 20,
         alignItems: 'center',
-        gap: 16,
+        gap: 20,
     },
     helpButton: {
-        borderRadius: 30,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(56, 189, 248, 0.3)', // Cyan hint
-        width: '100%',
-        maxWidth: 300,
-        shadowColor: '#38bdf8',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 10,
-        elevation: 6,
-    },
-    helpButtonGradient: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
+        paddingVertical: 8,
     },
     helpButtonText: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 14,
-        color: '#e0f2fe',
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.3)',
+        textDecorationLine: 'underline',
     },
     homeButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
         paddingVertical: 12,
-        paddingHorizontal: 24,
+        paddingHorizontal: 30,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderRadius: 20,
     },
     homeButtonText: {
-        fontFamily: 'Comfortaa_600SemiBold',
+        fontFamily: 'Comfortaa_700Bold',
         fontSize: 14,
-        color: 'rgba(255,255,255,0.6)',
+        color: 'rgba(255,255,255,0.8)',
     }
 });

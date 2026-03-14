@@ -43,6 +43,9 @@ interface UserState {
     toggleManifestTask: (task: keyof ManifestTasks) => void;
     startChallenge: (duration: number) => Promise<void>;
     completeTaskDay: () => Promise<void>;
+    resetChallenge: () => Promise<void>;
+    clearProfile: () => void;
+    clearManifestTasks: () => void;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -132,7 +135,14 @@ export const useUserStore = create<UserState>((set, get) => ({
         const profile = get().profile;
         if (!profile) return;
 
-        const today = new Date().toISOString().split('T')[0];
+        const getLocalDateString = (date: Date = new Date()) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        const today = getLocalDateString();
         const isNewDay = profile.last_manifest_date !== today;
         
         const newCount = isNewDay ? 1 : profile.daily_message_count + 1;
@@ -196,7 +206,20 @@ export const useUserStore = create<UserState>((set, get) => ({
         let complete = profile.is_challenge_complete;
         let streak = profile.streak_count;
 
+        const getLocalDateString = (date: Date = new Date()) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         // Update streak
+        const todayStr = getLocalDateString();
+        if (profile.last_manifest_date === todayStr) {
+            // Already completed today, don't increment day or streak again
+            return;
+        }
+
         const today = new Date();
         const lastDate = profile.last_manifest_date ? new Date(profile.last_manifest_date) : null;
         
@@ -204,8 +227,8 @@ export const useUserStore = create<UserState>((set, get) => ({
             const diffInDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 3600 * 24));
             if (diffInDays === 1) {
                 streak += 1;
-            } else if (diffInDays > 1) {
-                streak = 1;
+            } else {
+                streak = 1; // Reset streak if missed a day or more
             }
         } else {
             streak = 1;
@@ -222,9 +245,50 @@ export const useUserStore = create<UserState>((set, get) => ({
             challenge_day: nextDay,
             is_challenge_complete: complete,
             streak_count: streak,
-            last_manifest_date: today.toISOString().split('T')[0]
+            last_manifest_date: getLocalDateString(today)
         });
 
+        set({
+            manifestTasks: {
+                tookAction: false,
+                watchedContent: false,
+                connectedWithPeople: false,
+            }
+        });
+    },
+
+    resetChallenge: async () => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        await get().updateProfile({
+            challenge_day: 1,
+            is_challenge_complete: false,
+            streak_count: 0,
+            last_manifest_date: null,
+        });
+
+        set({
+            manifestTasks: {
+                tookAction: false,
+                watchedContent: false,
+                connectedWithPeople: false,
+            }
+        });
+    },
+
+    clearProfile: () => {
+        set({
+            profile: null,
+            manifestTasks: {
+                tookAction: false,
+                watchedContent: false,
+                connectedWithPeople: false,
+            }
+        });
+    },
+
+    clearManifestTasks: () => {
         set({
             manifestTasks: {
                 tookAction: false,

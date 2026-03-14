@@ -16,6 +16,7 @@ import { BreathingBackground } from '../../components/BreathingBackground';
 // Import our step components
 import Step_1_Breath from './Step_1_Breath';
 import Step_2_Visualize from './Step_2_Visualize';
+import Step_3_Dream from './Step_3_Dream';
 import Step_4_Goals from './Step_4_Goals';
 import Step_5_Release from './Step_5_Release';
 
@@ -29,14 +30,15 @@ const ManiHome = () => {
     const stepConfig = {
         1: { title: 'Breathwork', component: Step_1_Breath },
         2: { title: 'Visualization', component: Step_2_Visualize },
-        3: { title: 'Daily Goals', component: Step_4_Goals },
-        4: { title: 'Final Release', component: Step_5_Release },
+        3: { title: 'Dream Script', component: Step_3_Dream },
+        4: { title: 'Daily Goals', component: Step_4_Goals },
+        5: { title: 'Final Release', component: Step_5_Release },
     };
 
     const currentConfig = stepConfig[currentStep as keyof typeof stepConfig];
 
     const handleStepComplete = () => {
-        if (currentStep < 4) {
+        if (currentStep < 5) {
             setCurrentStep(prev => prev + 1);
         } else {
             console.log('Journey Complete!');
@@ -85,7 +87,7 @@ const ManiHome = () => {
                     <View style={styles.titleContainer}>
                         <Text style={styles.headerTitle}>{currentConfig?.title || ''}</Text>
                         <View style={styles.progressContainer}>
-                            {[1, 2, 3, 4].map((s) => (
+                            {[1, 2, 3, 4, 5].map((s) => (
                                 <View
                                     key={s}
                                     style={[

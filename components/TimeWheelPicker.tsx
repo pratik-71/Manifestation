@@ -64,42 +64,13 @@ const isMatch = (a: string, b: string) => {
 };
 
 const WheelItem = React.memo(
-    ({ label, index, scrollY }: { label: string; index: number; scrollY: SharedValue<number> }) => {
-        const animatedStyle = useAnimatedStyle(() => {
-            const inputRange = [
-                (index - 2) * ITEM_HEIGHT,
-                (index - 1) * ITEM_HEIGHT,
-                index * ITEM_HEIGHT,
-                (index + 1) * ITEM_HEIGHT,
-                (index + 2) * ITEM_HEIGHT,
-            ];
-
-            const scale = interpolate(
-                scrollY.value,
-                inputRange,
-                [0.75, 0.9, 1.1, 0.9, 0.75],
-                Extrapolation.CLAMP
-            );
-
-            const opacity = interpolate(
-                scrollY.value,
-                inputRange,
-                [0.2, 0.4, 1, 0.4, 0.2],
-                Extrapolation.CLAMP
-            );
-
-            return {
-                transform: [{ scale }],
-                opacity,
-            };
-        });
-
+    ({ label, index }: { label: string; index: number; }) => {
         return (
-            <Animated.View style={[styles.itemContainer, animatedStyle]}>
+            <View style={styles.itemContainer}>
                 <Text style={[styles.itemText, label === 'AM' || label === 'PM' ? styles.ampmText : null]}>
                     {label}
                 </Text>
-            </Animated.View>
+            </View>
         );
     }
 );
@@ -175,8 +146,8 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
     });
 
     const renderItem: ListRenderItem<string> = useCallback(({ item, index }) => (
-        <WheelItem label={item} index={index} scrollY={scrollY} />
-    ), [scrollY]);
+        <WheelItem label={item} index={index} />
+    ), []);
 
     return (
         <View style={[styles.wheelContainer, style]}>

@@ -1,53 +1,72 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import {
-    ActivityIndicator,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
+import { getOfferings, purchasePackage } from '../../services/purchaseService';
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 const { width, height } = Dimensions.get('window');
 
-const PLANS = [
-    {
-        id: 'weekly',
-        name: 'Weekly Access',
-        price: '$2.99',
-        period: 'week',
-        sub: 'Perfect for a quick reset',
-        bestValue: false
-    },
-    {
-        id: 'yearly',
-        name: 'Yearly Mastery',
-        price: '$49.99',
-        period: 'year',
-        sub: 'Most popular choice (Save 65%)',
-        bestValue: true
-    },
-] as const;
-
 export default function Paywall() {
     const router = useRouter();
-    const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'yearly'>('yearly');
+    const [offerings, setOfferings] = React.useState<PurchasesPackage[]>([]);
+    const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handlePurchase = () => {
+    React.useEffect(() => {
+        const loadOfferings = async () => {
+            try {
+                const currentOffering = await getOfferings();
+                if (currentOffering && currentOffering.availablePackages) {
+                    setOfferings(currentOffering.availablePackages);
+                    // Select yearly by default if available, else first one
+                    const yearly = currentOffering.availablePackages.find(p => p.packageType === 'ANNUAL');
+                    setSelectedPackage(yearly || currentOffering.availablePackages[0]);
+                }
+            } catch (err) {
+                console.error("Failed to load offerings", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadOfferings();
+    }, []);
+
+    const handlePurchase = async () => {
+        if (!selectedPackage || isProcessing) return;
+        
         setIsProcessing(true);
-        setTimeout(() => {
+        try {
+            const result = await purchasePackage(selectedPackage);
+            if (result.success) {
+                router.replace('/home');
+            } else if (!result.cancelled) {
+                Alert.alert('Purchase Failed', result.error || 'Please try again later.');
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
             setIsProcessing(false);
-            router.replace('/guide');
-        }, 2000);
+        }
+    };
+
+    const handleRestore = async () => {
+        try {
+            const customerInfo = await Purchases.restorePurchases();
+            if (customerInfo.entitlements.active['pro']) {
+                Alert.alert('Success', 'Your purchase has been restored.', [
+                    { text: 'OK', onPress: () => router.replace('/home') }
+                ]);
+            } else {
+                Alert.alert('Restore Failed', 'No active subscriptions found for your account.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     return (
@@ -83,48 +102,57 @@ export default function Paywall() {
 
                     {/* Plans Grid */}
                     <View style={styles.plansContainer}>
-                        {PLANS.map((plan, index) => (
-                            <View key={plan.id} style={styles.cardWrapper}>
-                                {plan.bestValue && (
-                                    <Animated.View
-                                        entering={FadeInDown.delay(600).duration(400)}
-                                        style={styles.floatingBadge}
-                                    >
-                                        <Text style={styles.bestValueText}>BEST VALUE</Text>
-                                    </Animated.View>
-                                )}
-                                <Animated.View
-                                    entering={FadeInDown.delay(400 + index * 100).duration(600)}
-                                    style={{ width: '100%' }}
-                                >
-                                    <TouchableOpacity
-                                        activeOpacity={0.9}
-                                        onPress={() => setSelectedPlan(plan.id)}
-                                        style={[
-                                            styles.planCard,
-                                            selectedPlan === plan.id ? styles.planCardActive : styles.planCardInactive
-                                        ]}
-                                    >
-                                        <View style={styles.radioRow}>
-                                            <View style={[
-                                                styles.radioCircle,
-                                                { borderColor: selectedPlan === plan.id ? '#fb923c' : 'rgba(255,255,255,0.15)' }
-                                            ]}>
-                                                {selectedPlan === plan.id && <View style={styles.radioInner} />}
-                                            </View>
-                                            <View style={styles.planInfo}>
-                                                <Text style={styles.planName}>{plan.name}</Text>
-                                                <Text style={styles.planSubtext}>{plan.sub}</Text>
-                                            </View>
-                                            <View style={styles.priceContainer}>
-                                                <Text style={styles.planPrice}>{plan.price}</Text>
-                                                <Text style={styles.planPeriod}>/{plan.period}</Text>
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                </Animated.View>
-                            </View>
-                        ))}
+                        {isLoading ? (
+                            <ActivityIndicator size="large" color="#fb923c" />
+                        ) : offerings.length > 0 ? (
+                            offerings.map((pkg, index) => {
+                                const isBestValue = pkg.packageType === 'ANNUAL';
+                                return (
+                                    <View key={pkg.identifier} style={styles.cardWrapper}>
+                                        {isBestValue && (
+                                            <Animated.View
+                                                entering={FadeInDown.delay(600).duration(400)}
+                                                style={styles.floatingBadge}
+                                            >
+                                                <Text style={styles.bestValueText}>BEST VALUE</Text>
+                                            </Animated.View>
+                                        )}
+                                        <Animated.View
+                                            entering={FadeInDown.delay(400 + index * 100).duration(600)}
+                                            style={{ width: '100%' }}
+                                        >
+                                            <TouchableOpacity
+                                                activeOpacity={0.9}
+                                                onPress={() => setSelectedPackage(pkg)}
+                                                style={[
+                                                    styles.planCard,
+                                                    selectedPackage?.identifier === pkg.identifier ? styles.planCardActive : styles.planCardInactive
+                                                ]}
+                                            >
+                                                <View style={styles.radioRow}>
+                                                    <View style={[
+                                                        styles.radioCircle,
+                                                        { borderColor: selectedPackage?.identifier === pkg.identifier ? '#fb923c' : 'rgba(255,255,255,0.15)' }
+                                                    ]}>
+                                                        {selectedPackage?.identifier === pkg.identifier && <View style={styles.radioInner} />}
+                                                    </View>
+                                                    <View style={styles.planInfo}>
+                                                        <Text style={styles.planName}>{pkg.product.title}</Text>
+                                                        <Text style={styles.planSubtext}>{pkg.product.description}</Text>
+                                                    </View>
+                                                    <View style={styles.priceContainer}>
+                                                        <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
+                                                        <Text style={styles.planPeriod}>{pkg.packageType === 'ANNUAL' ? '/year' : '/period'}</Text>
+                                                    </View>
+                                                </View>
+                                            </TouchableOpacity>
+                                        </Animated.View>
+                                    </View>
+                                );
+                            })
+                        ) : (
+                            <Text className="text-white/50 text-center italic">No active offerings available.</Text>
+                        )}
                     </View>
 
                     {/* CTA Section */}
@@ -134,7 +162,7 @@ export default function Paywall() {
                         <TouchableOpacity
                             activeOpacity={0.8}
                             onPress={handlePurchase}
-                            disabled={isProcessing}
+                            disabled={isProcessing || !selectedPackage}
                             style={styles.subscribeButton}
                         >
                             {isProcessing ? (
@@ -144,7 +172,7 @@ export default function Paywall() {
                             )}
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.restoreBtn} onPress={() => { }}>
+                        <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore}>
                             <Text style={styles.restoreText}>Restore Purchase</Text>
                         </TouchableOpacity>
                     </View>
@@ -194,7 +222,6 @@ const styles = StyleSheet.create({
     logoImage: {
         width: 44,
         height: 44,
-        tintColor: '#fff',
         marginBottom: 6,
     },
     brandTitle: {

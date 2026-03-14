@@ -8,7 +8,6 @@ export interface OnboardingProfileData {
     sleepTime: string;
     manifestTime: string;
     goals: string[];        // Saved directly in profiles.goals (JSONB)
-    aiRoadmap: AiRoadmapItem[];
 }
 
 /**
@@ -16,7 +15,7 @@ export interface OnboardingProfileData {
  * Goals are stored as a JSONB array inside the profiles row — no extra table needed.
  */
 export const saveOnboardingProfile = async (data: OnboardingProfileData): Promise<void> => {
-    const { userId, username, wakeTime, sleepTime, manifestTime, goals, aiRoadmap } = data;
+    const { userId, username, wakeTime, sleepTime, manifestTime, goals } = data;
 
     const { error } = await supabase
         .from('profiles')
@@ -27,7 +26,6 @@ export const saveOnboardingProfile = async (data: OnboardingProfileData): Promis
             sleep_time: sleepTime,
             manifest_time: manifestTime,
             goals: goals,           // JSONB column — stored directly on the row
-            ai_roadmap: aiRoadmap,
             streak_count: 0,
             last_manifest_date: null,
             daily_message_count: 0,
@@ -56,4 +54,18 @@ export const hasCompletedOnboarding = async (userId: string): Promise<boolean> =
 
     if (error || !data) return false;
     return data.onboarding_complete === true;
+};
+export const updateGoals = async (userId: string, goals: string[]): Promise<void> => {
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            goals,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId);
+
+    if (error) {
+        console.error('Error updating goals:', error);
+        throw error;
+    }
 };

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { AppState, Dimensions, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated as RNAnimated, AppState, Dimensions, Easing, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
@@ -18,12 +18,56 @@ export default function Home() {
     const router = useRouter();
     const { profile, fetchProfile } = useUserStore();
     const [showNotifModal, setShowNotifModal] = useState(false);
+    const [displayedStreak, setDisplayedStreak] = useState(0);
+    const flamePulse = useRef(new RNAnimated.Value(1)).current;
+    const streakAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Animate streak count up when profile loads / streak changes
+    useEffect(() => {
+        const target = profile?.streak_count ?? 0;
+        if (target === 0) { setDisplayedStreak(0); return; }
+
+        let current = 0;
+        if (streakAnimRef.current) clearInterval(streakAnimRef.current);
+
+        const step = Math.ceil(target / 20); // reach target in ~20 steps
+        streakAnimRef.current = setInterval(() => {
+            current = Math.min(current + step, target);
+            setDisplayedStreak(current);
+            if (current >= target) {
+                clearInterval(streakAnimRef.current!);
+                streakAnimRef.current = null;
+            }
+        }, 40);
+
+        return () => {
+            if (streakAnimRef.current) clearInterval(streakAnimRef.current);
+        };
+    }, [profile?.streak_count]);
+
+    // Flame pulse animation when streak > 0
+    useEffect(() => {
+        if ((profile?.streak_count ?? 0) > 0) {
+            RNAnimated.loop(
+                RNAnimated.sequence([
+                    RNAnimated.timing(flamePulse, { toValue: 1.3, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                    RNAnimated.timing(flamePulse, { toValue: 1.0, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+                ])
+            ).start();
+        } else {
+            flamePulse.setValue(1);
+        }
+    }, [profile?.streak_count]);
 
     useEffect(() => {
         const init = async () => {
             const user = await getCurrentUser();
-            if (user && !profile) {
-                await fetchProfile(user.id);
+            if (user) {
+                if (!profile) {
+                    await fetchProfile(user.id);
+                }
+            } else {
+                router.replace('/onboarding/google_signin');
             }
         };
         init();
@@ -64,13 +108,19 @@ export default function Home() {
                     {/* Header: Logo & Streak */}
                     <View style={styles.header}>
                         <View style={styles.brandingContainer}>
-
+                            <Image
+                                source={require('../assets/logo.png')}
+                                style={styles.headerLogo}
+                                resizeMode="contain"
+                            />
                             <Text style={styles.appName}>Hello {profile?.username || 'Seeker'}</Text>
                         </View>
 
                         <TouchableOpacity style={styles.streakBadge} activeOpacity={0.7}>
-                            <Ionicons name="flame" size={18} color="#B45309" />
-                            <Text style={styles.streakText}>{profile?.streak_count || 0}</Text>
+                            <RNAnimated.View style={{ transform: [{ scale: flamePulse }] }}>
+                                <Ionicons name="flame" size={18} color={displayedStreak > 0 ? '#f97316' : '#B45309'} />
+                            </RNAnimated.View>
+                            <Text style={styles.streakText}>{displayedStreak}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -197,7 +247,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 12,
-        paddingTop: 60,
+        paddingTop: 20,
         paddingBottom: 30,
     },
     brandingContainer: {
@@ -223,9 +273,13 @@ const styles = StyleSheet.create({
     },
     appName: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 20,
+        fontSize: 18,
         color: '#f8fafc',
-        letterSpacing: -0.5,
+        letterSpacing: -0.2,
+    },
+    headerLogo: {
+        width: 32,
+        height: 32,
     },
     streakBadge: {
         flexDirection: 'row',

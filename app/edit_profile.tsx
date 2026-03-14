@@ -1,13 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    FlatList,
+    Dimensions,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
+    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -15,245 +18,198 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../components/TimeWheelPicker';
-import { getCurrentUser } from '../services/authService';
-import { scheduleManifestationNotifications } from '../services/notificationService';
-import { supabase } from '../services/supabase';
+import { requestNotificationPermissions, scheduleManifestationNotifications } from '../services/notificationService';
+import { useUserStore } from '../store/userStore';
+
+const { width } = Dimensions.get('window');
+
+const timeValueTo24h = (val: TimeValue): string => {
+    let hour = parseInt(val.hour, 10);
+    if (val.ampm === 'PM' && hour !== 12) hour += 12;
+    if (val.ampm === 'AM' && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, '0')}:${val.minute}`;
+};
+
+const h24ToTimeValue = (time: string): TimeValue => {
+    if (!time) return { hour: '07', minute: '00', ampm: 'AM' };
+    const [h, m] = time.split(':').map(Number);
+    let ampm: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
+    let hour = h % 12;
+    if (hour === 0) hour = 12;
+    return {
+        hour: hour.toString().padStart(2, '0'),
+        minute: m.toString().padStart(2, '0'),
+        ampm
+    };
+};
 
 export default function EditProfile() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
+    const { profile, updateProfile } = useUserStore();
+    
+    const [username, setUsername] = useState(profile?.username || '');
+    const [wakeTime, setWakeTime] = useState<TimeValue>(h24ToTimeValue(profile?.wake_time || '07:00'));
+    const [sleepTime, setSleepTime] = useState<TimeValue>(h24ToTimeValue(profile?.sleep_time || '23:00'));
+    const [manifestTime, setManifestTime] = useState<TimeValue>(h24ToTimeValue(profile?.manifest_time || '10:00'));
+    
     const [isSaving, setIsSaving] = useState(false);
 
-    // Rhythm State
-    const [wakeTime, setWakeTime] = useState<TimeValue>({ hour: '07', minute: '00', ampm: 'AM' });
-    const [sleepTime, setSleepTime] = useState<TimeValue>({ hour: '11', minute: '00', ampm: 'PM' });
-    const [manifestTime, setManifestTime] = useState<TimeValue>({ hour: '12', minute: '00', ampm: 'AM' });
-
-    // Goals State
-    const [goals, setGoals] = useState<string[]>([]);
-    const [newGoal, setNewGoal] = useState('');
-    const [username, setUsername] = useState('');
-
-    useEffect(() => {
-        fetchInitialData();
-    }, []);
-
-    const fetchInitialData = async () => {
-        setIsLoading(true);
-        try {
-            const user = await getCurrentUser();
-            if (!user) {
-                router.replace('/onboarding/google_signin');
-                return;
-            }
-
-            // Fetch Profile
-            const { data: profile, error: pError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (profile) {
-                setUsername(profile.username);
-                setWakeTime(parseTimeToValue(profile.wake_time));
-                setSleepTime(parseTimeToValue(profile.sleep_time));
-                setManifestTime(parseTimeToValue(profile.manifest_time));
-                setGoals(profile.goals || []);
-            }
-
-        } catch (error) {
-            console.error('Fetch error:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const parseTimeToValue = (timeStr: string): TimeValue => {
-        if (!timeStr) return { hour: '12', minute: '00', ampm: 'AM' };
-        const [h, m] = timeStr.split(':');
-        let hour = parseInt(h);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        hour = hour % 12;
-        if (hour === 0) hour = 12;
-        return {
-            hour: hour.toString().padStart(2, '0'),
-            minute: m.padStart(2, '0'),
-            ampm
-        };
-    };
-
-    const formatToTimeStr = (val: TimeValue) => {
-        let hour = parseInt(val.hour);
-        if (val.ampm === 'PM' && hour !== 12) hour += 12;
-        if (val.ampm === 'AM' && hour === 12) hour = 0;
-        return `${hour.toString().padStart(2, '0')}:${val.minute}:00`;
-    };
-
-    const handleAddGoal = () => {
-        if (!newGoal.trim()) return;
-        setGoals([...goals, newGoal.trim()]);
-        setNewGoal('');
-    };
-
-    const handleDeleteGoal = (index: number) => {
-        setGoals(goals.filter((_, i) => i !== index));
-    };
-
     const handleSave = async () => {
+        if (!username.trim()) {
+            Alert.alert("Error", "Username cannot be empty");
+            return;
+        }
+
         setIsSaving(true);
         try {
-            const user = await getCurrentUser();
-            if (!user) return;
-
-            const wakeTimeStr = formatToTimeStr(wakeTime);
-            const sleepTimeStr = formatToTimeStr(sleepTime);
-            const manifestTimeStr = formatToTimeStr(manifestTime);
-
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    username,
-                    wake_time: wakeTimeStr,
-                    sleep_time: sleepTimeStr,
-                    manifest_time: manifestTimeStr,
-                    goals: goals // Save as JSONB array directly
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
-
-            // Update Notifications
-            const parseTo24 = (val: TimeValue) => {
-                let hour = parseInt(val.hour);
-                if (val.ampm === 'PM' && hour !== 12) hour += 12;
-                if (val.ampm === 'AM' && hour === 12) hour = 0;
-                return { hour, minute: parseInt(val.minute) };
-            };
-
-            await scheduleManifestationNotifications({
-                wakeTime: parseTo24(wakeTime),
-                sleepTime: parseTo24(sleepTime),
-                manifestTime: parseTo24(manifestTime)
+            await updateProfile({
+                username: username.trim(),
+                wake_time: timeValueTo24h(wakeTime),
+                sleep_time: timeValueTo24h(sleepTime),
+                manifest_time: timeValueTo24h(manifestTime),
             });
 
-            Alert.alert("Success", "Your sacred journey has been updated.");
+            // Reschedule notifications to match the new times
+            try {
+                const hasPermission = await requestNotificationPermissions();
+                if (hasPermission) {
+                    const parseTime = (val: TimeValue) => {
+                        let hour = parseInt(val.hour);
+                        if (val.ampm === 'PM' && hour !== 12) hour += 12;
+                        if (val.ampm === 'AM' && hour === 12) hour = 0;
+                        return { hour, minute: parseInt(val.minute) };
+                    };
+
+                    await scheduleManifestationNotifications({
+                        wakeTime: parseTime(wakeTime),
+                        sleepTime: parseTime(sleepTime),
+                        manifestTime: parseTime(manifestTime),
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to reschedule notifications", err);
+            }
+
+            Alert.alert("Success", "Profile updated successfully!");
             router.back();
         } catch (error) {
-            console.error('Save error:', error);
-            Alert.alert("Error", "Failed to update cosmic settings.");
+            Alert.alert("Error", "Failed to update profile.");
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <BreathingBackground colors={['#0f172a', '#1e1b4b']} opacity={1} />
-                <ActivityIndicator size="large" color="#fb923c" />
-            </View>
-        );
-    }
-
     return (
-        <View style={styles.container}>
+        <View style={styles.screen}>
             <StatusBar barStyle="light-content" />
-            <BreathingBackground colors={['#0f172a', '#1e1b4b']} opacity={0.8} />
 
-            <SafeAreaView style={styles.safeArea}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            <BreathingBackground
+                colors={['#060114', '#160a2b', '#030014']}
+                opacity={0.9}
+            />
+
+            <View style={styles.glowOrbTop} />
+            <View style={styles.glowOrbBottom} />
+
+            <SafeAreaView style={styles.safe}>
+                <Animated.View entering={FadeInUp.duration(600)} style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                        <Ionicons name="chevron-back" size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>YOUR IDENTITY</Text>
+                    <View style={{ width: 44 }} />
+                </Animated.View>
+
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
                     style={{ flex: 1 }}
                 >
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                            <Ionicons name="close" size={24} color="#fff" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Edit Profile</Text>
-                        <TouchableOpacity onPress={handleSave} disabled={isSaving}>
-                            {isSaving ? (
-                                <ActivityIndicator color="#fb923c" size="small" />
-                            ) : (
-                                <Text style={styles.saveText}>Done</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                        data={[{ id: 'form' }]}
-                        keyExtractor={item => item.id}
-                        renderItem={() => (
-                            <View>
-                                {/* Name Section */}
-                                <View style={styles.section}>
-                                    <Text style={styles.sectionLabel}>YOUR NAME</Text>
-                                    <TextInput
-                                        style={styles.input}
-                                        value={username}
-                                        onChangeText={setUsername}
-                                        placeholder="What should we call you?"
-                                        placeholderTextColor="rgba(255,255,255,0.2)"
-                                    />
-                                </View>
-
-                                {/* Goals Section */}
-                                <View style={styles.section}>
-                                    <Text style={styles.sectionLabel}>YOUR GOALS</Text>
-                                    <View style={styles.glassCard}>
-                                        {goals.map((goal, index) => (
-                                            <View key={index} style={[styles.goalItem, index === goals.length - 1 && { borderBottomWidth: 0 }]}>
-                                                <Text style={styles.goalText}>{goal}</Text>
-                                                <TouchableOpacity onPress={() => handleDeleteGoal(index)} style={styles.deleteBtn}>
-                                                    <Ionicons name="trash-outline" size={18} color="rgba(248, 113, 113, 0.6)" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        ))}
-                                        <View style={styles.addGoalRow}>
-                                            <TextInput
-                                                style={styles.addGoalInput}
-                                                value={newGoal}
-                                                onChangeText={setNewGoal}
-                                                placeholder="Add a new goal..."
-                                                placeholderTextColor="rgba(255,255,255,0.2)"
-                                                onSubmitEditing={handleAddGoal}
-                                            />
-                                            <TouchableOpacity style={styles.addGoalButton} onPress={handleAddGoal}>
-                                                <Ionicons name="add" size={20} color="#fff" />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Rhythm Section */}
-                                <View style={styles.section}>
-                                    <Text style={styles.sectionLabel}>SACRED RHYTHM</Text>
-
-                                    <View style={styles.timeItem}>
-                                        <Text style={styles.timeLabel}>Wake Up</Text>
-                                        <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
-                                    </View>
-
-                                    <View style={styles.timeItem}>
-                                        <Text style={styles.timeLabel}>Deep Sleep</Text>
-                                        <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
-                                    </View>
-
-                                    <View style={styles.timeItem}>
-                                        <Text style={styles.timeLabel}>Manifestation Hour</Text>
-                                        <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
-                                    </View>
-                                </View>
-
-                                <View style={{ height: 100 }} />
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                        
+                        {/* Username Section */}
+                        <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="person-circle-outline" size={16} color="#d946ef" />
+                                <Text style={styles.sectionLabel}>USERNAME</Text>
                             </View>
-                        )}
-                        contentContainerStyle={styles.scrollContent}
-                        showsVerticalScrollIndicator={false}
-                        keyboardShouldPersistTaps="handled"
-                    />
+                            <BlurView intensity={30} tint="dark" style={styles.inputCard}>
+                                <LinearGradient
+                                    colors={['rgba(217, 70, 239, 0.1)', 'rgba(0,0,0,0)']}
+                                    style={StyleSheet.absoluteFillObject}
+                                />
+                                <TextInput
+                                    style={styles.input}
+                                    value={username}
+                                    onChangeText={setUsername}
+                                    placeholder="Your username"
+                                    placeholderTextColor="rgba(255,255,255,0.2)"
+                                    maxLength={15}
+                                />
+                            </BlurView>
+                        </Animated.View>
+
+                        {/* Wake Time Section */}
+                        <Animated.View entering={FadeInDown.delay(300).duration(800)} style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="sunny-outline" size={16} color="#f59e0b" />
+                                <Text style={styles.sectionLabel}>WAKE UP Time</Text>
+                            </View>
+                            <View style={styles.pickerContainer}>
+                                <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
+                            </View>
+                        </Animated.View>
+
+                        {/* Sleep Time Section */}
+                        <Animated.View entering={FadeInDown.delay(400).duration(800)} style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="moon-outline" size={16} color="#8b5cf6" />
+                                <Text style={styles.sectionLabel}>Sleep Time</Text>
+                            </View>
+                            <View style={styles.pickerContainer}>
+                                <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
+                            </View>
+                        </Animated.View>
+
+                        {/* Manifestation Time Section */}
+                        <Animated.View entering={FadeInDown.delay(500).duration(800)} style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="sparkles-outline" size={16} color="#14b8a6" />
+                                <Text style={styles.sectionLabel}>MANIFESTATION WINDOW</Text>
+                            </View>
+                            <View style={styles.pickerContainer}>
+                                <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
+                            </View>
+                        </Animated.View>
+
+                        <View style={{ height: 40 }} />
+
+                        <Animated.View entering={FadeInDown.delay(600).duration(800)}>
+                            <TouchableOpacity 
+                                style={styles.saveButton} 
+                                onPress={handleSave}
+                                disabled={isSaving}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient
+                                    colors={['#8b5cf6', '#d946ef', '#f97316']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.saveGradient}
+                                >
+                                    {isSaving ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.saveText}>UPDATE DESTINY</Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </Animated.View>
+
+                        <View style={{ height: 100 }} />
+                    </ScrollView>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </View>
@@ -261,121 +217,125 @@ export default function EditProfile() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#0f172a' },
-    loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    safeArea: { flex: 1 },
+    screen: { flex: 1, backgroundColor: '#02010A' },
+    safe: { flex: 1 },
+    glowOrbTop: {
+        position: 'absolute',
+        top: -100,
+        right: -50,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: '#8b5cf6',
+        opacity: 0.15,
+        filter: 'blur(60px)',
+    },
+    glowOrbBottom: {
+        position: 'absolute',
+        bottom: -50,
+        left: -100,
+        width: 300,
+        height: 300,
+        borderRadius: 150,
+        backgroundColor: '#d946ef',
+        opacity: 0.1,
+        filter: 'blur(80px)',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 35,
-        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.03)',
     },
     backButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255,255,255,0.05)',
-        justifyContent: 'center',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.06)',
         alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
     },
     headerTitle: {
-        color: '#fff',
-        fontSize: 16,
         fontFamily: 'Comfortaa_700Bold',
-        letterSpacing: 1,
-    },
-    saveText: {
-        color: '#fb923c',
-        fontSize: 15,
-        fontFamily: 'Comfortaa_700Bold'
+        fontSize: 13,
+        color: '#fff',
+        letterSpacing: 4,
+        textTransform: 'uppercase',
     },
     scrollContent: {
         paddingHorizontal: 20,
-        paddingTop: 10
+        paddingTop: 30,
     },
     section: {
         marginBottom: 32,
     },
-    sectionLabel: {
-        color: 'rgba(255,255,255,0.3)',
-        fontSize: 10,
-        fontFamily: 'Comfortaa_700Bold',
-        letterSpacing: 2,
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: 12,
         marginLeft: 4,
+        gap: 8,
+    },
+    sectionLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.6)',
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+    },
+    inputCard: {
+        borderRadius: 20,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'rgba(20, 10, 40, 0.4)',
     },
     input: {
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        borderRadius: 16,
-        padding: 18,
-        color: '#fff',
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        fontSize: 18,
+        color: '#fff',
+        paddingHorizontal: 20,
+        paddingVertical: 18,
     },
-    glassCard: {
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 20,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+    pickerContainer: {
+        borderRadius: 24,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(10, 5, 25, 0.6)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
     },
-    goalItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.03)',
+    saveButton: {
+        borderRadius: 30,
+        overflow: 'hidden',
+        height: 56,
+        shadowColor: '#d946ef',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 15,
+        elevation: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    goalText: {
-        color: 'rgba(255,255,255,0.9)',
-        fontFamily: 'Comfortaa_500Medium',
-        fontSize: 14,
+    saveGradient: {
         flex: 1,
-        marginRight: 12
-    },
-    deleteBtn: {
-        padding: 4,
-    },
-    addGoalRow: {
-        flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 8,
-        backgroundColor: 'rgba(255,255,255,0.02)',
-        borderRadius: 12,
-        paddingLeft: 12,
-        paddingRight: 6,
-        paddingVertical: 4,
-    },
-    addGoalInput: {
-        flex: 1,
-        color: '#fff',
-        fontFamily: 'Comfortaa_400Regular',
-        fontSize: 14,
-        paddingVertical: 8,
-    },
-    addGoalButton: {
-        width: 30,
-        height: 30,
-        borderRadius: 10,
-        backgroundColor: 'rgba(251, 146, 60, 0.2)',
         justifyContent: 'center',
-        alignItems: 'center',
     },
-    timeItem: {
-        marginBottom: 24,
-    },
-    timeLabel: {
+    saveText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 14,
         color: '#fff',
-        fontSize: 13,
-        fontFamily: 'Comfortaa_600SemiBold',
-        marginBottom: 12,
-        marginLeft: 4,
-        opacity: 0.8,
+        letterSpacing: 3,
     },
 });

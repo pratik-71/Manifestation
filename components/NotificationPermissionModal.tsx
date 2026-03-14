@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import React from 'react';
-import { Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { requestNotificationPermissions } from '../services/notificationService';
 
 interface NotificationPermissionModalProps {
@@ -32,7 +32,11 @@ export const NotificationPermissionModal: React.FC<NotificationPermissionModalPr
 
                 <View style={styles.modalView}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="notifications" size={40} color="#fb923c" />
+                        <Image
+                            source={require('../assets/logo.png')}
+                            style={styles.logoImage}
+                            resizeMode="contain"
+                        />
                     </View>
 
                     <Text style={styles.modalTitle}>Enable Ritual Reminders</Text>
@@ -88,9 +92,12 @@ const styles = StyleSheet.create({
         height: 80,
         borderRadius: 40,
         backgroundColor: 'rgba(251, 146, 60, 0.1)',
-        justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 20,
+    },
+    logoImage: {
+        width: 44,
+        height: 44,
     },
     modalTitle: {
         fontFamily: 'Comfortaa_700Bold',

@@ -11,7 +11,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    Image
 } from 'react-native';
 import Animated, {
     FadeIn,
@@ -261,7 +262,7 @@ export default function UniverseChat() {
                     <Ionicons name="chevron-back" size={24} color={AppColors.manifestation.accent} />
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
-                    <Animated.View style={[styles.titleGlow, animatedPulseStyle]} />
+                   
                     <Text style={styles.headerTitle}>CHAT</Text>
                 </View>
                 <View style={{ width: 40 }} />

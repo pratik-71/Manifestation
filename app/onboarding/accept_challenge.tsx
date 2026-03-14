@@ -14,6 +14,10 @@ import {
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import SignatureScreen, { SignatureViewRef } from 'react-native-signature-canvas';
 import { BreathingBackground } from '../../components/BreathingBackground';
+import { getCurrentUser } from '../../services/authService';
+import { saveOnboardingProfile } from '../../services/profileService';
+import { useOnboardingStore } from '../../store/onboardingStore';
+import { useUserStore } from '../../store/userStore';
 
 const { width } = Dimensions.get('window');
 
@@ -23,12 +27,52 @@ export default function AcceptChallenge() {
     const [hasSigned, setHasSigned] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    const handleSignature = (signature: string) => {
+    const ob_username = useOnboardingStore((s) => s.username);
+    const ob_wakeTime = useOnboardingStore((s) => s.wakeTime);
+    const ob_sleepTime = useOnboardingStore((s) => s.sleepTime);
+    const ob_manifestTime = useOnboardingStore((s) => s.manifestTime);
+    const ob_goals = useOnboardingStore((s) => s.goals);
+    const ob_aiRoadmap = useOnboardingStore((s) => s.aiRoadmap);
+    const resetOnboarding = useOnboardingStore((s) => s.reset);
+    const fetchProfile = useUserStore((s) => s.fetchProfile);
+
+    const handleSignature = async (signature: string) => {
         if (isProcessing) return;
         setIsProcessing(true);
         console.log("Signature captured");
-        router.push('/onboarding/google_signin');
-        setTimeout(() => setIsProcessing(false), 1000);
+        
+        try {
+            const user = await getCurrentUser();
+            if (!user) {
+                console.error("No user found during commitment");
+                router.replace('/onboarding/google_signin');
+                return;
+            }
+
+            // Save the complete onboarding profile
+            await saveOnboardingProfile({
+                userId: user.id,
+                username: ob_username || user.email?.split('@')[0] || 'Seeker',
+                wakeTime: ob_wakeTime || '07:00',
+                sleepTime: ob_sleepTime || '23:00',
+                manifestTime: ob_manifestTime || '10:00',
+                goals: ob_goals,
+            });
+
+            console.log('✅ Final onboarding profile saved to Supabase');
+            
+            // Re-fetch profile in our global userStore to populate home/manifestation hub
+            await fetchProfile(user.id);
+            
+            resetOnboarding();
+            router.replace('/home');
+        } catch (error) {
+            console.error("Failed to finish onboarding:", error);
+            // Even if save fails, try to go home or show error
+            router.replace('/home');
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleEmpty = () => {
