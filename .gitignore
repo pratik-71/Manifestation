@@ -41,3 +41,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Security Tools & Secrets
+tools/apple_secret/
+.env

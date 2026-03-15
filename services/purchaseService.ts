@@ -4,11 +4,11 @@ import Purchases, { LOG_LEVEL, PurchasesOffering } from 'react-native-purchases'
 // ⚠️ REVENUECAT CONFIGURATION
 // Replace these with your actual keys from the RevenueCat dashboard
 const REVENUECAT_API_KEY = {
-    apple: 'goog_EXAMPLE_APPLE_KEY', // Apple App Store
+    apple: 'appl_NOjdStGqfTaubQSbdVZeZNBWIuQ', // Apple App Store
     google: 'goog_EXAMPLE_GOOGLE_KEY', // Google Play Store
 };
 
-const ENTITLEMENT_ID = 'pro'; // The entitlement ID defined in RevenueCat
+const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
 
 export const initializePurchases = async (userId?: string) => {
     try {

@@ -184,7 +184,7 @@ const StepThree = memo(({ manifestTime, onChangeManifest }: StepThreeProps) => {
                 </Animated.View>
             ) : (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={[styles.helperText, { fontSize: 16 }]}>Aligning with the universe...</Text>
+                    <Text style={[styles.helperText, { fontSize: 16 }]}>Setting up your profile...</Text>
                 </View>
             )}
         </View>

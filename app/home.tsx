@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated as RNAnimated, AppState, Dimensions, Easing, Image, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated as RNAnimated, AppState, Dimensions, Easing, Image, Linking, PermissionsAndroid, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system/legacy';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
@@ -12,12 +14,33 @@ import { checkNotificationStatus } from '../services/notificationService';
 import { getCurrentUser } from '../services/authService';
 import { useUserStore } from '../store/userStore';
 
-const { width } = Dimensions.get('window');
 
 export default function Home() {
     const router = useRouter();
     const { profile, fetchProfile } = useUserStore();
     const [showNotifModal, setShowNotifModal] = useState(false);
+
+    const handleWatchFuture = async () => {
+        try {
+            // Updated to use internal app storage
+            const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
+            const fileInfo = await FileSystem.getInfoAsync(videoPath);
+
+            if (!fileInfo.exists) {
+                Alert.alert("No Messages Yet", "You haven't recorded any digital records yet. You can do this in your Profile.");
+                return;
+            }
+
+            // Open the video directly from app storage (No permissions needed)
+            Linking.openURL(videoPath).catch(err => {
+                console.error("Failed to open video:", err);
+                Alert.alert("Error", "Could not open the video player.");
+            });
+        } catch (error) {
+            console.error("Watch Future Error:", error);
+            Alert.alert("Error", "Something went wrong while trying to play your message.");
+        }
+    };
     const [displayedStreak, setDisplayedStreak] = useState(0);
     const flamePulse = useRef(new RNAnimated.Value(1)).current;
     const streakAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -131,7 +154,7 @@ export default function Home() {
                         {/* Hero Section: Quote of the Day */}
                         <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroCard}>
                             <Text style={styles.heroQuote}>
-                                The universe doesn't give you what you want. It gives you who you are so live like you already have it.
+                                You don't get what you want, you get who you are. Live as if you already have it.
                             </Text>
                         </Animated.View>
 
@@ -162,7 +185,7 @@ export default function Home() {
                                         <View style={styles.iconCircle}>
                                             <Ionicons name="planet" size={22} color="#B45309" />
                                         </View>
-                                        <Text style={styles.cardTitle}>Universe</Text>
+                                        <Text style={styles.cardTitle}>Guide</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
                             </View>
@@ -198,15 +221,33 @@ export default function Home() {
                             </View>
                         </View>
 
-                        {/* Explore Guide */}
+                        {/* Explore Links */}
                         <Animated.View entering={FadeIn.delay(1000)} style={styles.exploreContainer}>
                             <TouchableOpacity
                                 onPress={() => router.push('/guide' as any)}
                                 style={styles.exploreButton}
                             >
                                 <Ionicons name="book-outline" size={18} color="#fb923c" style={{ marginRight: 8 }} />
-                                <Text style={styles.exploreText}>View Cosmic Guide</Text>
-                                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
+                                <Text style={styles.exploreText}>View Guide</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.exploreDivider} />
+
+                            <TouchableOpacity
+                                onPress={handleWatchFuture}
+                                style={styles.exploreButton}
+                            >
+                                <Ionicons name="play-circle-outline" size={20} color="#fb923c" style={{ marginRight: 8 }} />
+                                <Text style={styles.exploreText}>Watch Future</Text>
+                            </TouchableOpacity>
+                            <View style={styles.exploreDivider} />
+
+                            <TouchableOpacity
+                                onPress={() => router.push('/legal/features' as any)}
+                                style={styles.exploreButton}
+                            >
+                                <Ionicons name="sparkles-outline" size={18} color="#fb923c" style={{ marginRight: 8 }} />
+                                <Text style={styles.exploreText}>Features</Text>
                             </TouchableOpacity>
                         </Animated.View>
 
@@ -395,14 +436,22 @@ const styles = StyleSheet.create({
 
     // Explore Section
     exploreContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         marginTop: 10,
+        gap: 12,
     },
     exploreButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
         padding: 10,
+    },
+    exploreDivider: {
+        width: 1,
+        height: 14,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        marginHorizontal: 4,
     },
     exploreText: {
         fontFamily: 'Comfortaa_500Medium',

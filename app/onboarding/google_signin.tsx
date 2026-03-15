@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
-import { getCurrentUser, signInWithGoogle } from '../../services/authService';
+import { getCurrentUser, signInWithGoogle, signInWithApple } from '../../services/authService';
 import { hasCompletedOnboarding, saveOnboardingProfile } from '../../services/profileService';
 import { identifyUser } from '../../services/purchaseService';
 import { useOnboardingStore } from '../../store/onboardingStore';
@@ -68,8 +68,30 @@ export default function GoogleSignIn() {
         }
     };
 
-    const handleAppleSignIn = () => {
-        Alert.alert("Apple Sign In", "This feature is coming soon to your iOS experience.");
+    const handleAppleSignIn = async () => {
+        setIsLoading(true);
+        try {
+            const result = await signInWithApple();
+            const userId = result?.data?.user?.id;
+
+            if (userId) {
+                await identifyUser(userId);
+                
+                const complete = await hasCompletedOnboarding(userId);
+                if (complete) {
+                    router.replace('/home');
+                    return;
+                }
+                router.replace('/onboarding/questionnaire');
+            }
+        } catch (error: any) {
+            console.error('Apple login failed', error);
+            if (error.code !== 'ERR_CANCELED') {
+                Alert.alert("Connection Failed", "The Universe couldn't verify your Apple ID. Please try again.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const openLink = (title: string) => {
@@ -171,9 +193,9 @@ export default function GoogleSignIn() {
                         <View style={styles.footerContainer}>
                             <Text style={styles.footerNote}>
                                 By continuing, you agree to our{' '}
-                                <Text style={styles.linkText} onPress={() => openLink("Terms of Service")}>Terms of Service</Text>
+                                <Text style={styles.linkText} onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}>Terms of Service</Text>
                                 {' and '}
-                                <Text style={styles.linkText} onPress={() => openLink("Privacy Policy")}>Privacy Policy</Text>.
+                                <Text style={styles.linkText} onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/privacy-policy')}>Privacy Policy</Text>.
                             </Text>
                         </View>
                     </View>
@@ -184,7 +206,7 @@ export default function GoogleSignIn() {
             {isLoading && (
                 <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color="#f59e0b" />
-                    <Text style={styles.loadingText}>Connecting to Universe...</Text>
+                    <Text style={styles.loadingText}>Signing you in...</Text>
                 </View>
             )}
         </View >

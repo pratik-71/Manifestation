@@ -2,6 +2,8 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert } from 'react-native';
 import { supabase } from './supabase';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 
 // Complete the auth session if we're in a web environment or redirecting
 WebBrowser.maybeCompleteAuthSession();
@@ -48,6 +50,37 @@ export const signInWithGoogle = async (): Promise<any> => {
         return null;
     } catch (error: any) {
         console.error('Web-based Sign-in Error:', error);
+        throw error;
+    }
+};
+
+export const signInWithApple = async (): Promise<any> => {
+    try {
+        const rawNonce = await Crypto.getRandomBytesAsync(32);
+        const nonce = Array.from(rawNonce).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+        const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+
+        const appleCredential = await AppleAuthentication.signInAsync({
+            requestedScopes: [
+                AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                AppleAuthentication.AppleAuthenticationScope.EMAIL,
+            ],
+            nonce: hashedNonce,
+        });
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+            provider: 'apple',
+            token: appleCredential.identityToken!,
+            nonce,
+        });
+
+        if (error) throw error;
+        return { data };
+    } catch (error: any) {
+        if (error.code === 'ERR_CANCELED') {
+            return null;
+        }
+        console.error('Apple Sign-in Error:', error);
         throw error;
     }
 };

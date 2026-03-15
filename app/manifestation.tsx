@@ -265,7 +265,7 @@ export default function ManifestHub() {
                                 <View style={styles.completeContent}>
                                     <Ionicons name="medal-outline" size={40} color="#B45309" style={{ marginBottom: 16 }} />
                                     <Text style={styles.completeTitle}>Challenge Complete! 🏆</Text>
-                                    <Text style={styles.completeSubtitle}>You've fully completed your {challengeDuration}-day sprint. The universe saw your commitment.</Text>
+                                    <Text style={styles.completeSubtitle}>You've fully completed your {challengeDuration}-day sprint. Great job on staying committed!</Text>
 
                                     <TouchableOpacity
                                         activeOpacity={0.8}
@@ -291,7 +291,7 @@ export default function ManifestHub() {
                                     <Text style={styles.failEmoji}>💔</Text>
                                     <Text style={styles.failTitle}>You Broke the Chain</Text>
                                     <Text style={styles.failSubtitle}>
-                                        You made it to Day {completedDays + 1} — that's real progress, {username}. The universe doesn't judge, it just waits. Champions fall and rise. Your comeback starts now.
+                                        You made it to Day {completedDays + 1} — that's real progress, {username}. Every day is a new chance to succeed. Champions fall and rise. Your comeback starts now.
                                     </Text>
 
                                     <View style={styles.failStatsRow}>

@@ -7,18 +7,24 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
     SafeAreaView,
     ScrollView,
     StatusBar,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
+    Linking,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { deleteAccount, getCurrentUser, signOut } from '../services/authService';
+import { supabase } from '../services/supabase';
 import { useUserStore } from '../store/userStore';
 
 const { width } = Dimensions.get('window');
@@ -28,6 +34,41 @@ export default function Profile() {
     const { profile, fetchProfile } = useUserStore();
     const [email, setEmail] = useState<string>('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
+    const [feedbackName, setFeedbackName] = useState('');
+    const [feedbackTitle, setFeedbackTitle] = useState('');
+    const [feedbackMessage, setFeedbackMessage] = useState('');
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
+    const submitFeedback = async () => {
+        if (!feedbackName.trim() || !feedbackTitle.trim() || !feedbackMessage.trim()) {
+            Alert.alert("Missing Fields", "Please complete all fields to submit your feedback.");
+            return;
+        }
+        setIsSubmittingFeedback(true);
+        try {
+            const user = await getCurrentUser();
+            if(!user) throw new Error("Not logged in");
+            const { error } = await supabase.from('feedback').insert({
+                user_id: user.id,
+                name: feedbackName.trim(),
+                title: feedbackTitle.trim(),
+                message: feedbackMessage.trim(),
+            });
+            if (error) throw error;
+            Alert.alert("Feedback Received", "Thank you for sharing your thoughts with us!");
+            setIsFeedbackVisible(false);
+            setFeedbackName('');
+            setFeedbackTitle('');
+            setFeedbackMessage('');
+        } catch(e) {
+            console.error(e);
+            Alert.alert("Error", "Could not submit feedback at this time.");
+        } finally {
+            setIsSubmittingFeedback(false);
+        }
+    };
 
     useEffect(() => {
         const init = async () => {
@@ -150,19 +191,34 @@ export default function Profile() {
                                 onPress={() => router.push('/edit_profile')}
                             />
                             <MenuRow
+                                icon="videocam-outline"
+                                label="Talk to Future Self"
+                                onPress={() => router.push('/record_future' as any)}
+                            />
+                            <MenuRow
                                 icon="card-outline"
                                 label="Subscription"
-                                onPress={() => { }}
+                                onPress={() => router.push('/onboarding/paywall')}
                             />
                             <MenuRow
                                 icon="chatbubble-outline"
                                 label="Feedback"
-                                onPress={() => { }}
+                                onPress={() => setIsFeedbackVisible(true)}
                             />
                             <MenuRow
-                                icon="information-circle-outline"
-                                label="About"
-                                onPress={() => Alert.alert("About Astral", "Your companion in the journey of manifestation.\nVersion 1.0.4")}
+                                icon="star-outline"
+                                label="App Features"
+                                onPress={() => router.push('/legal/features' as any)}
+                            />
+                            <MenuRow
+                                icon="shield-checkmark-outline"
+                                label="Privacy Policy"
+                                onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/privacy-policy')}
+                            />
+                            <MenuRow
+                                icon="document-text-outline"
+                                label="Terms of Service"
+                                onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}
                                 showBorder={true}
                             />
                             <MenuRow
@@ -195,6 +251,79 @@ export default function Profile() {
                     <ActivityIndicator color="#fff" size="large" />
                 </View>
             )}
+
+            {/* Feedback Modal */}
+            <Modal visible={isFeedbackVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setIsFeedbackVisible(false)}>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContainer}>
+                    <StatusBar barStyle="light-content" />
+                    <BreathingBackground colors={['#0f172a', '#1c1917', '#451a03']} opacity={0.8} />
+                    <SafeAreaView style={styles.modalSafe}>
+                        <View style={styles.modalHeader}>
+                            <TouchableOpacity onPress={() => setIsFeedbackVisible(false)} style={styles.modalBackButton}>
+                                <Ionicons name="close" size={24} color="#fff" />
+                            </TouchableOpacity>
+                            <Text style={styles.modalHeaderTitle}>FEEDBACK</Text>
+                            <View style={{ width: 40 }} />
+                        </View>
+                        <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+                            <Text style={styles.modalDescription}>We value your thoughts. Let us know how we can improve your manifestation journey.</Text>
+                            
+                            <Text style={styles.inputLabel}>NAME</Text>
+                            <BlurView intensity={20} tint="dark" style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="Your Name"
+                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                    value={feedbackName}
+                                    onChangeText={setFeedbackName}
+                                />
+                            </BlurView>
+                            
+                            <Text style={styles.inputLabel}>TITLE</Text>
+                            <BlurView intensity={20} tint="dark" style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.modalInput}
+                                    placeholder="Brief summary"
+                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                    value={feedbackTitle}
+                                    onChangeText={setFeedbackTitle}
+                                />
+                            </BlurView>
+
+                            <Text style={styles.inputLabel}>MESSAGE</Text>
+                            <BlurView intensity={20} tint="dark" style={[styles.inputWrapper, { height: 160 }]}>
+                                <TextInput
+                                    style={[styles.modalInput, styles.modalTextArea]}
+                                    placeholder="Tell us everything..."
+                                    placeholderTextColor="rgba(255,255,255,0.3)"
+                                    multiline
+                                    value={feedbackMessage}
+                                    onChangeText={setFeedbackMessage}
+                                    textAlignVertical="top"
+                                />
+                            </BlurView>
+
+                        </ScrollView>
+
+                        <View style={styles.floatingButtonContainer}>
+                            <TouchableOpacity 
+                                style={styles.submitButton} 
+                                onPress={submitFeedback}
+                                disabled={isSubmittingFeedback}
+                                activeOpacity={0.8}
+                            >
+                                <LinearGradient colors={['#8b5cf6', '#d946ef', '#f97316']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.submitGradient}>
+                                    {isSubmittingFeedback ? (
+                                        <ActivityIndicator color="#fff" />
+                                    ) : (
+                                        <Text style={styles.submitText}>SEND FEEDBACK</Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </KeyboardAvoidingView>
+            </Modal>
         </View>
     );
 }
@@ -338,5 +467,97 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
+    },
+    modalContainer: { flex: 1, backgroundColor: '#0f172a' },
+    modalSafe: { flex: 1 },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: Platform.OS === 'ios' ? 50 : 30,
+        paddingBottom: 16,
+    },
+    modalBackButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalHeaderTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.6)',
+        letterSpacing: 3,
+        textTransform: 'uppercase',
+    },
+    modalContent: {
+        paddingHorizontal: 24,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    modalDescription: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.7)',
+        marginBottom: 32,
+        lineHeight: 22,
+        textAlign: 'center',
+    },
+    inputLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 2,
+        marginBottom: 8,
+        marginLeft: 4,
+    },
+    inputWrapper: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        marginBottom: 20,
+    },
+    modalInput: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 16,
+        color: '#fff',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    modalTextArea: {
+        height: '100%',
+        paddingTop: 16,
+    },
+    floatingButtonContainer: {
+        position: 'absolute',
+        bottom: Platform.OS === 'ios' ? 40 : 24,
+        left: 24,
+        right: 24,
+    },
+    submitButton: {
+        borderRadius: 30,
+        overflow: 'hidden',
+        height: 56,
+        shadowColor: '#d946ef',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 8,
+    },
+    submitGradient: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    submitText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 14,
+        color: '#fff',
+        letterSpacing: 2,
     },
 });

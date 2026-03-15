@@ -34,7 +34,7 @@ import { useUserStore } from '../store/userStore';
 interface Message {
     id: string;
     text: string;
-    sender: 'user' | 'universe';
+    sender: 'user' | 'assistant';
     timestamp: Date;
     isTyping?: boolean;
 }
@@ -90,13 +90,13 @@ export default function UniverseChat() {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
-            text: 'Hello! I am here to help you manifest your goals. What would you like to focus on today?',
-            sender: 'universe',
+            text: 'Hello! I am here to help you work on your goals. What would you like to focus on today?',
+            sender: 'assistant',
             timestamp: new Date(),
         },
     ]);
     const [inputText, setInputText] = useState('');
-    const [isUniverseTyping, setIsUniverseTyping] = useState(false);
+    const [isAssistantTyping, setIsAssistantTyping] = useState(false);
     const scrollViewRef = useRef<ScrollView>(null);
 
     // Animations
@@ -142,14 +142,14 @@ export default function UniverseChat() {
 
     const handleSend = async () => {
         const trimmedText = inputText.trim();
-        if (!trimmedText || isUniverseTyping) return;
+        if (!trimmedText || isAssistantTyping) return;
 
         // Check daily limit
         if (!canSendMessage()) {
             const limitMsg: Message = {
                 id: 'limit-' + Date.now(),
                 text: "You have reached your daily limit of 12 messages. Please return tomorrow to continue.",
-                sender: 'universe',
+                sender: 'assistant',
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, limitMsg]);
@@ -166,7 +166,7 @@ export default function UniverseChat() {
 
         setMessages((prev) => [...prev, userMsg]);
         setInputText('');
-        setIsUniverseTyping(true);
+        setIsAssistantTyping(true);
         scrollToBottom();
 
         try {
@@ -179,27 +179,27 @@ export default function UniverseChat() {
 
             const aiResponse = await getAIResponse(trimmedText, history);
 
-            const universeMsg: Message = {
+            const assistantMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 text: aiResponse,
-                sender: 'universe',
+                sender: 'assistant',
                 timestamp: new Date(),
                 isTyping: true,
             };
 
-            setMessages((prev) => [...prev, universeMsg]);
+            setMessages((prev) => [...prev, assistantMsg]);
         } catch (error) {
-            console.error("Universe Chat Error:", error);
+            console.error("Chat Error:", error);
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 text: "I'm having trouble connecting right now. Please try again in a moment.",
-                sender: 'universe',
+                sender: 'assistant',
                 timestamp: new Date(),
                 isTyping: true,
             };
             setMessages((prev) => [...prev, errorMsg]);
         } finally {
-            setIsUniverseTyping(false);
+            setIsAssistantTyping(false);
             await incrementMessageCount();
         }
     };
@@ -210,14 +210,14 @@ export default function UniverseChat() {
             entering={item.sender === 'user' ? FadeInRight.duration(400) : FadeInDown.duration(600)}
             style={[
                 styles.messageWrapper,
-                item.sender === 'user' ? styles.userWrapper : styles.universeWrapper
+                item.sender === 'user' ? styles.userWrapper : styles.assistantWrapper
             ]}
         >
             <View style={[
                 styles.messageBubble,
-                item.sender === 'user' ? styles.userBubble : styles.universeBubble
+                item.sender === 'user' ? styles.userBubble : styles.assistantBubble
             ]}>
-                {item.sender === 'universe' && item.isTyping ? (
+                {item.sender === 'assistant' && item.isTyping ? (
                     <TypewriterText
                         text={item.text}
                         onComplete={() => {
@@ -240,7 +240,7 @@ export default function UniverseChat() {
 
     const renderTypingIndicator = () => (
         <Animated.View key="typing-indicator" entering={FadeIn.duration(400)} style={styles.typingWrapper}>
-            <View style={[styles.messageBubble, styles.universeBubble, styles.typingIndicator]}>
+            <View style={[styles.messageBubble, styles.assistantBubble, styles.typingIndicator]}>
                 <Animated.View style={[styles.typingDot, { opacity: glowOpacity }]} />
                 <Animated.View style={[styles.typingDot, { opacity: glowOpacity, marginHorizontal: 4 }]} />
                 <Animated.View style={[styles.typingDot, { opacity: glowOpacity }]} />
@@ -283,7 +283,7 @@ export default function UniverseChat() {
                 >
                     <View style={styles.messageList}>
                         {messages.map((item, index) => renderMessage(item, index))}
-                        {isUniverseTyping && renderTypingIndicator()}
+                        {isAssistantTyping && renderTypingIndicator()}
                     </View>
                 </ScrollView>
 
@@ -294,7 +294,7 @@ export default function UniverseChat() {
                     <View style={styles.inputContainer}>
                         <TextInput
                             style={[styles.input, { maxHeight: 100 }]}
-                            placeholder="Connect with the Universe..."
+                            placeholder="Type your message..."
                             placeholderTextColor="rgba(254, 243, 199, 0.3)"
                             value={inputText}
                             onChangeText={setInputText}
@@ -303,10 +303,10 @@ export default function UniverseChat() {
                         />
                         <TouchableOpacity
                             onPress={handleSend}
-                            disabled={!inputText.trim() || isUniverseTyping}
+                            disabled={!inputText.trim() || isAssistantTyping}
                             style={[
                                 styles.sendButton,
-                                (!inputText.trim() || isUniverseTyping) && { opacity: 0.5 }
+                                (!inputText.trim() || isAssistantTyping) && { opacity: 0.5 }
                             ]}
                             activeOpacity={0.7}
                         >
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
         alignSelf: 'flex-end',
         alignItems: 'flex-end',
     },
-    universeWrapper: {
+    assistantWrapper: {
         alignSelf: 'flex-start',
         alignItems: 'flex-start',
     },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 8,
     },
-    universeBubble: {
+    assistantBubble: {
         backgroundColor: 'rgba(23, 11, 41, 0.9)',
         borderColor: 'rgba(251, 191, 36, 0.15)',
         borderBottomLeftRadius: 4,

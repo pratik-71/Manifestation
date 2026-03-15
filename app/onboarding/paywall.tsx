@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
@@ -175,6 +175,29 @@ export default function Paywall() {
                         <TouchableOpacity style={styles.restoreBtn} onPress={handleRestore}>
                             <Text style={styles.restoreText}>Restore Purchase</Text>
                         </TouchableOpacity>
+
+                        <View style={styles.legalLinks}>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/privacy-policy')}>
+                                <Text style={styles.legalText}>Privacy Policy</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.legalDot}>•</Text>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}>
+                                <Text style={styles.legalText}>EULA & Terms</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.legalDot}>•</Text>
+                            <TouchableOpacity onPress={() => router.push('/legal/features' as any)}>
+                                <Text style={styles.legalText}>Features</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.disclosureSection}>
+                            <Text style={styles.disclosureText}>
+                                • Payment will be charged to your iTunes Account at confirmation of purchase.{"\n"}
+                                • Subscription automatically renews unless auto-renew is turned off at least 24-hours before the end of the current period.{"\n"}
+                                • Account will be charged for renewal within 24-hours prior to the end of the current period at the rate of the selected plan.{"\n"}
+                                • Subscriptions may be managed and auto-renewal turned off by going to your Account Settings after purchase.
+                            </Text>
+                        </View>
                     </View>
                 </View>
             </SafeAreaView>
@@ -382,5 +405,33 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: 'rgba(255,255,255,0.35)',
         textDecorationLine: 'underline',
+    },
+    legalLinks: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        marginTop: 5,
+        paddingBottom: 10,
+    },
+    legalText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.3)',
+    },
+    legalDot: {
+        fontSize: 10,
+        color: 'rgba(255,255,255,0.2)',
+    },
+    disclosureSection: {
+        marginTop: 15,
+        paddingHorizontal: 10,
+    },
+    disclosureText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 9,
+        color: 'rgba(255,255,255,0.25)',
+        lineHeight: 14,
+        textAlign: 'center',
     },
 });
