@@ -5,7 +5,7 @@ import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, StatusBar, S
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
-import { getOfferings, purchasePackage } from '../../services/purchaseService';
+import { ENTITLEMENT_ID, getOfferings, purchasePackage, restorePurchases } from '../../services/purchaseService';
 import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 const { width, height } = Dimensions.get('window');
@@ -24,7 +24,7 @@ export default function Paywall() {
                 if (currentOffering && currentOffering.availablePackages) {
                     setOfferings(currentOffering.availablePackages);
                     // Select yearly by default if available, else first one
-                    const yearly = currentOffering.availablePackages.find(p => p.packageType === 'ANNUAL');
+                    const yearly = currentOffering.availablePackages.find((p: any) => p.packageType === 'ANNUAL');
                     setSelectedPackage(yearly || currentOffering.availablePackages[0]);
                 }
             } catch (err) {
@@ -55,17 +55,21 @@ export default function Paywall() {
     };
 
     const handleRestore = async () => {
+        setIsProcessing(true);
         try {
-            const customerInfo = await Purchases.restorePurchases();
-            if (customerInfo.entitlements.active['pro']) {
+            const result = await restorePurchases();
+            if (result.success) {
                 Alert.alert('Success', 'Your purchase has been restored.', [
                     { text: 'OK', onPress: () => router.replace('/home') }
                 ]);
             } else {
-                Alert.alert('Restore Failed', 'No active subscriptions found for your account.');
+                Alert.alert('Notice', 'No active subscriptions found for your account.');
             }
         } catch (err) {
             console.error(err);
+            Alert.alert('Error', 'An unexpected error occurred during restore.');
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -182,20 +186,22 @@ export default function Paywall() {
                             </TouchableOpacity>
                             <Text style={styles.legalDot}>•</Text>
                             <TouchableOpacity onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}>
-                                <Text style={styles.legalText}>EULA & Terms</Text>
+                                <Text style={styles.legalText}>Terms & Conditions</Text>
                             </TouchableOpacity>
                             <Text style={styles.legalDot}>•</Text>
-                            <TouchableOpacity onPress={() => router.push('/legal/features' as any)}>
-                                <Text style={styles.legalText}>Features</Text>
+                            <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+                                <Text style={styles.legalText}>Apple EULA</Text>
                             </TouchableOpacity>
                         </View>
 
                         <View style={styles.disclosureSection}>
                             <Text style={styles.disclosureText}>
                                 • Payment will be charged to your iTunes Account at confirmation of purchase.{"\n"}
-                                • Subscription automatically renews unless auto-renew is turned off at least 24-hours before the end of the current period.{"\n"}
+                                • Manifestation Pro subscription automatically renews unless auto-renew is turned off at least 24-hours before the end of the current period.{"\n"}
                                 • Account will be charged for renewal within 24-hours prior to the end of the current period at the rate of the selected plan.{"\n"}
-                                • Subscriptions may be managed and auto-renewal turned off by going to your Account Settings after purchase.
+                                • Any unused portion of a free trial period, if offered, will be forfeited when the user purchases a subscription to that publication, where applicable.{"\n"}
+                                • Subscriptions may be managed and auto-renewal turned off by going to your iTunes Account Settings after purchase.{"\n"}
+                                • By continuing, you agree to our Privacy Policy, Terms & Conditions and the Apple Standard EULA.
                             </Text>
                         </View>
                     </View>

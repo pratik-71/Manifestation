@@ -15,10 +15,10 @@
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Allow Manifestation to access your camera to record your future message.",
-        "NSMicrophoneUsageDescription": "Allow Manifestation to access your microphone to record audio for your future message.",
-        "NSPhotoLibraryUsageDescription": "Allow Manifestation to access your photos to save and view your recorded future messages.",
-        "NSPhotoLibraryAddUsageDescription": "Allow Manifestation to save your recorded future message to your gallery.",
+        "NSCameraUsageDescription": "Manifestation needs camera access so you can record visual affirmations and send video messages to your future self.",
+        "NSMicrophoneUsageDescription": "We need microphone access to capture the sound and voice for your future-self video recordings and meditations.",
+        "NSPhotoLibraryUsageDescription": "This allows you to save your recorded manifestation journeys and future-self videos directly to your Photo Library.",
+        "NSPhotoLibraryAddUsageDescription": "We need permission to add your recorded manifestations to your gallery so you can cherish them forever.",
         "LSApplicationQueriesSchemes": [
           "itms-apps"
         ],

@@ -17,6 +17,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    InteractionManager,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
@@ -56,6 +57,14 @@ export default function EditProfile() {
     const [manifestTime, setManifestTime] = useState<TimeValue>(h24ToTimeValue(profile?.manifest_time || '10:00'));
     
     const [isSaving, setIsSaving] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+
+    React.useEffect(() => {
+        const task = InteractionManager.runAfterInteractions(() => {
+            setIsReady(true);
+        });
+        return () => task.cancel();
+    }, []);
 
     const handleSave = async () => {
         if (!username.trim()) {
@@ -158,7 +167,13 @@ export default function EditProfile() {
                                 <Text style={styles.sectionLabel}>WAKE UP Time</Text>
                             </View>
                             <View style={styles.pickerContainer}>
-                                <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
+                                {isReady ? (
+                                    <TimeWheelPicker value={wakeTime} onChange={setWakeTime} />
+                                ) : (
+                                    <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+                                        <ActivityIndicator color="rgba(255,255,255,0.2)" />
+                                    </View>
+                                )}
                             </View>
                         </Animated.View>
 
@@ -169,7 +184,13 @@ export default function EditProfile() {
                                 <Text style={styles.sectionLabel}>Sleep Time</Text>
                             </View>
                             <View style={styles.pickerContainer}>
-                                <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
+                                {isReady ? (
+                                    <TimeWheelPicker value={sleepTime} onChange={setSleepTime} />
+                                ) : (
+                                    <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+                                        <ActivityIndicator color="rgba(255,255,255,0.2)" />
+                                    </View>
+                                )}
                             </View>
                         </Animated.View>
 
@@ -180,7 +201,13 @@ export default function EditProfile() {
                                 <Text style={styles.sectionLabel}>MANIFESTATION WINDOW</Text>
                             </View>
                             <View style={styles.pickerContainer}>
-                                <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
+                                {isReady ? (
+                                    <TimeWheelPicker value={manifestTime} onChange={setManifestTime} />
+                                ) : (
+                                    <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+                                        <ActivityIndicator color="rgba(255,255,255,0.2)" />
+                                    </View>
+                                )}
                             </View>
                         </Animated.View>
 

@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    FlatList,
-    ListRenderItem,
     NativeScrollEvent,
     NativeSyntheticEvent,
+    ScrollView,
     StyleSheet,
     Text,
     View,
@@ -43,9 +42,7 @@ const HOURS_DATA = Array.from({ length: REPEAT_HOURS }, () => HOURS_BASE).flat()
 const MINUTES_DATA = Array.from({ length: REPEAT_MINUTES }, () => MINUTES_BASE).flat();
 const AMPM_DATA = Array.from({ length: REPEAT_AMPM }, () => AMPM_BASE).flat();
 
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
-// @ts-ignore - needed because Animated.createAnimatedComponent doesn't perfectly preserve generic types sometimes
-const TypedAnimatedFlatList = AnimatedFlatList as any;
+const AnimatedScrollView = Animated.ScrollView;
 
 interface WheelProps {
     items: string[];
@@ -108,6 +105,16 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
     }, [getTargetIndex]);
 
     useEffect(() => {
+        if (isLayoutReady) {
+            const targetIndex = getTargetIndex(lastReportedValue.current);
+            flatListRef.current?.scrollTo({
+                y: targetIndex * ITEM_HEIGHT,
+                animated: false
+            });
+        }
+    }, [isLayoutReady, getTargetIndex]);
+
+    useEffect(() => {
         if (isLayoutReady && value !== lastReportedValue.current) {
             syncToValue(value, true);
         }
@@ -139,41 +146,43 @@ const Wheel = React.memo(({ items, value, onChange, style, baseLength }: WheelPr
         isInteracting.current = true;
     }, []);
 
-    const getItemLayout = (_: any, index: number) => ({
-        length: ITEM_HEIGHT,
-        offset: ITEM_HEIGHT * index,
-        index,
-    });
+    const handleMomentumScrollEnd = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            handleScrollEnd(event);
+        },
+        [handleScrollEnd]
+    );
 
-    const renderItem: ListRenderItem<string> = useCallback(({ item, index }) => (
-        <WheelItem label={item} index={index} />
-    ), []);
+    const handleScrollEndDrag = useCallback(
+        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+            handleScrollEnd(event);
+        },
+        [handleScrollEnd]
+    );
+
+
 
     return (
         <View style={[styles.wheelContainer, style]}>
-            <TypedAnimatedFlatList
+            <AnimatedScrollView
                 ref={flatListRef}
-                data={items}
-                keyExtractor={(item: string, index: number) => index.toString()}
-                renderItem={renderItem}
-                getItemLayout={getItemLayout}
-                initialScrollIndex={initialIndex}
                 showsVerticalScrollIndicator={false}
                 snapToInterval={ITEM_HEIGHT}
                 decelerationRate="fast"
                 onScroll={scrollHandler}
                 scrollEventThrottle={16}
-                onMomentumScrollEnd={handleScrollEnd}
+                onMomentumScrollEnd={handleMomentumScrollEnd}
                 onScrollBeginDrag={onScrollBeginDrag}
-                onScrollEndDrag={handleScrollEnd}
+                onScrollEndDrag={handleScrollEndDrag}
                 onLayout={() => setIsLayoutReady(true)}
                 contentContainerStyle={styles.listContent}
                 nestedScrollEnabled={true}
-                removeClippedSubviews={true}
-                initialNumToRender={5}
-                maxToRenderPerBatch={5}
-                windowSize={3}
-            />
+                scrollEnabled={true}
+            >
+                {items.map((item, index) => (
+                    <WheelItem key={`${item}-${index}`} label={item} index={index} />
+                ))}
+            </AnimatedScrollView>
         </View>
     );
 });

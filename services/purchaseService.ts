@@ -8,13 +8,18 @@ const REVENUECAT_API_KEY = {
     google: 'goog_EXAMPLE_GOOGLE_KEY', // Google Play Store
 };
 
-const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
+export const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
 
 export const initializePurchases = async (userId?: string) => {
     try {
         await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
         
         if (Platform.OS === 'android') {
+            // If Google Key is still the placeholder, we don't configure RC on Android
+            if (!REVENUECAT_API_KEY.google || REVENUECAT_API_KEY.google === 'goog_EXAMPLE_GOOGLE_KEY') {
+                console.log("⚠️ RevenueCat: Google API Key missing. Android will use mock mode.");
+                return;
+            }
             await Purchases.configure({ apiKey: REVENUECAT_API_KEY.google, appUserID: userId });
         } else if (Platform.OS === 'ios') {
             await Purchases.configure({ apiKey: REVENUECAT_API_KEY.apple, appUserID: userId });
@@ -56,8 +61,24 @@ export const logoutPurchases = async () => {
 /**
  * Fetch available subscription offerings.
  */
-export const getOfferings = async (): Promise<PurchasesOffering | null> => {
+export const getOfferings = async (): Promise<any | null> => {
     try {
+        // Fallback for Android development without API Key
+        if (Platform.OS === 'android' && REVENUECAT_API_KEY.google === 'goog_EXAMPLE_GOOGLE_KEY') {
+            return {
+                availablePackages: [
+                    {
+                        identifier: 'manifestation_yearly',
+                        product: {
+                            priceString: '$29.99/yr',
+                            title: 'Manifestation Pro (Android Mock)',
+                            description: 'Full access to all AI manifestation features'
+                        }
+                    }
+                ]
+            };
+        }
+
         const offerings = await Purchases.getOfferings();
         if (offerings.current !== null) {
             return offerings.current;
@@ -98,5 +119,20 @@ export const purchasePackage = async (packageToPurchase: any) => {
             return { success: false, error: error.message };
         }
         return { success: false, cancelled: true };
+    }
+};
+/**
+ * Restore previously purchased subscriptions.
+ */
+export const restorePurchases = async () => {
+    try {
+        const customerInfo = await Purchases.restorePurchases();
+        return {
+            success: !!customerInfo.entitlements.active[ENTITLEMENT_ID],
+            customerInfo
+        };
+    } catch (e: any) {
+        console.error("❌ Restore failed:", e);
+        return { success: false, error: e.message };
     }
 };

@@ -242,13 +242,7 @@ export default function Home() {
                             </TouchableOpacity>
                             <View style={styles.exploreDivider} />
 
-                            <TouchableOpacity
-                                onPress={() => router.push('/legal/features' as any)}
-                                style={styles.exploreButton}
-                            >
-                                <Ionicons name="sparkles-outline" size={18} color="#fb923c" style={{ marginRight: 8 }} />
-                                <Text style={styles.exploreText}>Features</Text>
-                            </TouchableOpacity>
+                            
                         </Animated.View>
 
                         {/* Spacer for bottom bar */}

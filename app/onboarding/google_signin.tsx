@@ -152,22 +152,20 @@ export default function GoogleSignIn() {
                         <Text style={styles.intentText}>Now Its Your Turn</Text>
 
                         <View style={styles.buttonStack}>
-                            {Platform.OS === 'ios' && (
-                                <TouchableOpacity
-                                    style={[styles.appleButton, isLoading && styles.buttonDisabled]}
-                                    onPress={() => {
-                                        if (isLoading) return;
-                                        handleAppleSignIn();
-                                    }}
-                                    disabled={isLoading}
-                                    activeOpacity={0.9}
-                                >
-                                    <View style={styles.buttonContent}>
-                                        <Ionicons name="logo-apple" size={22} color="#ffffff" style={styles.appleIcon} />
-                                        <Text style={styles.appleButtonText}>Continue with Apple</Text>
-                                    </View>
-                                </TouchableOpacity>
-                            )}
+                            <TouchableOpacity
+                                style={[styles.appleButton, isLoading && styles.buttonDisabled]}
+                                onPress={() => {
+                                    if (isLoading) return;
+                                    handleAppleSignIn();
+                                }}
+                                disabled={isLoading}
+                                activeOpacity={0.9}
+                            >
+                                <View style={styles.buttonContent}>
+                                    <Ionicons name="logo-apple" size={22} color="#ffffff" style={styles.appleIcon} />
+                                    <Text style={styles.appleButtonText}>Continue with Apple</Text>
+                                </View>
+                            </TouchableOpacity>
 
                             <TouchableOpacity
                                 style={[styles.googleButton, isLoading && styles.buttonDisabled]}

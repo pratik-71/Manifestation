@@ -49,7 +49,7 @@ export default function Profile() {
         setIsSubmittingFeedback(true);
         try {
             const user = await getCurrentUser();
-            if(!user) throw new Error("Not logged in");
+            if (!user) throw new Error("Not logged in");
             const { error } = await supabase.from('feedback').insert({
                 user_id: user.id,
                 name: feedbackName.trim(),
@@ -62,7 +62,7 @@ export default function Profile() {
             setFeedbackName('');
             setFeedbackTitle('');
             setFeedbackMessage('');
-        } catch(e) {
+        } catch (e) {
             console.error(e);
             Alert.alert("Error", "Could not submit feedback at this time.");
         } finally {
@@ -171,7 +171,7 @@ export default function Profile() {
 
                     {/* Profile Hero */}
                     <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroContainer}>
-                        
+
 
                         <Text style={styles.username}>{profile?.username || 'Seeker'}</Text>
                         <Text style={styles.emailTag}>{email}</Text>
@@ -206,11 +206,6 @@ export default function Profile() {
                                 onPress={() => setIsFeedbackVisible(true)}
                             />
                             <MenuRow
-                                icon="star-outline"
-                                label="App Features"
-                                onPress={() => router.push('/legal/features' as any)}
-                            />
-                            <MenuRow
                                 icon="shield-checkmark-outline"
                                 label="Privacy Policy"
                                 onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/privacy-policy')}
@@ -219,7 +214,11 @@ export default function Profile() {
                                 icon="document-text-outline"
                                 label="Terms of Service"
                                 onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}
-                                showBorder={true}
+                            />
+                            <MenuRow
+                                icon="globe-outline"
+                                label="Apple Standard EULA"
+                                onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
                             />
                             <MenuRow
                                 icon="log-out-outline"
@@ -237,7 +236,7 @@ export default function Profile() {
                     </Animated.View>
 
                     <View style={styles.footer}>
-                        <Text style={styles.versionText}>v1.0.4</Text>
+                        <Text style={styles.versionText}>v1.0.1 (Build 1)</Text>
                     </View>
 
                     <View style={{ height: 120 }} />
@@ -267,7 +266,7 @@ export default function Profile() {
                         </View>
                         <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
                             <Text style={styles.modalDescription}>We value your thoughts. Let us know how we can improve your manifestation journey.</Text>
-                            
+
                             <Text style={styles.inputLabel}>NAME</Text>
                             <BlurView intensity={20} tint="dark" style={styles.inputWrapper}>
                                 <TextInput
@@ -278,7 +277,7 @@ export default function Profile() {
                                     onChangeText={setFeedbackName}
                                 />
                             </BlurView>
-                            
+
                             <Text style={styles.inputLabel}>TITLE</Text>
                             <BlurView intensity={20} tint="dark" style={styles.inputWrapper}>
                                 <TextInput
@@ -306,8 +305,8 @@ export default function Profile() {
                         </ScrollView>
 
                         <View style={styles.floatingButtonContainer}>
-                            <TouchableOpacity 
-                                style={styles.submitButton} 
+                            <TouchableOpacity
+                                style={styles.submitButton}
                                 onPress={submitFeedback}
                                 disabled={isSubmittingFeedback}
                                 activeOpacity={0.8}

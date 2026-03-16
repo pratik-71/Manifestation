@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { supabase } from './supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
 
 // Complete the auth session if we're in a web environment or redirecting
 WebBrowser.maybeCompleteAuthSession();
@@ -56,28 +57,44 @@ export const signInWithGoogle = async (): Promise<any> => {
 
 export const signInWithApple = async (): Promise<any> => {
     try {
-        const rawNonce = await Crypto.getRandomBytesAsync(32);
-        const nonce = Array.from(rawNonce).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-        const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+        if (Platform.OS === 'ios') {
+            const rawNonce = await Crypto.getRandomBytesAsync(32);
+            const nonce = Array.from(rawNonce).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+            const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
 
-        const appleCredential = await AppleAuthentication.signInAsync({
-            requestedScopes: [
-                AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-                AppleAuthentication.AppleAuthenticationScope.EMAIL,
-            ],
-            nonce: hashedNonce,
-        });
+            const appleCredential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+                nonce: hashedNonce,
+            });
 
-        const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: 'apple',
-            token: appleCredential.identityToken!,
-            nonce,
-        });
+            const { data, error } = await supabase.auth.signInWithIdToken({
+                provider: 'apple',
+                token: appleCredential.identityToken!,
+                nonce,
+            });
 
-        if (error) throw error;
-        return { data };
+            if (error) throw error;
+            return { data };
+        } else {
+            // Android/Web flow: Use Supabase OAuth (Web Browser flow)
+            const redirectUrl = Linking.createURL('', { scheme: 'manifestation' });
+            
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'apple',
+                options: {
+                    redirectTo: redirectUrl,
+                    skipBrowserRedirect: false, // For Apple on Android, it's often smoother to let Supabase handle redirect
+                },
+            });
+
+            if (error) throw error;
+            return { data };
+        }
     } catch (error: any) {
-        if (error.code === 'ERR_CANCELED') {
+        if (error.code === 'ERR_CANCELED' || error.message?.includes('cancel')) {
             return null;
         }
         console.error('Apple Sign-in Error:', error);
