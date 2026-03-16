@@ -205,21 +205,7 @@ export default function Profile() {
                                 label="Feedback"
                                 onPress={() => setIsFeedbackVisible(true)}
                             />
-                            <MenuRow
-                                icon="shield-checkmark-outline"
-                                label="Privacy Policy"
-                                onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/privacy-policy')}
-                            />
-                            <MenuRow
-                                icon="document-text-outline"
-                                label="Terms of Service"
-                                onPress={() => Linking.openURL('https://zenvy-venture.vercel.app/manifest/terms-conditions')}
-                            />
-                            <MenuRow
-                                icon="globe-outline"
-                                label="Apple Standard EULA"
-                                onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
-                            />
+        
                             <MenuRow
                                 icon="log-out-outline"
                                 label="Logout"

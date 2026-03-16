@@ -267,12 +267,12 @@ const styles = StyleSheet.create({
     },
     itemText: {
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 26,
+        fontSize: 22,
         color: '#fff',
         includeFontPadding: false,
     },
     ampmText: {
-        fontSize: 18,
+        fontSize: 14,
         fontFamily: 'Comfortaa_700Bold',
         letterSpacing: 2,
     },

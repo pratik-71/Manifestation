@@ -449,7 +449,7 @@ export default function Goals() {
                                                             setIsSubmitting(false);
                                                         }
                                                     } else {
-                                                        router.push('/onboarding/accept_challenge');
+                                                        router.push('/record_future?fromOnboarding=1');
                                                     }
                                                 }}
                                                 disabled={isSubmitting}

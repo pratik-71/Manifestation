@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated as RNAnimated, AppState, Dimensions, Easing, Image, Linking, PermissionsAndroid, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated as RNAnimated, AppState, Dimensions, Easing, Image, Modal, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
@@ -19,10 +20,11 @@ export default function Home() {
     const router = useRouter();
     const { profile, fetchProfile } = useUserStore();
     const [showNotifModal, setShowNotifModal] = useState(false);
+    const [videoUri, setVideoUri] = useState<string | null>(null);
+    const [showVideoModal, setShowVideoModal] = useState(false);
 
     const handleWatchFuture = async () => {
         try {
-            // Updated to use internal app storage
             const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
             const fileInfo = await FileSystem.getInfoAsync(videoPath);
 
@@ -31,11 +33,9 @@ export default function Home() {
                 return;
             }
 
-            // Open the video directly from app storage (No permissions needed)
-            Linking.openURL(videoPath).catch(err => {
-                console.error("Failed to open video:", err);
-                Alert.alert("Error", "Could not open the video player.");
-            });
+            // Play in-app — avoids Android FileProvider/Intent restriction
+            setVideoUri(videoPath);
+            setShowVideoModal(true);
         } catch (error) {
             console.error("Watch Future Error:", error);
             Alert.alert("Error", "Something went wrong while trying to play your message.");
@@ -257,9 +257,89 @@ export default function Home() {
                 isVisible={showNotifModal}
                 onClose={() => setShowNotifModal(false)}
             />
+
+            {/* In-App Video Player Modal */}
+            {showVideoModal && videoUri ? (
+                <VideoPlayerModal
+                    uri={videoUri}
+                    onClose={() => {
+                        setShowVideoModal(false);
+                        setVideoUri(null);
+                    }}
+                />
+            ) : null}
         </View>
     );
 }
+
+// ─── In-App Video Player ─────────────────────────────────────────────────────
+function VideoPlayerModal({ uri, onClose }: { uri: string; onClose: () => void }) {
+    const player = useVideoPlayer(uri, p => {
+        p.loop = false;
+        p.play();
+    });
+
+    return (
+        <Modal
+            visible
+            transparent
+            animationType="fade"
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <View style={videoStyles.backdrop}>
+                <View style={videoStyles.playerWrapper}>
+                    <VideoView
+                        player={player}
+                        style={videoStyles.video}
+                        allowsFullscreen
+                        allowsPictureInPicture
+                        contentFit="contain"
+                    />
+                    <TouchableOpacity style={videoStyles.closeBtn} onPress={onClose} activeOpacity={0.8}>
+                        <Ionicons name="close" size={22} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+}
+
+const { width: SCREEN_W } = Dimensions.get('window');
+
+const videoStyles = StyleSheet.create({
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.96)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    playerWrapper: {
+        width: SCREEN_W - 24,
+        aspectRatio: 9 / 16,
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+        position: 'relative',
+    },
+    video: {
+        flex: 1,
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+    },
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: {

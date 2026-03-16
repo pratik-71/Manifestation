@@ -7,7 +7,12 @@ import {
   CormorantGaramond_700Bold,
   CormorantGaramond_700Bold_Italic
 } from '@expo-google-fonts/cormorant-garamond';
-import { DancingScript_400Regular } from '@expo-google-fonts/dancing-script';
+import { 
+  DancingScript_400Regular,
+  DancingScript_500Medium,
+  DancingScript_600SemiBold,
+  DancingScript_700Bold 
+} from '@expo-google-fonts/dancing-script';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
 import { SplashScreen, Stack } from 'expo-router';
@@ -36,7 +41,10 @@ export default function RootLayout() {
     CormorantGaramond_700Bold,
     CormorantGaramond_400Regular_Italic,
     CormorantGaramond_700Bold_Italic,
-    DancingScript_400Regular
+    DancingScript_400Regular,
+    DancingScript_500Medium,
+    DancingScript_600SemiBold,
+    DancingScript_700Bold
   });
 
   useEffect(() => {

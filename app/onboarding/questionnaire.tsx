@@ -20,7 +20,7 @@ type HeaderProps = {
 };
 
 const Header = memo(({ currentStep, totalSteps, onBack }: HeaderProps) => (
-    <View style={styles.header}>
+    <View style={[styles.header, currentStep === 1 && { paddingTop: 40 }]}>
         {currentStep > 1 ? (
             <TouchableOpacity
                 onPress={onBack}
@@ -420,8 +420,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: 30,
-        paddingBottom: 10,
+        paddingTop: 10,
+        paddingBottom: 2,
     },
     progressBarContainer: {
         flex: 1,
@@ -445,13 +445,13 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     questionContainer: {
-        marginBottom: 20,
+        marginBottom: 12,
     },
     questionText: {
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 28,
+        fontSize: 22,
         color: '#fff',
-        marginBottom: 12,
+        marginBottom: 4,
         lineHeight: 46,
         textShadowColor: 'rgba(251, 146, 60, 0.3)', // subtle orange shadow
         textShadowOffset: { width: 0, height: 0 },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     belowText: {
         fontFamily: 'Comfortaa_400Regular',
         color: 'rgba(255,255,255,0.6)',
-        fontSize: 13,
+        fontSize: 9,
         lineHeight: 18,
         marginBottom: 20,
     },
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     },
     timeSectionLabel: {
         fontFamily: 'Comfortaa_500Medium',
-        fontSize: 14,
+        fontSize: 10,
         color: 'rgba(255,255,255,0.7)',
         marginBottom: 10,
         letterSpacing: 0.5,

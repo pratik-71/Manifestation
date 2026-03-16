@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -24,9 +25,162 @@ import { BreathingBackground } from '../components/BreathingBackground';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+// ─── Choice screen styles (must be before component for Hermes) ───────────────
+const choiceStyles = StyleSheet.create({
+    safe: {
+        flex: 1,
+        paddingHorizontal: 26,
+        paddingTop: 16,
+        paddingBottom: 40,
+        justifyContent: 'space-between',
+    },
+    backRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: 4,
+        paddingVertical: 6,
+        marginTop: 22,
+        marginBottom: 8,
+    },
+    backText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.35)',
+    },
+    hero: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 14,
+    },
+
+    heading: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 24,
+        color: '#fff8f0',
+        textAlign: 'center',
+        letterSpacing: -0.2,
+    },
+    subheading: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.35)',
+        textAlign: 'center',
+        lineHeight: 22,
+        maxWidth: '80%',
+    },
+    actions: {
+        gap: 14,
+        marginBottom: 28,
+    },
+    // PRIMARY — Watch (solid amber)
+    primaryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        backgroundColor: '#f97316',
+        borderRadius: 18,
+        paddingVertical: 18,
+        paddingHorizontal: 22,
+        shadowColor: '#f97316',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 16,
+        elevation: 8,
+    },
+    primaryIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.18)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 15,
+        color: '#fff',
+        marginBottom: 2,
+    },
+    primaryHint: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.65)',
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 4,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: 'rgba(255,255,255,0.06)',
+    },
+    dividerText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.18)',
+        letterSpacing: 1,
+    },
+    // SECONDARY — Record (warm amber outline)
+    secondaryBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        backgroundColor: 'rgba(180,83,9,0.08)',
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: 'rgba(249,115,22,0.35)',
+        paddingVertical: 16,
+        paddingHorizontal: 22,
+    },
+    secondaryIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(249,115,22,0.14)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(249,115,22,0.3)',
+    },
+    secondaryLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 15,
+        color: '#fff',
+        marginBottom: 2,
+    },
+    secondaryHint: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.5)',
+    },
+    footer: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.18)',
+        textAlign: 'center',
+        letterSpacing: 0.2,
+    },
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function RecordFuture() {
     const router = useRouter();
+    const { fromOnboarding } = useLocalSearchParams<{ fromOnboarding?: string }>();
+    const isOnboarding = fromOnboarding === '1';
     const cameraRef = useRef<CameraView>(null);
+
+    const handleDone = () => {
+        if (isOnboarding) {
+            router.push('/onboarding/accept_challenge');
+        } else {
+            router.back();
+        }
+    };
 
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
     const [microphonePermission, requestMicrophonePermission] = useMicrophonePermissions();
@@ -37,6 +191,11 @@ export default function RecordFuture() {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [recordTime, setRecordTime] = useState(0);
     const [facing, setFacing] = useState<'front' | 'back'>('front');
+
+    // Video-exists state
+    const [videoExists, setVideoExists] = useState<boolean | null>(null); // null = checking
+    const [showCamera, setShowCamera] = useState(false);   // true once user picks "Record New"
+    const [watchUri, setWatchUri] = useState<string | null>(null);        // set when watching
 
     const pulseAnim = useSharedValue(1);
 
@@ -66,12 +225,30 @@ export default function RecordFuture() {
 
     const [flashProgress, setFlashProgress] = useState(0);
 
+    // Check whether a saved video already exists (runs after permissions resolved)
+    useEffect(() => {
+        const allGranted =
+            cameraPermission?.granted &&
+            microphonePermission?.granted &&
+            mediaLibraryPermission?.granted;
+        if (!allGranted) return;
+
+        const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
+        FileSystem.getInfoAsync(videoPath).then(info => {
+            setVideoExists(info.exists);
+            // If no video yet, go straight to camera
+            if (!info.exists) setShowCamera(true);
+        }).catch(() => {
+            setVideoExists(false);
+            setShowCamera(true);
+        });
+    }, [cameraPermission?.granted, microphonePermission?.granted, mediaLibraryPermission?.granted]);
+
     if (!cameraPermission || !microphonePermission || !mediaLibraryPermission) {
-        // Permissions are still loading
         return (
-            <View style={styles.loadingContainer}>
-                <BreathingBackground colors={['#0f172a', '#1c1917', '#451a03']} opacity={0.8} />
-                <ActivityIndicator size="large" color="#fff" />
+            <View style={styles.permissionContainer}>
+                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
+                <ActivityIndicator size="large" color="#e879f9" style={{ flex: 1, alignSelf: 'center' }} />
             </View>
         );
     }
@@ -80,54 +257,75 @@ export default function RecordFuture() {
         return (
             <View style={styles.permissionContainer}>
                 <StatusBar barStyle="light-content" />
-                <BreathingBackground colors={['#050505', '#1e1b4b', '#450a0a']} opacity={1} />
-                
+                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
+                <View style={styles.permissionOverlay} pointerEvents="none" />
+
                 <SafeAreaView style={styles.permissionSafe}>
-                    <Animated.View entering={FadeInDown.duration(1000)} style={styles.permissionHeader}>
-                        <View style={styles.iconCircle}>
-                            <Ionicons name="videocam" size={40} color="#fbbf24" />
+                    {isOnboarding && (
+                        <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
+                            <Text style={styles.skipNavText}>Skip</Text>
+                            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
+                        </TouchableOpacity>
+                    )}
+
+                    <Animated.View entering={FadeInDown.duration(800)} style={styles.permissionHero}>
+                        <View style={styles.heroIconRing}>
+                            <View style={styles.heroIconInner}>
+                                <Ionicons name="videocam" size={20} color="#f0abfc" />
+                            </View>
                         </View>
                         <Text style={styles.permissionTitle}>Record Your Future</Text>
-                        <Text style={styles.permissionSubtitle}>A video message for the person you want to become.</Text>
+                        <Text style={styles.permissionSubtitle}>
+                            A message from your future self — already living the life you dreamed of.
+                        </Text>
                     </Animated.View>
 
-                    <Animated.View entering={FadeIn.delay(500).duration(1000)} style={styles.permissionCardContainer}>
-                        <BlurView intensity={30} tint="dark" style={styles.permissionCard}>
-                            <View style={styles.permissionRow}>
-                                <View style={styles.iconBox}>
-                                    <Ionicons name="videocam" size={20} color="#8b5cf6" />
+                    <Animated.View entering={FadeIn.delay(400).duration(800)} style={styles.instructionCard}>
+                        <Text style={styles.instructionHeading}>How to make it powerful</Text>
+                        {[
+                            {
+                                step: '01',
+                                icon: 'sunny-outline' as const,
+                                title: 'Find good lighting',
+                                tip: 'Sit facing a window or lamp so your face is visible.',
+                            },
+                            {
+                                step: '02',
+                                icon: 'mic-outline' as const,
+                                title: 'Speak in present tense',
+                                tip: '"I wake up grateful every morning..." — as if it already happened.',
+                            },
+                            {
+                                step: '03',
+                                icon: 'heart-outline' as const,
+                                title: 'Be specific & emotional',
+                                tip: 'Describe your home, career, joy. The more vivid, the more powerful.',
+                            },
+                            {
+                                step: '04',
+                                icon: 'time-outline' as const,
+                                title: 'Aim for 1–3 minutes',
+                                tip: 'Short and powerful. You can always record again anytime.',
+                            },
+                        ].map((item, i, arr) => (
+                            <View key={i} style={[styles.instructionRow, i < arr.length - 1 && styles.instructionRowBorder]}>
+                                <View style={styles.stepBadge}>
+                                    <Text style={styles.stepText}>{item.step}</Text>
                                 </View>
-                                <View style={styles.permissionInfo}>
-                                    <Text style={styles.permissionItemTitle}>Camera Access</Text>
-                                    <Text style={styles.permissionItemText}>We need your camera to record your video.</Text>
+                                <View style={styles.instructionContent}>
+                                    <View style={styles.instructionTitleRow}>
+                                        <Ionicons name={item.icon} size={13} color="#d8b4fe" style={{ marginRight: 5 }} />
+                                        <Text style={styles.instructionTitle}>{item.title}</Text>
+                                    </View>
+                                    <Text style={styles.instructionTip}>{item.tip}</Text>
                                 </View>
                             </View>
-                            
-                            <View style={styles.permissionRow}>
-                                <View style={styles.iconBox}>
-                                    <Ionicons name="mic" size={20} color="#ec4899" />
-                                </View>
-                                <View style={styles.permissionInfo}>
-                                    <Text style={styles.permissionItemTitle}>Voice Recording</Text>
-                                    <Text style={styles.permissionItemText}>We need your microphone to record your voice.</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.permissionRow}>
-                                <View style={styles.iconBox}>
-                                    <Ionicons name="images" size={20} color="#f59e0b" />
-                                </View>
-                                <View style={styles.permissionInfo}>
-                                    <Text style={styles.permissionItemTitle}>Save to Phone</Text>
-                                    <Text style={styles.permissionItemText}>Save your video directly to your photo gallery.</Text>
-                                </View>
-                            </View>
-                        </BlurView>
+                        ))}
                     </Animated.View>
 
-                    <Animated.View entering={FadeInUp.delay(800).duration(1000)} style={styles.permissionFooter}>
+                    <Animated.View entering={FadeInUp.delay(700).duration(800)} style={styles.permissionFooter}>
                         <TouchableOpacity
-                            activeOpacity={0.8}
+                            activeOpacity={0.85}
                             onPress={async () => {
                                 await requestCameraPermission();
                                 await requestMicrophonePermission();
@@ -135,28 +333,113 @@ export default function RecordFuture() {
                             }}
                             style={styles.mainActionButton}
                         >
-                            <LinearGradient
-                                colors={['#8b5cf6', '#d946ef', '#f97316']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.actionGradient}
-                            >
-                                <Text style={styles.actionButtonText}>I'M READY</Text>
-                                <Ionicons name="arrow-forward" size={18} color="#fff" />
-                            </LinearGradient>
+                            <Ionicons name="videocam" size={17} color="#fff" style={{ marginRight: 10 }} />
+                            <Text style={styles.actionButtonText}>I'm Ready — Start Recording</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            style={styles.secondaryActionButton}
-                        >
-                            <Text style={styles.secondaryActionText}>Not Now</Text>
-                        </TouchableOpacity>
                     </Animated.View>
                 </SafeAreaView>
             </View>
         );
     }
+
+    // Still checking whether video exists
+    if (videoExists === null) {
+        return (
+            <View style={styles.permissionContainer}>
+                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
+                <ActivityIndicator size="large" color="#e879f9" style={{ flex: 1, alignSelf: 'center' }} />
+            </View>
+        );
+    }
+
+    // ─── CHOICE SCREEN (video already exists, user hasn't chosen yet) ─────────
+    if (videoExists && !showCamera) {
+        return (
+            <View style={styles.permissionContainer}>
+                <StatusBar barStyle="light-content" />
+                <BreathingBackground colors={['#0f172a', '#1c1917', '#451a03']} opacity={0.9} />
+
+                <SafeAreaView style={choiceStyles.safe}>
+                    {/* Top nav */}
+                    <TouchableOpacity onPress={handleDone} style={choiceStyles.backRow}>
+                        <Ionicons name="chevron-back" size={18} color="rgba(255,255,255,0.4)" />
+                        <Text style={choiceStyles.backText}>Back</Text>
+                    </TouchableOpacity>
+
+                    {/* Hero */}
+                    <View style={choiceStyles.hero}>
+                        
+                            <Ionicons name="film-outline" size={32} color="#fb923c" />
+                        
+                        <Text style={choiceStyles.heading}>Your Future Message</Text>
+                        <Text style={choiceStyles.subheading}>
+                            A message from the version of you{`\n`}who already made it.
+                        </Text>
+                    </View>
+
+                    {/* Actions */}
+                    <View style={choiceStyles.actions}>
+
+                        {/* Primary: Watch */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            style={choiceStyles.primaryBtn}
+                            onPress={() => {
+                                const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
+                                setWatchUri(videoPath);
+                            }}
+                        >
+                            <View style={choiceStyles.primaryIcon}>
+                                <Ionicons name="play" size={18} color="#fff" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={choiceStyles.primaryLabel}>Watch Your Future</Text>
+                                <Text style={choiceStyles.primaryHint}>Play your recorded commitment</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+                        </TouchableOpacity>
+
+                        {/* Divider */}
+                        <View style={choiceStyles.dividerRow}>
+                            <View style={choiceStyles.dividerLine} />
+                            <Text style={choiceStyles.dividerText}>or</Text>
+                            <View style={choiceStyles.dividerLine} />
+                        </View>
+
+                        {/* Secondary: Record new */}
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            style={choiceStyles.secondaryBtn}
+                            onPress={() => setShowCamera(true)}
+                        >
+                            <View style={choiceStyles.secondaryIcon}>
+                                <Ionicons name="radio-button-on" size={16} color="#fff" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={choiceStyles.secondaryLabel}>Record a New Message</Text>
+                                <Text style={choiceStyles.secondaryHint}>Your vision has grown — capture it</Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.4)" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text style={choiceStyles.footer}>
+                        You made a promise to yourself. Keep it.
+                    </Text>
+                </SafeAreaView>
+
+                {/* In-app video player */}
+                {watchUri ? (
+                    <ExistingVideoModal
+                        uri={watchUri}
+                        onClose={() => setWatchUri(null)}
+                    />
+                ) : null}
+            </View>
+        );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const toggleFacing = () => {
         setFacing(current => (current === 'back' ? 'front' : 'back'));
@@ -233,8 +516,11 @@ export default function RecordFuture() {
                 <SafeAreaView style={styles.overlay}>
                     {/* Header */}
                     <View style={styles.header}>
-                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} disabled={isRecording}>
-                            <Ionicons name="close" size={28} color={isRecording ? 'transparent' : '#fff'} />
+                        <TouchableOpacity onPress={handleDone} style={styles.backButton} disabled={isRecording}>
+                            {isOnboarding
+                                ? <Text style={{ fontFamily: 'Comfortaa_600SemiBold', fontSize: 14, color: isRecording ? 'transparent' : '#fff', letterSpacing: 0.5 }}>Skip</Text>
+                                : <Ionicons name="close" size={28} color={isRecording ? 'transparent' : '#fff'} />
+                            }
                         </TouchableOpacity>
                         <TouchableOpacity onPress={toggleFacing} style={styles.flipButton} disabled={isRecording}>
                             <Ionicons name="camera-reverse-outline" size={28} color={isRecording ? 'transparent' : '#fff'} />
@@ -326,7 +612,7 @@ export default function RecordFuture() {
                             style={styles.doneButton}
                             onPress={() => {
                                 setShowSuccessModal(false);
-                                router.back();
+                                handleDone();
                             }}
                         >
                             <LinearGradient
@@ -335,7 +621,7 @@ export default function RecordFuture() {
                                 end={{ x: 1, y: 0 }}
                                 style={styles.doneGradient}
                             >
-                                <Text style={styles.doneButtonText}>AWESOME</Text>
+                                <Text style={styles.doneButtonText}>{isOnboarding ? 'CONTINUE →' : 'AWESOME'}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </Animated.View>
@@ -344,6 +630,89 @@ export default function RecordFuture() {
         </View>
     );
 }
+
+// ─── In-App Existing-Video Player ────────────────────────────────────────────
+function ExistingVideoModal({ uri, onClose }: { uri: string; onClose: () => void }) {
+    const player = useVideoPlayer(uri, p => {
+        p.loop = false;
+        p.play();
+    });
+    return (
+        <Modal
+            visible
+            transparent
+            animationType="fade"
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <View style={evStyles.backdrop}>
+                <View style={evStyles.topBar}>
+                    <Text style={evStyles.topLabel}>Your Future Message 🔥</Text>
+                    <TouchableOpacity onPress={onClose} style={evStyles.closeBtn}>
+                        <Ionicons name="close" size={22} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+                <View style={evStyles.playerWrapper}>
+                    <VideoView
+                        player={player}
+                        style={evStyles.video}
+                        allowsFullscreen
+                        allowsPictureInPicture
+                        contentFit="contain"
+                    />
+                </View>
+                <Text style={evStyles.reminder}>
+                    Remember why you started.
+                </Text>
+            </View>
+        </Modal>
+    );
+}
+
+const evStyles = StyleSheet.create({
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.97)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+    },
+    topBar: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    topLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 14,
+        color: '#c084fc',
+        flex: 1,
+    },
+    closeBtn: {
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center', justifyContent: 'center',
+        marginLeft: 12,
+    },
+    playerWrapper: {
+        width: width - 32,
+        aspectRatio: 9 / 16,
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+    },
+    video: { flex: 1 },
+    reminder: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.4)',
+        textAlign: 'center',
+        marginTop: 20,
+        lineHeight: 22,
+    },
+});
 
 const styles = StyleSheet.create({
     container: {
@@ -354,127 +723,229 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000',
+        backgroundColor: '#0d0015',
     },
     permissionContainer: {
         flex: 1,
-        backgroundColor: '#050505',
+        backgroundColor: '#0d0015',
+    },
+    permissionOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.25)',
     },
     permissionSafe: {
         flex: 1,
-        justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingTop: 40,
-        paddingBottom: 20,
+        paddingTop: 46,
+        paddingBottom: 32,
+        justifyContent: 'space-between',
     },
-    permissionHeader: {
+    skipNav: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 20,
+        alignSelf: 'flex-end',
+        gap: 4,
+        paddingVertical: 8,
+        paddingHorizontal: 4,
     },
-    iconCircle: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    skipNavText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 9,
+        color: 'rgba(255,255,255,0.35)',
+        letterSpacing: 0.5,
+    },
+    permissionHero: {
+        alignItems: 'center',
+        paddingHorizontal: 10,
+    },
+    heroIconRing: {
+        width: 48,
+        height: 48,
+        borderRadius: 44,
+        backgroundColor: 'rgba(232, 121, 249, 0.07)',
+        borderWidth: 1,
+        borderColor: 'rgba(232, 121, 249, 0.2)',
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(251, 191, 36, 0.3)',
         marginBottom: 24,
+    },
+    heroIconInner: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: 'rgba(167, 139, 250, 0.1)',
+        borderWidth: 1,
+        borderColor: 'rgba(240, 171, 252, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     permissionTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 28,
-        color: '#fff',
+        fontSize: 22,
+        color: '#fdf4ff',
         textAlign: 'center',
-        marginBottom: 12,
-        letterSpacing: -0.5,
+        marginBottom: 10,
+        letterSpacing: -0.3,
     },
     permissionSubtitle: {
-        fontFamily: 'Comfortaa_500Medium',
-        fontSize: 16,
-        color: 'rgba(255,255,255,0.6)',
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.4)',
         textAlign: 'center',
+        lineHeight: 22,
+        maxWidth: '88%',
     },
-    permissionCardContainer: {
-        marginVertical: 40,
+    // ─── Choice screen styles ────────────────────────────────────────────
+    choiceContainer: {
+        gap: 14,
+        width: '100%',
     },
-    permissionCard: {
-        borderRadius: 32,
+    choiceCard: {
+        borderRadius: 22,
         overflow: 'hidden',
-        padding: 24,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        borderColor: 'rgba(255,255,255,0.08)',
     },
-    permissionRow: {
-        flexDirection: 'row',
+    choiceGradient: {
+        padding: 22,
         alignItems: 'center',
-        marginBottom: 24,
-        gap: 20,
+        gap: 10,
     },
-    iconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+    choiceIconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
-    },
-    permissionInfo: {
-        flex: 1,
-    },
-    permissionItemTitle: {
-        fontFamily: 'Comfortaa_700Bold',
-        fontSize: 15,
-        color: '#fff',
         marginBottom: 4,
     },
-    permissionItemText: {
+    choiceTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 17,
+        color: '#fdf4ff',
+        textAlign: 'center',
+    },
+    choiceSub: {
         fontFamily: 'Comfortaa_400Regular',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.45)',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    choiceChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        borderWidth: 1,
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        marginTop: 4,
+    },
+    choiceChipText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 10,
+        letterSpacing: 0.5,
+    },
+    // ─────────────────────────────────────────────────────────────────────
+    // Instruction card styles
+    instructionCard: {
+        backgroundColor: 'rgba(88, 28, 135, 0.2)',
+        borderRadius: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(167, 139, 250, 0.12)',
+        overflow: 'hidden',
+        paddingTop: 4,
+    },
+    instructionHeading: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 11,
+        color: '#d8b4fe',
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 8,
+        opacity: 0.7,
+    },
+    instructionRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: 14,
+        paddingHorizontal: 18,
+        gap: 14,
+    },
+    instructionRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(167, 139, 250, 0.07)',
+    },
+    stepBadge: {
+        width: 28,
+        height: 28,
+        borderRadius: 10,
+        backgroundColor: 'rgba(167, 139, 250, 0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 1,
+        flexShrink: 0,
+    },
+    stepText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 9,
+        color: '#c084fc',
+        letterSpacing: 0.5,
+    },
+    instructionContent: {
+        flex: 1,
+    },
+    instructionTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 3,
+    },
+    instructionTitle: {
+        fontFamily: 'Comfortaa_700Bold',
         fontSize: 13,
-        color: 'rgba(255,255,255,0.5)',
-        lineHeight: 18,
+        color: '#f3e8ff',
+    },
+    instructionTip: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.38)',
+        lineHeight: 17,
     },
     permissionFooter: {
-        width: '100%',
-        gap: 16,
-        marginBottom: 20,
+        gap: 14,
     },
     mainActionButton: {
         width: '100%',
-        height: 64,
-        borderRadius: 32,
-        overflow: 'hidden',
-        elevation: 8,
-        shadowColor: '#d946ef',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-    },
-    actionGradient: {
-        flex: 1,
-        flexDirection: 'row',
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#7c3aed',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 12,
+        flexDirection: 'row',
+        shadowColor: '#a855f7',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.35,
+        shadowRadius: 20,
+        elevation: 10,
     },
     actionButtonText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 18,
-        color: '#fff',
-        letterSpacing: 2,
+        fontSize: 15,
+        color: '#fdf4ff',
+        letterSpacing: 0.3,
     },
     secondaryActionButton: {
         paddingVertical: 12,
         alignItems: 'center',
     },
     secondaryActionText: {
-        fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.4)',
-        letterSpacing: 1,
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.3)',
+        letterSpacing: 0.5,
     },
     camera: {
         flex: 1,
@@ -488,23 +959,27 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingTop: Platform.OS === 'ios' ? 20 : 40,
+        paddingTop: Platform.OS === 'ios' ? 12 : 36,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     flipButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(255,255,255,0.18)',
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     promptContainer: {
         paddingHorizontal: 24,
@@ -622,27 +1097,27 @@ const styles = StyleSheet.create({
         fontSize: 16,
         letterSpacing: 1,
     },
-    // New Styles
+    // Viewfinder corners
     viewfinderCornerTL: {
         position: 'absolute',
-        top: 40,
+        top: 100,
         left: 40,
-        width: 40,
-        height: 40,
-        borderTopWidth: 4,
-        borderLeftWidth: 4,
-        borderColor: 'rgba(255,255,255,0.6)',
+        width: 36,
+        height: 36,
+        borderTopWidth: 3,
+        borderLeftWidth: 3,
+        borderColor: 'rgba(255,255,255,0.7)',
         borderTopLeftRadius: 10,
     },
     viewfinderCornerTR: {
         position: 'absolute',
-        top: 40,
+        top: 100,
         right: 40,
-        width: 40,
-        height: 40,
-        borderTopWidth: 4,
-        borderRightWidth: 4,
-        borderColor: 'rgba(255,255,255,0.6)',
+        width: 36,
+        height: 36,
+        borderTopWidth: 3,
+        borderRightWidth: 3,
+        borderColor: 'rgba(255,255,255,0.7)',
         borderTopRightRadius: 10,
     },
     viewfinderCornerBL: {

@@ -1,8 +1,10 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as FileSystem from 'expo-file-system/legacy';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useState } from 'react';
-import { Dimensions, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     FadeIn,
     FadeInDown,
@@ -346,6 +348,26 @@ export default function FeelingLowScreen() {
     const [currentNodeId, setCurrentNodeId] = useState<string>('root');
     const [result, setResult] = useState<ResultContent | null>(null);
     const [history, setHistory] = useState<string[]>([]);
+    const [videoUri, setVideoUri] = useState<string | null>(null);
+    const [showVideoModal, setShowVideoModal] = useState(false);
+
+    const handleWatchCommitment = async () => {
+        try {
+            const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
+            const fileInfo = await FileSystem.getInfoAsync(videoPath);
+            if (!fileInfo.exists) {
+                Alert.alert(
+                    'No Video Found',
+                    "You haven't recorded your commitment video yet. Go to your Profile to record one."
+                );
+                return;
+            }
+            setVideoUri(videoPath);
+            setShowVideoModal(true);
+        } catch (e) {
+            Alert.alert('Error', 'Could not load your commitment video.');
+        }
+    };
 
     // Simple logic to determine visual step: 1 (root), 2, 3, 4. If result, show 4 full.
     const currentStep = result ? 4 : Math.min(history.length + 1, 4);
@@ -458,6 +480,29 @@ export default function FeelingLowScreen() {
                                 entering={FadeInDown.delay(800).duration(400)}
                                 style={styles.footerContainer}
                             >
+                                {/* Commitment Video Nudge */}
+                                <TouchableOpacity
+                                    style={styles.commitmentButton}
+                                    onPress={handleWatchCommitment}
+                                    activeOpacity={0.85}
+                                >
+                                    <LinearGradient
+                                        colors={['rgba(249,115,22,0.18)', 'rgba(180,83,9,0.10)']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                        style={styles.commitmentGradient}
+                                    >
+                                        <View style={styles.commitmentIconCircle}>
+                                            <Ionicons name="play-circle" size={22} color="#fb923c" />
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.commitmentLabel}>Did you forget your commitment?</Text>
+                                            <Text style={styles.commitmentSub}>Watch your future self — right now.</Text>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={16} color="rgba(249,115,22,0.5)" />
+                                    </LinearGradient>
+                                </TouchableOpacity>
+
                                 <TouchableOpacity
                                     style={styles.helpButton}
                                     onPress={navigateToChat}
@@ -517,9 +562,114 @@ export default function FeelingLowScreen() {
                     )}
                 </ScrollView>
             </SafeAreaView>
+
+            {/* In-App Commitment Video Player */}
+            {showVideoModal && videoUri ? (
+                <CommitmentVideoModal
+                    uri={videoUri}
+                    onClose={() => {
+                        setShowVideoModal(false);
+                        setVideoUri(null);
+                    }}
+                />
+            ) : null}
         </View>
     );
 }
+
+// ─── Commitment Video Modal ───────────────────────────────────────────────────
+function CommitmentVideoModal({ uri, onClose }: { uri: string; onClose: () => void }) {
+    const player = useVideoPlayer(uri, p => {
+        p.loop = false;
+        p.play();
+    });
+
+    return (
+        <Modal
+            visible
+            transparent
+            animationType="fade"
+            onRequestClose={onClose}
+            statusBarTranslucent
+        >
+            <View style={videoStyles.backdrop}>
+                <View style={videoStyles.topBar}>
+                    <Text style={videoStyles.topLabel}>Your Commitment to the Future</Text>
+                    <TouchableOpacity onPress={onClose} style={videoStyles.closeBtn}>
+                        <Ionicons name="close" size={22} color="#fff" />
+                    </TouchableOpacity>
+                </View>
+                <View style={videoStyles.playerWrapper}>
+                    <VideoView
+                        player={player}
+                        style={videoStyles.video}
+                        allowsFullscreen
+                        allowsPictureInPicture
+                        contentFit="contain"
+                    />
+                </View>
+                <Text style={videoStyles.reminder}>
+                    You made this promise to yourself. Honor it. 🔥
+                </Text>
+            </View>
+        </Modal>
+    );
+}
+
+const { width: SCREEN_W } = Dimensions.get('window');
+
+const videoStyles = StyleSheet.create({
+    backdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.97)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+    },
+    topBar: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    topLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 13,
+        color: '#fb923c',
+        flex: 1,
+        letterSpacing: 0.3,
+    },
+    closeBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 12,
+    },
+    playerWrapper: {
+        width: SCREEN_W - 32,
+        aspectRatio: 9 / 16,
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+    },
+    video: {
+        flex: 1,
+    },
+    reminder: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.45)',
+        textAlign: 'center',
+        marginTop: 20,
+        lineHeight: 22,
+        maxWidth: '80%',
+    },
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
     container: {
@@ -733,5 +883,41 @@ const styles = StyleSheet.create({
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 14,
         color: 'rgba(255,255,255,0.8)',
-    }
+    },
+    // Commitment button
+    commitmentButton: {
+        width: '100%',
+        borderRadius: 20,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(249,115,22,0.25)',
+    },
+    commitmentGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 18,
+        gap: 14,
+    },
+    commitmentIconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(249,115,22,0.12)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(249,115,22,0.2)',
+    },
+    commitmentLabel: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 13,
+        color: '#fb923c',
+        marginBottom: 3,
+    },
+    commitmentSub: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 11,
+        color: 'rgba(255,255,255,0.4)',
+    },
 });
