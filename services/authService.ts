@@ -117,16 +117,30 @@ export const deleteAccount = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user found");
         
-        // Try calling an RPC if available, otherwise just warn and sign out
-        const { error } = await supabase.rpc('delete_user');
-        if (error) {
-            console.log('RPC delete_user missing, fallback to warning. Details:', error);
-            // On a real app, you would have an edge function or trigger here.
-            Alert.alert("Notice", "Account flagged for deletion. Contact support for immediate removal.");
-        }
+        // Call the secure Edge Function to delete the user
+        const { data, error } = await supabase.functions.invoke('delete-user', {
+            headers: {
+                'x-client-info': 'supabase-js-react-native',
+            }
+        });
+
+        if (error) throw error;
+        
+        // After successful deletion on server, sign out locally
         await supabase.auth.signOut();
-    } catch (error) {
+    } catch (error: any) {
         console.error('Delete-account Error:', error);
+        
+        // Try to extract the detailed message from the function response
+        if (error.context && typeof error.context.json === 'function') {
+            try {
+                const body = await error.context.json();
+                if (body.message) throw new Error(body.message);
+            } catch (jsonErr) {
+                // Ignore JSON parsing errors
+            }
+        }
+        
         throw error;
     }
 };

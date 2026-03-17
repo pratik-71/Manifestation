@@ -158,7 +158,6 @@ export default function Home() {
                             </Text>
                         </Animated.View>
 
-                        {/* Grid of Action Cards */}
                         <View style={styles.actionsGrid}>
                             <View style={styles.actionsRow}>
                                 {/* Primary CTA: Manifest */}
@@ -175,24 +174,8 @@ export default function Home() {
                                     </TouchableOpacity>
                                 </Animated.View>
 
-                                {/* Secondary CTA: Universe Chat */}
-                                <Animated.View entering={FadeInUp.delay(500).duration(800)} style={styles.halfWidthCard}>
-                                    <TouchableOpacity
-                                        onPress={() => router.push('/universe_chat')}
-                                        activeOpacity={0.9}
-                                        style={[styles.actionCard, styles.cardBorderOrange]}
-                                    >
-                                        <View style={styles.iconCircle}>
-                                            <Ionicons name="planet" size={22} color="#B45309" />
-                                        </View>
-                                        <Text style={styles.cardTitle}>Guide</Text>
-                                    </TouchableOpacity>
-                                </Animated.View>
-                            </View>
-
-                            <View style={styles.actionsRow}>
                                 {/* Affirmations */}
-                                <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.halfWidthCard}>
+                                <Animated.View entering={FadeInUp.delay(500).duration(800)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
                                         onPress={() => router.push('/affirmation')}
                                         activeOpacity={0.9}
@@ -202,6 +185,22 @@ export default function Home() {
                                             <Ionicons name="chatbubble-ellipses" size={22} color="#B45309" />
                                         </View>
                                         <Text style={styles.cardTitle}>Affirmations</Text>
+                                    </TouchableOpacity>
+                                </Animated.View>
+                            </View>
+
+                            <View style={styles.actionsRow}>
+                                {/* Raise Frequency */}
+                                <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.halfWidthCard}>
+                                    <TouchableOpacity
+                                        onPress={() => router.push('/raise_frequency')}
+                                        activeOpacity={0.9}
+                                        style={[styles.actionCard, styles.cardBorderOrange]}
+                                    >
+                                        <View style={styles.iconCircle}>
+                                            <Ionicons name="flash" size={22} color="#B45309" />
+                                        </View>
+                                        <Text style={styles.cardTitle}>Frequency</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
 
@@ -215,7 +214,7 @@ export default function Home() {
                                         <View style={styles.iconCircle}>
                                             <Ionicons name="heart" size={22} color="#B45309" />
                                         </View>
-                                        <Text style={styles.cardTitle}>Feeling Low?</Text>
+                                        <Text style={styles.cardTitle}>Feeling Low</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
                             </View>
@@ -240,9 +239,6 @@ export default function Home() {
                                 <Ionicons name="play-circle-outline" size={20} color="#fb923c" style={{ marginRight: 8 }} />
                                 <Text style={styles.exploreText}>Watch Future</Text>
                             </TouchableOpacity>
-                            <View style={styles.exploreDivider} />
-
-                            
                         </Animated.View>
 
                         {/* Spacer for bottom bar */}
@@ -456,8 +452,15 @@ const styles = StyleSheet.create({
     cardBorderOrange: {
         borderColor: 'rgba(180, 83, 9, 0.4)',
     },
+    cardBorderPurple: {
+        borderColor: 'rgba(139, 92, 246, 0.4)',
+    },
     cardBorderSubtle: {
         borderColor: 'rgba(255, 255, 255, 0.05)',
+    },
+    fullWidthCard: {
+        flex: 1,
+        height: 85,
     },
     iconCircle: {
         width: 44,

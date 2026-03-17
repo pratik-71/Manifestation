@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -125,6 +126,10 @@ export default function Trust2() {
             <SafeAreaView style={styles.safe}>
                 <Animated.View style={[styles.container, { opacity: pageOpacity }]}>
 
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.4)" />
+                    </TouchableOpacity>
+
                     <View style={styles.topLabel}>
                         <Text style={styles.topLabelText}>YOUR EVOLUTION</Text>
                     </View>
@@ -208,6 +213,15 @@ const styles = StyleSheet.create({
     topLabelText: {
         fontFamily: 'Comfortaa_600SemiBold',
         fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 1.2,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
     },
     headlineBlock: { gap: 6 },
     headline: {

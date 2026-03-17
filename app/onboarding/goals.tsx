@@ -29,7 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { requestNotificationPermissions } from '../../services/notificationService';
-import { updateGoals } from '../../services/profileService';
+import { generateAIRoadmap, updateGoals } from '../../services/profileService';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useUserStore } from '../../store/userStore';
 
@@ -109,7 +109,6 @@ export default function Goals() {
     const isUpdateMode = profile?.onboarding_complete === true;
 
     useEffect(() => {
-        requestNotificationPermissions();
         // If we have existing goals, pre-fill them
         if (profile?.goals && profile.goals.length > 0) {
             setGoalTags(profile.goals);
@@ -134,42 +133,16 @@ export default function Goals() {
         setAiResponse([]);
         setCurrentAiGoalIndex(0);
 
-        // --- TEMPORARILY DISABLED API CALLS ---
-        /*
-        const goalStr = goals.join(", ");
-        const prompt = "..."; 
         try {
-            const response = await getAIResponse(prompt, []);
-            ...
+            const data = await generateAIRoadmap(goals);
+            setAiResponse(data);
+            setAiRoadmap(data);
         } catch (error) {
-            ...
+            console.error('AI Coach error:', error);
+            // Fallback handled inside generateAIRoadmap
         } finally {
             setAiLoading(false);
         }
-        */
-
-        // SIMULATED RAW DATA (Mocking the AI Response)
-        setTimeout(() => {
-            const mockData = goals.map(goal => ({
-                goal: goal,
-                content: [
-                    "YouTube - Naval Ravikant (Mental Models)",
-                    "YouTube - Alex Hormozi (Business Scaling)",
-                    "TED - Procrastination Insights",
-                    "YouTube - Mindset & Discipline Guides"
-                ],
-                network: [
-                    "Reddit - r/Entrepreneur (High Growth)",
-                    "Discord - Creator Economy Space",
-                    "Reddit - r/DisciplineHub",
-                    "Discord - High Performance Network"
-                ]
-            }));
-
-            setAiResponse(mockData);
-            setAiRoadmap(mockData);
-            setAiLoading(false);
-        }, 800);
     };
 
     const isValid = goalTags.length > 0;
@@ -437,18 +410,26 @@ export default function Goals() {
                                             <TouchableOpacity
                                                 onPress={async () => {
                                                     setIsCoachVisible(false);
-                                                    if (isUpdateMode && profile?.id) {
+                                                    if (profile?.id) {
                                                         setIsSubmitting(true);
                                                         try {
-                                                            await updateGoals(profile.id, goalTags);
+                                                            // Restore actual API update
+                                                            await updateGoals(profile.id, goalTags, aiResponse);
                                                             await fetchProfile(profile.id);
-                                                            router.replace('/manifestation');
+                                                            
+                                                            if (isUpdateMode) {
+                                                                router.replace('/manifestation');
+                                                            } else {
+                                                                router.push('/record_future?fromOnboarding=1');
+                                                            }
                                                         } catch (err) {
-                                                            console.error(err);
+                                                            console.error('Failed to update goals:', err);
                                                         } finally {
                                                             setIsSubmitting(false);
                                                         }
                                                     } else {
+                                                        // Fallback for fresh onboarding if profile not yet loaded
+                                                        setGoals(goalTags);
                                                         router.push('/record_future?fromOnboarding=1');
                                                     }
                                                 }}

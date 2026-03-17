@@ -81,23 +81,20 @@ export default function EditProfile() {
                 manifest_time: timeValueTo24h(manifestTime),
             });
 
-            // Reschedule notifications to match the new times
+            // Reschedule notifications (will update only if already granted)
             try {
-                const hasPermission = await requestNotificationPermissions();
-                if (hasPermission) {
-                    const parseTime = (val: TimeValue) => {
-                        let hour = parseInt(val.hour);
-                        if (val.ampm === 'PM' && hour !== 12) hour += 12;
-                        if (val.ampm === 'AM' && hour === 12) hour = 0;
-                        return { hour, minute: parseInt(val.minute) };
-                    };
+                const parseTime = (val: TimeValue) => {
+                    let hour = parseInt(val.hour);
+                    if (val.ampm === 'PM' && hour !== 12) hour += 12;
+                    if (val.ampm === 'AM' && hour === 12) hour = 0;
+                    return { hour, minute: parseInt(val.minute) };
+                };
 
-                    await scheduleManifestationNotifications({
-                        wakeTime: parseTime(wakeTime),
-                        sleepTime: parseTime(sleepTime),
-                        manifestTime: parseTime(manifestTime),
-                    });
-                }
+                await scheduleManifestationNotifications({
+                    wakeTime: parseTime(wakeTime),
+                    sleepTime: parseTime(sleepTime),
+                    manifestTime: parseTime(manifestTime),
+                });
             } catch (err) {
                 console.error("Failed to reschedule notifications", err);
             }

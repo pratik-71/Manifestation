@@ -8,6 +8,7 @@ export interface OnboardingProfileData {
     sleepTime: string;
     manifestTime: string;
     goals: string[];        // Saved directly in profiles.goals (JSONB)
+    aiRoadmap?: AiRoadmapItem[];
 }
 
 /**
@@ -15,7 +16,7 @@ export interface OnboardingProfileData {
  * Goals are stored as a JSONB array inside the profiles row — no extra table needed.
  */
 export const saveOnboardingProfile = async (data: OnboardingProfileData): Promise<void> => {
-    const { userId, username, wakeTime, sleepTime, manifestTime, goals } = data;
+    const { userId, username, wakeTime, sleepTime, manifestTime, goals, aiRoadmap } = data;
 
     const { error } = await supabase
         .from('profiles')
@@ -26,6 +27,7 @@ export const saveOnboardingProfile = async (data: OnboardingProfileData): Promis
             sleep_time: sleepTime,
             manifest_time: manifestTime,
             goals: goals,           // JSONB column — stored directly on the row
+            ai_roadmap: aiRoadmap || null,
             streak_count: 0,
             last_manifest_date: null,
             daily_message_count: 0,
@@ -55,11 +57,12 @@ export const hasCompletedOnboarding = async (userId: string): Promise<boolean> =
     if (error || !data) return false;
     return data.onboarding_complete === true;
 };
-export const updateGoals = async (userId: string, goals: string[]): Promise<void> => {
+export const updateGoals = async (userId: string, goals: string[], ai_roadmap?: AiRoadmapItem[]): Promise<void> => {
     const { error } = await supabase
         .from('profiles')
         .update({
             goals,
+            ai_roadmap: ai_roadmap || null,
             updated_at: new Date().toISOString(),
         })
         .eq('id', userId);
@@ -67,5 +70,35 @@ export const updateGoals = async (userId: string, goals: string[]): Promise<void
     if (error) {
         console.error('Error updating goals:', error);
         throw error;
+    }
+};
+
+/**
+ * Calls the secure Supabase Edge Function to generate an AI roadmap.
+ */
+export const generateAIRoadmap = async (goals: string[]): Promise<AiRoadmapItem[]> => {
+    try {
+        const { data, error } = await supabase.functions.invoke('generate-roadmap', {
+            body: { goals }
+        });
+
+        if (error) throw error;
+        return data as AiRoadmapItem[];
+    } catch (error) {
+        console.error('Error generating AI roadmap:', error);
+        // Fallback to high-quality roadmap if function fails
+        return goals.map(goal => ({
+            goal,
+            content: [
+                "YouTube - Mindset & Discipline Masterclass",
+                "Podcast - The Ultimate Goal Setting Series",
+                "Documentary - The Path to High Performance"
+            ],
+            network: [
+                "Reddit - r/SuccessStrategies",
+                "Discord - Elite Manifestors Community",
+                "Professional - The High Achievers Mastermind"
+            ]
+        }));
     }
 };

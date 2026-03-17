@@ -260,23 +260,20 @@ export default function Questionnaire() {
                     wake24, sleep24, manifest24,
                 });
 
-                // Schedule Notifications
+                // Schedule Notifications (Only if already granted, don't request here)
                 try {
-                    const hasPermission = await requestNotificationPermissions();
-                    if (hasPermission) {
-                        const parseTime = (val: TimeValue) => {
-                            let hour = parseInt(val.hour);
-                            if (val.ampm === 'PM' && hour !== 12) hour += 12;
-                            if (val.ampm === 'AM' && hour === 12) hour = 0;
-                            return { hour, minute: parseInt(val.minute) };
-                        };
+                    const parseTime = (val: TimeValue) => {
+                        let hour = parseInt(val.hour);
+                        if (val.ampm === 'PM' && hour !== 12) hour += 12;
+                        if (val.ampm === 'AM' && hour === 12) hour = 0;
+                        return { hour, minute: parseInt(val.minute) };
+                    };
 
-                        await scheduleManifestationNotifications({
-                            wakeTime: parseTime(wakeTimeRef.current),
-                            sleepTime: parseTime(sleepTimeRef.current),
-                            manifestTime: parseTime(manifestTimeRef.current),
-                        });
-                    }
+                    await scheduleManifestationNotifications({
+                        wakeTime: parseTime(wakeTimeRef.current),
+                        sleepTime: parseTime(sleepTimeRef.current),
+                        manifestTime: parseTime(manifestTimeRef.current),
+                    });
                 } catch (err) {
                     console.error("Failed to schedule notifications", err);
                 }

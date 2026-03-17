@@ -34,6 +34,10 @@ export default function Profile() {
     const { profile, fetchProfile } = useUserStore();
     const [email, setEmail] = useState<string>('');
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    
+    // Deletion states
+    const [isDeleteStep1Visible, setIsDeleteStep1Visible] = useState(false);
+    const [isDeleteStep2Visible, setIsDeleteStep2Visible] = useState(false);
 
     const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
     const [feedbackName, setFeedbackName] = useState('');
@@ -112,29 +116,21 @@ export default function Profile() {
     };
 
     const handleDeleteAccount = async () => {
-        Alert.alert(
-            "Delete Account",
-            "This action is permanent and will remove all of your progress, data, and settings. Are you absolutely sure?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: async () => {
-                        setIsLoggingOut(true);
-                        try {
-                            await deleteAccount();
-                            useUserStore.getState().clearProfile();
-                            router.replace('/onboarding/google_signin');
-                        } catch (error) {
-                            Alert.alert("Error", "Failed to delete account.");
-                        } finally {
-                            setIsLoggingOut(false);
-                        }
-                    }
-                }
-            ]
-        );
+        setIsDeleteStep1Visible(true);
+    };
+
+    const confirmDeleteFinal = async () => {
+        setIsDeleteStep2Visible(false);
+        setIsLoggingOut(true);
+        try {
+            await deleteAccount();
+            useUserStore.getState().clearProfile();
+            router.replace('/onboarding/google_signin');
+        } catch (error) {
+            Alert.alert("Error", "Failed to delete account.");
+        } finally {
+            setIsLoggingOut(false);
+        }
     };
 
     const MenuRow = ({ icon, label, onPress, showBorder = true, color = '#fff' }: any) => (
@@ -308,6 +304,70 @@ export default function Profile() {
                         </View>
                     </SafeAreaView>
                 </KeyboardAvoidingView>
+            </Modal>
+
+            {/* Delete Account Step 1: Initial Ask */}
+            <Modal visible={isDeleteStep1Visible} transparent animationType="fade" onRequestClose={() => setIsDeleteStep1Visible(false)}>
+                <View style={styles.alertOverlay}>
+                    <Animated.View entering={FadeInUp} style={styles.alertCard}>
+                        <View style={styles.alertIconBg}>
+                            <Ionicons name="alert-circle" size={32} color="#ef4444" />
+                        </View>
+                        <Text style={styles.alertTitle}>Delete Account</Text>
+                        <Text style={styles.alertMessage}>Are you sure you want to do it?</Text>
+                        
+                        <View style={styles.alertActions}>
+                            <TouchableOpacity 
+                                style={[styles.alertButton, styles.cancelBtn]} 
+                                onPress={() => setIsDeleteStep1Visible(false)}
+                            >
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.alertButton, styles.proceedBtn]} 
+                                onPress={() => {
+                                    setIsDeleteStep1Visible(false);
+                                    setIsDeleteStep2Visible(true);
+                                }}
+                            >
+                                <Text style={styles.proceedBtnText}>Proceed</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                </View>
+            </Modal>
+
+            {/* Delete Account Step 2: Final Warning */}
+            <Modal visible={isDeleteStep2Visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setIsDeleteStep2Visible(false)}>
+                <View style={styles.fullDeleteContainer}>
+                    <BreathingBackground colors={['#1c1917', '#450a0a', '#000000']} opacity={1} />
+                    <SafeAreaView style={styles.fullDeleteSafe}>
+                        <View style={styles.fullDeleteContent}>
+                            <Ionicons name="warning" size={80} color="#ef4444" style={{ marginBottom: 30 }} />
+                            <Text style={styles.fullDeleteTitle}>FINAL WARNING</Text>
+                            <Text style={styles.fullDeleteMessage}>
+                                You will lose ALL data, progress, and settings. This action is irreversible.
+                            </Text>
+                            <Text style={styles.fullDeleteAsk}>Are you absolutely sure you want to delete your account?</Text>
+
+                            <TouchableOpacity 
+                                style={styles.finalDeleteBtn} 
+                                onPress={confirmDeleteFinal}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.finalDeleteText}>YES, DELETE IT</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={styles.finalCancelBtn} 
+                                onPress={() => setIsDeleteStep2Visible(false)}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={styles.finalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </View>
             </Modal>
         </View>
     );
@@ -544,5 +604,139 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#fff',
         letterSpacing: 2,
+    },
+
+    // Custom Alert Modals
+    alertOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        padding: 30,
+    },
+    alertCard: {
+        backgroundColor: '#1e293b',
+        borderRadius: 24,
+        padding: 24,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    alertIconBg: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+    },
+    alertTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 18,
+        color: '#fff',
+        marginBottom: 8,
+    },
+    alertMessage: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    alertActions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    alertButton: {
+        flex: 1,
+        height: 48,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelBtn: {
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    cancelBtnText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        color: '#fff',
+        fontSize: 14,
+    },
+    proceedBtn: {
+        backgroundColor: '#ef4444',
+    },
+    proceedBtnText: {
+        fontFamily: 'Comfortaa_700Bold',
+        color: '#fff',
+        fontSize: 14,
+    },
+
+    // Full Screen Delete
+    fullDeleteContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    fullDeleteSafe: {
+        flex: 1,
+    },
+    fullDeleteContent: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 32,
+    },
+    fullDeleteTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 24,
+        color: '#ef4444',
+        letterSpacing: 4,
+        marginBottom: 20,
+    },
+    fullDeleteMessage: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 16,
+        color: '#fff',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 30,
+    },
+    fullDeleteAsk: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.4)',
+        textAlign: 'center',
+        marginBottom: 60,
+    },
+    finalDeleteBtn: {
+        width: '100%',
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: '#ef4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    finalDeleteText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 16,
+        color: '#fff',
+        letterSpacing: 2,
+    },
+    finalCancelBtn: {
+        width: '100%',
+        height: 60,
+        borderRadius: 30,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    finalCancelText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 16,
+        color: '#fff',
     },
 });

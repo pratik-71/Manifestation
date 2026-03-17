@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
-import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system/legacy';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { BlurView } from 'expo-blur';
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as MediaLibrary from 'expo-media-library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    Modal,
     Platform,
     SafeAreaView,
     StatusBar,
@@ -18,7 +19,6 @@ import {
     Text,
     TouchableOpacity,
     View,
-    Modal,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
@@ -247,8 +247,8 @@ export default function RecordFuture() {
     if (!cameraPermission || !microphonePermission || !mediaLibraryPermission) {
         return (
             <View style={styles.permissionContainer}>
-                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
-                <ActivityIndicator size="large" color="#e879f9" style={{ flex: 1, alignSelf: 'center' }} />
+                <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
+                <ActivityIndicator size="large" color="#f59e0b" style={{ flex: 1, alignSelf: 'center' }} />
             </View>
         );
     }
@@ -257,28 +257,34 @@ export default function RecordFuture() {
         return (
             <View style={styles.permissionContainer}>
                 <StatusBar barStyle="light-content" />
-                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
+                <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
                 <View style={styles.permissionOverlay} pointerEvents="none" />
 
                 <SafeAreaView style={styles.permissionSafe}>
-                    {isOnboarding && (
-                        <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
-                            <Text style={styles.skipNavText}>Skip</Text>
-                            <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
-                        </TouchableOpacity>
-                    )}
+                    <View>
+                        <View style={styles.permissionHeader}>
+                            <TouchableOpacity onPress={() => router.back()} style={styles.miniBackButton}>
+                                <Ionicons name="chevron-back" size={24} color="#fff" />
+                            </TouchableOpacity>
 
-                    <Animated.View entering={FadeInDown.duration(800)} style={styles.permissionHero}>
-                        <View style={styles.heroIconRing}>
-                            <View style={styles.heroIconInner}>
-                                <Ionicons name="videocam" size={20} color="#f0abfc" />
-                            </View>
+                            {isOnboarding && (
+                                <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
+                                    <Text style={styles.skipNavText}>Skip</Text>
+                                    <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
+                                </TouchableOpacity>
+                            )}
                         </View>
-                        <Text style={styles.permissionTitle}>Record Your Future</Text>
-                        <Text style={styles.permissionSubtitle}>
-                            A message from your future self — already living the life you dreamed of.
-                        </Text>
-                    </Animated.View>
+
+                        <Animated.View entering={FadeInDown.duration(800)} style={styles.permissionHero}>
+                            <View style={styles.heroIconInner}>
+                                <Ionicons name="videocam" size={28} color="#f59e0b" />
+                            </View>
+                            <Text style={styles.permissionTitle}>Record Your Future</Text>
+                            <Text style={styles.permissionSubtitle}>
+                                A message from your future self — already living the life you dreamed of.
+                            </Text>
+                        </Animated.View>
+                    </View>
 
                     <Animated.View entering={FadeIn.delay(400).duration(800)} style={styles.instructionCard}>
                         <Text style={styles.instructionHeading}>How to make it powerful</Text>
@@ -314,7 +320,7 @@ export default function RecordFuture() {
                                 </View>
                                 <View style={styles.instructionContent}>
                                     <View style={styles.instructionTitleRow}>
-                                        <Ionicons name={item.icon} size={13} color="#d8b4fe" style={{ marginRight: 5 }} />
+                                        <Ionicons name={item.icon} size={13} color="#f59e0b" style={{ marginRight: 5 }} />
                                         <Text style={styles.instructionTitle}>{item.title}</Text>
                                     </View>
                                     <Text style={styles.instructionTip}>{item.tip}</Text>
@@ -347,8 +353,8 @@ export default function RecordFuture() {
     if (videoExists === null) {
         return (
             <View style={styles.permissionContainer}>
-                <BreathingBackground colors={['#0d0015', '#1a0533', '#2d0845']} opacity={1} />
-                <ActivityIndicator size="large" color="#e879f9" style={{ flex: 1, alignSelf: 'center' }} />
+                <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
+                <ActivityIndicator size="large" color="#f59e0b" style={{ flex: 1, alignSelf: 'center' }} />
             </View>
         );
     }
@@ -369,9 +375,9 @@ export default function RecordFuture() {
 
                     {/* Hero */}
                     <View style={choiceStyles.hero}>
-                        
-                            <Ionicons name="film-outline" size={32} color="#fb923c" />
-                        
+
+                        <Ionicons name="film-outline" size={32} color="#fb923c" />
+
                         <Text style={choiceStyles.heading}>Your Future Message</Text>
                         <Text style={choiceStyles.subheading}>
                             A message from the version of you{`\n`}who already made it.
@@ -483,7 +489,7 @@ export default function RecordFuture() {
 
             const fileName = `message_${Date.now()}.mp4`;
             const newPath = `${dir}${fileName}`;
-            
+
             // Move file to our app folder
             await FileSystem.moveAsync({
                 from: uri,
@@ -507,9 +513,9 @@ export default function RecordFuture() {
 
     return (
         <View style={styles.container}>
-            <CameraView 
-                style={styles.camera} 
-                facing={facing} 
+            <CameraView
+                style={styles.camera}
+                facing={facing}
                 mode="video"
                 ref={cameraRef}
             >
@@ -552,7 +558,7 @@ export default function RecordFuture() {
                             <View style={styles.viewfinderCornerTR} />
                             <View style={styles.viewfinderCornerBL} />
                             <View style={styles.viewfinderCornerBR} />
-                            
+
                             <View style={styles.recordingHeader}>
                                 <Animated.View style={[styles.redDot, pulseStyle]} />
                                 <Text style={styles.recordingText}>Recording {formatTime(recordTime)}</Text>
@@ -573,7 +579,7 @@ export default function RecordFuture() {
                                 onPress={isRecording ? stopRecording : startRecording}
                             >
                                 <Animated.View style={[
-                                    styles.recordButtonInner, 
+                                    styles.recordButtonInner,
                                     isRecording ? { borderRadius: 10, width: 32, height: 32 } : {},
                                     isRecording ? pulseStyle : {}
                                 ]} />
@@ -595,14 +601,14 @@ export default function RecordFuture() {
                 animationType="fade"
             >
                 <View style={styles.modalOverlay}>
-                    <Animated.View 
+                    <Animated.View
                         entering={FadeInDown.springify()}
                         style={styles.successCard}
                     >
                         <View style={styles.successIconContainer}>
-                            <Ionicons name="checkmark-circle" size={80} color="#34d399" />
+                            <Ionicons name="checkmark-circle" size={80} color="#f59e0b" />
                         </View>
-                        
+
                         <Text style={styles.successTitle}>Message Saved!</Text>
                         <Text style={styles.successText}>
                             Your video has been saved in your app records.
@@ -616,7 +622,7 @@ export default function RecordFuture() {
                             }}
                         >
                             <LinearGradient
-                                colors={['#8b5cf6', '#d946ef']}
+                                colors={['#f97316', '#ea580c']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.doneGradient}
@@ -687,7 +693,7 @@ const evStyles = StyleSheet.create({
     topLabel: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 14,
-        color: '#c084fc',
+        color: '#f59e0b',
         flex: 1,
     },
     closeBtn: {
@@ -736,9 +742,25 @@ const styles = StyleSheet.create({
     permissionSafe: {
         flex: 1,
         paddingHorizontal: 24,
-        paddingTop: 46,
+        paddingTop: 0,
         paddingBottom: 32,
         justifyContent: 'space-between',
+    },
+    permissionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 10,
+        marginBottom: 0,
+    },
+    miniBackButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     skipNav: {
         flexDirection: 'row',
@@ -758,26 +780,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 10,
     },
-    heroIconRing: {
-        width: 48,
-        height: 48,
-        borderRadius: 44,
-        backgroundColor: 'rgba(232, 121, 249, 0.07)',
-        borderWidth: 1,
-        borderColor: 'rgba(232, 121, 249, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 24,
-    },
     heroIconInner: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: 'rgba(167, 139, 250, 0.1)',
-        borderWidth: 1,
-        borderColor: 'rgba(240, 171, 252, 0.2)',
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: 'rgba(245, 158, 11, 0.08)',
         alignItems: 'center',
         justifyContent: 'center',
+        marginBottom: 20,
     },
     permissionTitle: {
         fontFamily: 'Comfortaa_700Bold',
@@ -850,17 +860,17 @@ const styles = StyleSheet.create({
     // ─────────────────────────────────────────────────────────────────────
     // Instruction card styles
     instructionCard: {
-        backgroundColor: 'rgba(88, 28, 135, 0.2)',
+        backgroundColor: 'rgba(69, 26, 3, 0.15)',
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: 'rgba(167, 139, 250, 0.12)',
+        borderColor: 'rgba(245, 158, 11, 0.12)',
         overflow: 'hidden',
         paddingTop: 4,
     },
     instructionHeading: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 11,
-        color: '#d8b4fe',
+        color: '#fcd34d',
         letterSpacing: 1.5,
         textTransform: 'uppercase',
         paddingHorizontal: 20,
@@ -877,13 +887,13 @@ const styles = StyleSheet.create({
     },
     instructionRowBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(167, 139, 250, 0.07)',
+        borderBottomColor: 'rgba(245, 158, 11, 0.07)',
     },
     stepBadge: {
         width: 28,
         height: 28,
         borderRadius: 10,
-        backgroundColor: 'rgba(167, 139, 250, 0.12)',
+        backgroundColor: 'rgba(245, 158, 11, 0.12)',
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 1,
@@ -892,7 +902,7 @@ const styles = StyleSheet.create({
     stepText: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 9,
-        color: '#c084fc',
+        color: '#f59e0b',
         letterSpacing: 0.5,
     },
     instructionContent: {
@@ -921,11 +931,11 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#7c3aed',
+        backgroundColor: '#f97316',
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        shadowColor: '#a855f7',
+        shadowColor: '#f97316',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.35,
         shadowRadius: 20,
@@ -953,7 +963,7 @@ const styles = StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(0,0,0,0.4)', 
+        backgroundColor: 'rgba(0,0,0,0.4)',
     },
     header: {
         flexDirection: 'row',

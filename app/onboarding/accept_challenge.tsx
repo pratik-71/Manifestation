@@ -57,6 +57,7 @@ export default function AcceptChallenge() {
                 sleepTime: ob_sleepTime || '23:00',
                 manifestTime: ob_manifestTime || '10:00',
                 goals: ob_goals,
+                aiRoadmap: ob_aiRoadmap,
             });
 
             console.log('✅ Final onboarding profile saved to Supabase');
@@ -65,11 +66,11 @@ export default function AcceptChallenge() {
             await fetchProfile(user.id);
             
             resetOnboarding();
-            router.replace('/onboarding/paywall');
+            router.replace('/onboarding/trust1');
         } catch (error) {
             console.error("Failed to finish onboarding:", error);
             // Even if save fails, try to go home or show error
-            router.replace('/onboarding/paywall');
+            router.replace('/onboarding/trust1');
         } finally {
             setIsProcessing(false);
         }

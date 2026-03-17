@@ -203,6 +203,13 @@ export default function Paywall() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
                 >
+                    {/* Header with Back Button */}
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                            <Ionicons name="chevron-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+
                     {/* Brand Section */}
                     <Animated.View entering={FadeInUp.duration(600)} style={styles.brandSection}>
                         <Image
@@ -430,7 +437,21 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 24,
         paddingBottom: 40,
-        paddingTop: 20,
+        paddingTop: 10,
+    },
+    headerRow: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     brandSection: {
         alignItems: 'center',

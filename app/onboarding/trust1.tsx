@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
@@ -137,6 +138,11 @@ export default function Trust1() {
             <SafeAreaView style={styles.safe}>
                 <Animated.View style={[styles.container, { opacity: pageOpacity }]}>
 
+                    {/* ── BACK BUTTON ── */}
+                    <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                        <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.4)" />
+                    </TouchableOpacity>
+
                     {/* ── LABEL ── */}
                     <View style={styles.topLabel}>
                         <Text style={styles.topLabelText}>WHY IT WORKS</Text>
@@ -246,6 +252,15 @@ const styles = StyleSheet.create({
     subAccent: {
         fontFamily: 'Comfortaa_600SemiBold',
         color: '#f59e0b',
+    },
+    backBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
     },
 
     // Carousel

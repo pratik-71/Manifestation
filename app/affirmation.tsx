@@ -2,9 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Dimensions, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Vibration } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
+    cancelAnimation,
     FadeInDown,
     interpolate,
     runOnJS,
@@ -15,7 +16,6 @@ import Animated, {
     withTiming
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import { BreathingBackground } from '../components/BreathingBackground';
 
 const { width, height } = Dimensions.get('window');
@@ -124,43 +124,47 @@ export default function AffirmationScreen() {
     const [showConfetti, setShowConfetti] = React.useState(false);
     const lastHapticPulse = useSharedValue(0);
 
-    // Provide haptic feedback during charging
-    useAnimatedReaction(
-        () => charge.value,
-        (current: number, previous: number | null) => {
-            if (current > 0 && current < 1) {
-                // Pulse every 5% of charge
-                if (Math.floor(current * 20) > Math.floor((previous || 0) * 20)) {
-                    runOnJS(Haptics.selectionAsync)();
-                }
-            }
-            if (current === 1 && previous !== 1) {
-                // Completed!
-                runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
-                runOnJS(setShowConfetti)(true);
-                // Reset confetti after a delay
-                runOnJS(setTimeout)(() => setShowConfetti(false), 3000);
-            }
+    const handleFinish = () => {
+        try {
+            // TRIGGER THE BIG VIBRATION
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            
+            // 800ms is a very long, powerful pulse to make it feel "Big"
+            Vibration.vibrate(800);
+
+            setTimeout(() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }, 600);
+        } catch (e) {
+            console.warn("Haptics/Vibration failed:", e);
         }
-    );
+    };
 
     const handleNext = () => {
+        cancelAnimation(charge);
+        charge.value = 0;
         setDirection(1);
         setCurrentIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
         setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
-        charge.value = 0;
     };
 
     const handlePrev = () => {
+        cancelAnimation(charge);
+        charge.value = 0;
         setDirection(-1);
         setCurrentIndex((prev) => (prev - 1 + AFFIRMATIONS.length) % AFFIRMATIONS.length);
         setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
-        charge.value = 0;
     };
 
     const panGesture = Gesture.Pan()
         .onBegin(() => {
-            charge.value = withTiming(1, { duration: 2000 });
+            // ALWAYS reset to 0 so we can repeat the affirmation ceremony
+            charge.value = 0;
+            charge.value = withTiming(1, { duration: 2500 }, (finished) => {
+                if (finished) {
+                    runOnJS(handleFinish)();
+                }
+            });
         })
         .onEnd((e) => {
             if (e.translationY < -100) {
@@ -173,6 +177,7 @@ export default function AffirmationScreen() {
         })
         .onFinalize(() => {
             if (charge.value < 1) {
+                cancelAnimation(charge);
                 charge.value = withSpring(0);
             }
         });
@@ -227,15 +232,6 @@ export default function AffirmationScreen() {
 
                 <GestureDetector gesture={panGesture}>
                     <View style={styles.interactiveLayer}>
-                        {showConfetti && (
-                            <ConfettiCannon 
-                                count={50} 
-                                origin={{ x: width / 2, y: height / 2 }} 
-                                fadeOut={true}
-                                fallSpeed={2000}
-                                explosionSpeed={350}
-                            />
-                        )}
                         <Animated.View 
                             key={`fact-${factIndex}`}
                             entering={FadeInDown.duration(600)}
