@@ -65,11 +65,11 @@ export default function AcceptChallenge() {
             await fetchProfile(user.id);
             
             resetOnboarding();
-            router.replace('/home');
+            router.replace('/onboarding/paywall');
         } catch (error) {
             console.error("Failed to finish onboarding:", error);
             // Even if save fails, try to go home or show error
-            router.replace('/home');
+            router.replace('/onboarding/paywall');
         } finally {
             setIsProcessing(false);
         }

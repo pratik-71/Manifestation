@@ -9,10 +9,13 @@ import Animated, {
     interpolate,
     runOnJS,
     useAnimatedStyle,
+    useAnimatedReaction,
     useSharedValue,
     withSpring,
     withTiming
 } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { BreathingBackground } from '../components/BreathingBackground';
 
 const { width, height } = Dimensions.get('window');
@@ -55,6 +58,34 @@ const AFFIRMATIONS = [
     "Love leads my life, wealth supports my goals, happiness fulfills my days, and recognition follows my efforts."
 ];
 
+const SCIENTIFIC_FACTS = [
+    "Studies show affirmations stimulate the reward system in your brain.",
+    "Positive self-talk can significantly reduce the impact of chronic stress.",
+    "Research indicates affirmations increase activity in self-processing brain regions.",
+    "Daily affirmations help reinforce positive neural pathways.",
+    "Self-affirmation can improve problem-solving skills under high pressure.",
+    "Affirming core values helps create a psychological buffer against ego-threats.",
+    "Studies suggest affirmations can lower levels of the stress hormone cortisol.",
+    "Affirmations activate the ventral striatum, part of the brain's reward system.",
+    "Repeating positive statements helps re-wire negative cognitive distortions.",
+    "Research shows affirmations help people process information more effectively.",
+    "Positive talk boosts self-efficacy, making it easier to take real action.",
+    "Self-affirmation has been proven to improve academic and work focus.",
+    "Neuroplasticity allows affirmations to shift deeply held internal beliefs.",
+    "Affirmations help align conscious efforts with subconscious desires.",
+    "Consistent practice helps build resilience against external criticism.",
+    "Positive self-affirmation can improve physical health outcomes over time.",
+    "Research shows affirmations help maintain a steady, positive self-concept.",
+    "Affirmations foster a growth mindset by focusing on future potential.",
+    "Studies show affirmations increase open-mindedness to new opportunities.",
+    "Positive talk activates the prefrontal cortex, improving focus and planning.",
+    "Self-affirmation improves executive function and emotional regulation.",
+    "Affirmations help reduce the brain's focus on negative emotional triggers.",
+    "Research indicates affirmations help people stick to long-term habits.",
+    "Practicing affirmations helps transition from reactive to proactive thinking.",
+    "Affirmations strengthen the neurological connection between heart and mind."
+];
+
 export default function AffirmationScreen() {
     const router = useRouter();
     const charge = useSharedValue(0);
@@ -88,16 +119,42 @@ export default function AffirmationScreen() {
 
 
     const [direction, setDirection] = React.useState(0); // 1 for next, -1 for prev
+    const [factIndex, setFactIndex] = React.useState(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
+
+    const [showConfetti, setShowConfetti] = React.useState(false);
+    const lastHapticPulse = useSharedValue(0);
+
+    // Provide haptic feedback during charging
+    useAnimatedReaction(
+        () => charge.value,
+        (current: number, previous: number | null) => {
+            if (current > 0 && current < 1) {
+                // Pulse every 5% of charge
+                if (Math.floor(current * 20) > Math.floor((previous || 0) * 20)) {
+                    runOnJS(Haptics.selectionAsync)();
+                }
+            }
+            if (current === 1 && previous !== 1) {
+                // Completed!
+                runOnJS(Haptics.notificationAsync)(Haptics.NotificationFeedbackType.Success);
+                runOnJS(setShowConfetti)(true);
+                // Reset confetti after a delay
+                runOnJS(setTimeout)(() => setShowConfetti(false), 3000);
+            }
+        }
+    );
 
     const handleNext = () => {
         setDirection(1);
         setCurrentIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
+        setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
         charge.value = 0;
     };
 
     const handlePrev = () => {
         setDirection(-1);
         setCurrentIndex((prev) => (prev - 1 + AFFIRMATIONS.length) % AFFIRMATIONS.length);
+        setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
         charge.value = 0;
     };
 
@@ -170,6 +227,22 @@ export default function AffirmationScreen() {
 
                 <GestureDetector gesture={panGesture}>
                     <View style={styles.interactiveLayer}>
+                        {showConfetti && (
+                            <ConfettiCannon 
+                                count={50} 
+                                origin={{ x: width / 2, y: height / 2 }} 
+                                fadeOut={true}
+                                fallSpeed={2000}
+                                explosionSpeed={350}
+                            />
+                        )}
+                        <Animated.View 
+                            key={`fact-${factIndex}`}
+                            entering={FadeInDown.duration(600)}
+                            style={styles.factContainer}
+                        >
+                            <Text style={styles.factText}>{SCIENTIFIC_FACTS[factIndex]}</Text>
+                        </Animated.View>
                         <View style={styles.content}>
                             <Animated.View
                                 key={currentIndex}
@@ -316,5 +389,23 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.1)',
+    },
+    factContainer: {
+        position: 'absolute',
+        top: 20,
+        left: 30,
+        right: 30,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        opacity: 0.6,
+    },
+    factText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 10,
+        color: '#fff',
+        textAlign: 'center',
+        lineHeight: 16,
+        fontStyle: 'italic',
     }
 });

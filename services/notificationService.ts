@@ -43,8 +43,8 @@ export const scheduleManifestationNotifications = async (config: MultiTimeConfig
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Good Morning, Soul",
-      body: "Start your day with your morning affirmations. The universe is waiting.",
+      title: "Rise and Shine!",
+      body: "A new day to reach your dreams. Let's start with a positive thought.",
       data: { url: '/affirmation' },
     },
     trigger: {
@@ -54,15 +54,34 @@ export const scheduleManifestationNotifications = async (config: MultiTimeConfig
     },
   });
 
-  // 2. Bedtime Reflection (5 mins before sleep_time)
+  // 2. Daily Checklist Reminder (1 hour before sleep_time)
+  let checklistTime = new Date();
+  checklistTime.setHours(config.sleepTime.hour);
+  checklistTime.setMinutes(config.sleepTime.minute);
+  checklistTime.setHours(checklistTime.getHours() - 1);
+
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: "Almost There!",
+      body: "Did you finish your tasks for today? Open your checklist now.",
+      data: { url: '/manifestation' },
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: checklistTime.getHours(),
+      minute: checklistTime.getMinutes(),
+    },
+  });
+
+  // 3. Bedtime Reflection (5 mins before sleep_time)
   let sleepTimeModified = new Date();
   sleepTimeModified.setHours(config.sleepTime.hour);
   sleepTimeModified.setMinutes(config.sleepTime.minute - 5);
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "Evening Reflection",
-      body: "Prepare your mind for rest. 5 minutes until your bedtime ritual.",
+      title: "Time to Rest",
+      body: "You did great today. Let's settle your mind for a deep sleep.",
       data: { url: '/affirmation' },
     },
     trigger: {
@@ -72,12 +91,12 @@ export const scheduleManifestationNotifications = async (config: MultiTimeConfig
     },
   });
 
-  // 3. Exact Manifestation Time
+  // 4. Exact Manifestation Time
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: "It's Manifestation Time!",
-      body: "Your portal is open. Focus on your goals now.",
-      data: { url: '/manifest_hub' },
+      title: "It's Power Time!",
+      body: "Your future self is waiting. Step into your manifestation ritual.",
+      data: { url: '/Manifestation/mani_home' },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,

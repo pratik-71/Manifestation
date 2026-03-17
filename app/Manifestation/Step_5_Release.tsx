@@ -1,4 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import React, { useState } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
@@ -19,6 +21,7 @@ const CENTER = width * 0.5; // rings fill the full width
 
 const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
     const [isReleased, setIsReleased] = useState(false);
+    const [showConfetti, setShowConfetti] = useState(false);
 
     // Shared values for 5 orbit rings at different speeds/directions
     const rot1 = useSharedValue(0);
@@ -56,12 +59,21 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
 
     const handleRelease = () => {
         setIsReleased(true);
+        // Initial tactile feedback
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        
         releaseScale.value = withSequence(
             withTiming(1.4, { duration: 600 }),
             withTiming(0, { duration: 1000 })
         );
         releaseOpacity.value = withDelay(400, withTiming(0, { duration: 1200 }));
         successOpacity.value = withDelay(1400, withTiming(1, { duration: 800 }));
+
+        // Trigger confetti and success haptic after expansion
+        setTimeout(() => {
+            setShowConfetti(true);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }, 600);
 
         setTimeout(() => {
             if (onComplete) onComplete();
@@ -129,6 +141,14 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
                 </Animated.View>
 
                 {/* Success overlay */}
+                {showConfetti && (
+                    <ConfettiCannon 
+                        count={60} 
+                        origin={{ x: width / 2, y: height / 2 }} 
+                        fadeOut={true}
+                        fallSpeed={2500}
+                    />
+                )}
                 {isReleased && (
                     <Animated.View style={[styles.successOverlay, successStyle]}>
                         <Text style={styles.successText}>You're all set.</Text>

@@ -33,6 +33,21 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
     useEffect(() => {
         const loadSavedGoals = async () => {
             try {
+                // Check if 24 hours have passed since last save
+                const lastSaveTime = await AsyncStorage.getItem('last_goals_save_time');
+                if (lastSaveTime) {
+                    const saveDate = new Date(lastSaveTime);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - saveDate.getTime()) / (1000 * 60 * 60);
+
+                    if (diffInHours >= 24) {
+                        console.log("🕒 24 hours passed, clearing goals");
+                        await AsyncStorage.removeItem('today_goals');
+                        await AsyncStorage.removeItem('last_goals_save_time');
+                        return; // Default to initial empty goal
+                    }
+                }
+
                 const saved = await AsyncStorage.getItem('today_goals');
                 if (saved) {
                     const parsed: string[] = JSON.parse(saved);
@@ -88,7 +103,9 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
             await AsyncStorage.setItem('manifestation_history', JSON.stringify(history));
 
             // Also save as "today's goals" for quick access
+            const now = new Date().toISOString();
             await AsyncStorage.setItem('today_goals', JSON.stringify(validGoals.map(g => g.text)));
+            await AsyncStorage.setItem('last_goals_save_time', now);
 
             onComplete?.();
         } catch (error) {
