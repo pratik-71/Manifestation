@@ -128,8 +128,8 @@ export default function GoogleSignIn() {
                     router.replace('/home');
                     return;
                 }
+                router.replace('/onboarding/questionnaire');
             }
-            router.replace('/onboarding/questionnaire');
         } catch (error: any) {
             console.error('Login failed', error);
             if (error.code !== 'SIGN_IN_CANCELLED') {

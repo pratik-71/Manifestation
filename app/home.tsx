@@ -29,7 +29,7 @@ export default function Home() {
             const fileInfo = await FileSystem.getInfoAsync(videoPath);
 
             if (!fileInfo.exists) {
-                Alert.alert("No Messages Yet", "You haven't recorded any digital records yet. You can do this in your Profile.");
+                router.push('/record_future');
                 return;
             }
 

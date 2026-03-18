@@ -121,57 +121,95 @@ export default function AffirmationScreen() {
     const [direction, setDirection] = React.useState(0); // 1 for next, -1 for prev
     const [factIndex, setFactIndex] = React.useState(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
 
-    const [showConfetti, setShowConfetti] = React.useState(false);
-    const lastHapticPulse = useSharedValue(0);
+    const hasVibrated = useSharedValue(false);
+    const lastTick = useSharedValue(0);
 
-    const handleFinish = () => {
+    const handleBegin = React.useCallback(() => {
         try {
-            // TRIGGER THE BIG VIBRATION
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            
-            // 800ms is a very long, powerful pulse to make it feel "Big"
-            Vibration.vibrate(800);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        } catch (e) { }
+    }, []);
 
-            setTimeout(() => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }, 600);
-        } catch (e) {
-            console.warn("Haptics/Vibration failed:", e);
-        }
-    };
+    const handleTick = React.useCallback(() => {
+        try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } catch (e) { }
+    }, []);
 
-    const handleNext = () => {
+    const autoScrollTimeout = React.useRef<any>(null);
+
+    const handleNext = React.useCallback(() => {
+        if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
         cancelAnimation(charge);
         charge.value = 0;
         setDirection(1);
         setCurrentIndex((prev) => (prev + 1) % AFFIRMATIONS.length);
         setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
-    };
+    }, [charge]);
 
-    const handlePrev = () => {
+    const handleFinish = React.useCallback(() => {
+        try {
+            Vibration.cancel();
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            Vibration.vibrate([0, 800]);
+
+            setTimeout(() => {
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }, 200);
+
+            // Auto-scroll to next affirmation after 1.5s delay
+            if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
+            autoScrollTimeout.current = setTimeout(() => {
+                handleNext();
+            }, 1500);
+
+        } catch (error) {
+            console.warn("Vibration feedback failed", error);
+        }
+    }, [handleNext]);
+
+    const handlePrev = React.useCallback(() => {
         cancelAnimation(charge);
         charge.value = 0;
         setDirection(-1);
         setCurrentIndex((prev) => (prev - 1 + AFFIRMATIONS.length) % AFFIRMATIONS.length);
         setFactIndex(Math.floor(Math.random() * SCIENTIFIC_FACTS.length));
-    };
+    }, [charge]);
+
+    useAnimatedReaction(
+        () => charge.value,
+        (current, previous) => {
+            if (current > lastTick.value + 0.2) {
+                lastTick.value = Math.floor(current * 5) / 5;
+                if (current < 1) {
+                    runOnJS(handleTick)();
+                }
+            }
+
+            if (current >= 1 && !hasVibrated.value) {
+                hasVibrated.value = true;
+                runOnJS(handleFinish)();
+            }
+
+            if (current === 0) {
+                hasVibrated.value = false;
+                lastTick.value = 0;
+            }
+        }
+    );
 
     const panGesture = Gesture.Pan()
+        .shouldCancelWhenOutside(false)
         .onBegin(() => {
-            // ALWAYS reset to 0 so we can repeat the affirmation ceremony
+            if (charge.value >= 1) return; // Don't reset if already finished
+            runOnJS(handleBegin)();
             charge.value = 0;
-            charge.value = withTiming(1, { duration: 2500 }, (finished) => {
-                if (finished) {
-                    runOnJS(handleFinish)();
-                }
-            });
+            charge.value = withTiming(1, { duration: 2000 });
         })
         .onEnd((e) => {
             if (e.translationY < -100) {
-                // Swipe Up -> Next
                 runOnJS(handleNext)();
             } else if (e.translationY > 100) {
-                // Swipe Down -> Prev
                 runOnJS(handlePrev)();
             }
         })
@@ -200,8 +238,6 @@ export default function AffirmationScreen() {
     const textStyle = useAnimatedStyle(() => ({
         transform: [{ scale: textPulse.value + charge.value * 0.1 }],
         opacity: interpolate(charge.value, [0, 1], [1, 0.8]),
-        textShadowRadius: interpolate(charge.value, [0, 1], [10, 30]),
-        textShadowColor: 'rgba(249, 115, 22, 0.5)',
     }));
 
     const progressBarStyle = useAnimatedStyle(() => ({
@@ -217,29 +253,30 @@ export default function AffirmationScreen() {
                 opacity={0.8}
             />
 
-            <SafeAreaView style={styles.safeArea}>
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        style={styles.backButton}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name="chevron-back" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Daily Affirmation</Text>
-                    <View style={{ width: 24 }} />
-                </View>
+            <GestureDetector gesture={panGesture}>
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={styles.backButton}
+                            activeOpacity={0.7}
+                        >
+                            <Ionicons name="chevron-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Daily Affirmation</Text>
+                        <View style={{ width: 24 }} />
+                    </View>
 
-                <GestureDetector gesture={panGesture}>
                     <View style={styles.interactiveLayer}>
                         <Animated.View 
                             key={`fact-${factIndex}`}
                             entering={FadeInDown.duration(600)}
                             style={styles.factContainer}
+                            pointerEvents="none"
                         >
                             <Text style={styles.factText}>{SCIENTIFIC_FACTS[factIndex]}</Text>
                         </Animated.View>
-                        <View style={styles.content}>
+                        <View style={styles.content} pointerEvents="none">
                             <Animated.View
                                 key={currentIndex}
                                 entering={direction >= 0 ? FadeInDown.duration(800) : FadeInDown.duration(800)}
@@ -266,8 +303,8 @@ export default function AffirmationScreen() {
                             </Animated.View>
                         </View>
                     </View>
-                </GestureDetector>
-            </SafeAreaView>
+                </SafeAreaView>
+            </GestureDetector>
         </View>
     );
 }

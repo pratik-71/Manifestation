@@ -26,10 +26,10 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
             route: '/manifestation',
         },
         {
-            name: 'Space',
-            icon: 'planet-outline' as const,
-            activeIcon: 'planet' as const,
-            route: '/universe_chat',
+            name: 'Frequency',
+            icon: 'pulse-outline' as const,
+            activeIcon: 'pulse' as const,
+            route: '/raise_frequency',
         },
         {
             name: 'Profile',

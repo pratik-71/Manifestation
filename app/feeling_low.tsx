@@ -441,11 +441,7 @@ export default function FeelingLowScreen() {
                         <Ionicons name="chevron-back" size={24} color="rgba(255,255,255,0.8)" />
                     </TouchableOpacity>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Image
-                            source={require('../assets/logo.png')}
-                            style={{ width: 24, height: 24 }}
-                            resizeMode="contain"
-                        />
+                      
                         <Text style={styles.headerTitle}>Soul Space</Text>
                     </View>
                     <View style={{ width: 32 }} />
