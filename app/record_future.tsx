@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
+    Linking,
     Modal,
     Platform,
     SafeAreaView,
@@ -333,9 +334,20 @@ export default function RecordFuture() {
                         <TouchableOpacity
                             activeOpacity={0.85}
                             onPress={async () => {
-                                await requestCameraPermission();
-                                await requestMicrophonePermission();
-                                await requestMediaLibraryPermission();
+                                const cam = await requestCameraPermission();
+                                const mic = await requestMicrophonePermission();
+                                const med = await requestMediaLibraryPermission();
+
+                                if (!cam?.granted || !mic?.granted || !med?.granted) {
+                                    Alert.alert(
+                                        "Permissions Required",
+                                        "Please enable Camera, Microphone, and Photos access in your device settings to record your future.",
+                                        [
+                                            { text: "Cancel", style: "cancel" },
+                                            { text: "Open Settings", onPress: () => Linking.openSettings() }
+                                        ]
+                                    );
+                                }
                             }}
                             style={styles.mainActionButton}
                         >
