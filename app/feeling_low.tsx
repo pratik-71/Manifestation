@@ -3,7 +3,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import { Alert, Dimensions, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     FadeIn,
@@ -350,6 +351,16 @@ export default function FeelingLowScreen() {
     const [history, setHistory] = useState<string[]>([]);
     const [videoUri, setVideoUri] = useState<string | null>(null);
     const [showVideoModal, setShowVideoModal] = useState(false);
+    const [hasCommitmentVideo, setHasCommitmentVideo] = useState<boolean>(false);
+
+    useEffect(() => {
+        const checkVideo = async () => {
+            const videoPath = `${FileSystem.documentDirectory}future_messages/latest_message.mp4`;
+            const fileInfo = await FileSystem.getInfoAsync(videoPath);
+            setHasCommitmentVideo(fileInfo.exists);
+        };
+        checkVideo();
+    }, []);
 
     const handleWatchCommitment = async () => {
         try {
@@ -479,7 +490,7 @@ export default function FeelingLowScreen() {
                                 {/* Commitment Video Nudge */}
                                 <TouchableOpacity
                                     style={styles.commitmentButton}
-                                    onPress={handleWatchCommitment}
+                                    onPress={hasCommitmentVideo ? handleWatchCommitment : () => router.push('/record_future')}
                                     activeOpacity={0.85}
                                 >
                                     <LinearGradient
@@ -489,23 +500,24 @@ export default function FeelingLowScreen() {
                                         style={styles.commitmentGradient}
                                     >
                                         <View style={styles.commitmentIconCircle}>
-                                            <Ionicons name="play-circle" size={22} color="#fb923c" />
+                                            <Ionicons 
+                                                name={hasCommitmentVideo ? "play-circle" : "videocam"} 
+                                                size={22} 
+                                                color="#fb923c" 
+                                            />
                                         </View>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={styles.commitmentLabel}>Did you forget your commitment?</Text>
-                                            <Text style={styles.commitmentSub}>Watch your future self — right now.</Text>
+                                        <View>
+                                            <Text style={styles.commitmentLabel}>
+                                                {hasCommitmentVideo 
+                                                    ? "Did you forget your commitment?" 
+                                                    : "Commit to your future version"}
+                                            </Text>
                                         </View>
-                                        <Ionicons name="chevron-forward" size={16} color="rgba(249,115,22,0.5)" />
                                     </LinearGradient>
                                 </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={styles.helpButton}
-                                    onPress={navigateToChat}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={styles.helpButtonText}>Still feeling it? Talk to Universe</Text>
-                                </TouchableOpacity>
+
+                               
 
                                 <TouchableOpacity
                                     style={styles.homeButton}
@@ -896,14 +908,7 @@ const styles = StyleSheet.create({
         gap: 14,
     },
     commitmentIconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(249,115,22,0.12)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: 'rgba(249,115,22,0.2)',
+        
     },
     commitmentLabel: {
         fontFamily: 'Comfortaa_700Bold',

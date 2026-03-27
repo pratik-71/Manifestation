@@ -9,28 +9,78 @@ const REVENUECAT_API_KEY = {
 
 export const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
 
+let isInitialized = false;
+let initializationPromise: Promise<void> | null = null;
+
+/**
+ * Initialize RevenueCat SDK with appropriate API keys.
+ * Uses a singleton promise to ensure configuration attempt happens exactly once
+ * and subsequent calls wait for the same result.
+ */
 export const initializePurchases = async (userId?: string) => {
-    try {
-        await Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-        
-        if (Platform.OS === 'android') {
-            await Purchases.configure({ apiKey: REVENUECAT_API_KEY.google, appUserID: userId });
-        } else if (Platform.OS === 'ios') {
-            await Purchases.configure({ apiKey: REVENUECAT_API_KEY.apple, appUserID: userId });
+    if (isInitialized) return;
+    if (initializationPromise) return initializationPromise;
+
+    initializationPromise = (async () => {
+        try {
+            // Avoid double configuration entirely with a local flag check
+            if (isInitialized) return;
+
+            // 500ms delay to ensure the native bridge and JS environment are fully stable.
+            // This moves the initialization out of the high-stress startup window.
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY.apple : REVENUECAT_API_KEY.google;
+
+            // Simplified check to avoid string prototype calls (like .includes) 
+            // during the delicate JSI heap initialization phase.
+            if (!apiKey || apiKey === 'goog_EXAMPLE_GOOGLE_KEY') {
+                return;
+            }
+
+            // CRITICAL: We call configure() with a clean, hardcoded-style configuration object.
+            try {
+                const config: any = { apiKey };
+                if (userId && userId.trim()) {
+                    config.appUserID = userId;
+                }
+                
+                // Final safeguard: ensure no other native methods are called before/after
+                Purchases.configure(config);
+                isInitialized = true;
+                console.log("✅ RevenueCat initialized");
+            } catch (err) {
+                console.error("❌ RC configure error:", err);
+            }
+        } catch (e) {
+            console.error("❌ RC: Unexpected error in init():", e);
+        } finally {
+            initializationPromise = null;
         }
-        
-        console.log("✅ RevenueCat initialized");
-    } catch (e) {
-        console.error("❌ Failed to initialize RevenueCat:", e);
+    })();
+
+    return initializationPromise;
+};
+
+/**
+ * Helper to ensure the SDK is configured before calling any other methods.
+ */
+const ensureInitialized = async () => {
+    if (!isInitialized && !initializationPromise) {
+        await initializePurchases();
     }
+    if (initializationPromise) {
+        await initializationPromise;
+    }
+    return isInitialized;
 };
 
 /**
  * Identify the user in RevenueCat using their Supabase/Google ID.
- * This ensures purchases are linked to their account across devices.
  */
 export const identifyUser = async (userId: string) => {
     try {
+        if (!await ensureInitialized()) return null;
         const result = await Purchases.logIn(userId);
         console.log("✅ User identified in RevenueCat:", userId);
         return result.customerInfo;
@@ -45,6 +95,7 @@ export const identifyUser = async (userId: string) => {
  */
 export const logoutPurchases = async () => {
     try {
+        if (!await ensureInitialized()) return;
         await Purchases.logOut();
         console.log("✅ Logged out from RevenueCat");
     } catch (e) {
@@ -57,80 +108,59 @@ export const logoutPurchases = async () => {
  */
 export const getOfferings = async (): Promise<any | null> => {
     try {
+        if (!await ensureInitialized()) {
+            console.warn("🛠️ RevenueCat: Not initialized. Returning mocks.");
+            return getFallbackOfferings();
+        }
+        
         const offerings = await Purchases.getOfferings();
         if (offerings.current !== null && offerings.current.availablePackages.length > 0) {
             return offerings.current;
         }
         
-        // Fallback Mock Data for UI Testing
-        console.log("🛠️ RevenueCat: No real offerings found. Returning mocks.");
-        return {
-            availablePackages: [
-                {
-                    identifier: 'monthly',
-                    packageType: 'MONTHLY',
-                    product: {
-                        identifier: 'manifestation_monthly',
-                        description: 'Monthly unlimited AI access',
-                        title: 'Premium Monthly',
-                        price: 4.99,
-                        priceString: '$4.99/mo',
-                        currencyCode: 'USD',
-                    }
-                },
-                {
-                    identifier: 'yearly',
-                    packageType: 'ANNUAL',
-                    product: {
-                        identifier: 'manifestation_yearly',
-                        description: 'Yearly vision roadmap + Pro features',
-                        title: 'Premium Yearly',
-                        price: 29.99,
-                        priceString: '$29.99/yr',
-                        currencyCode: 'USD',
-                    }
-                }
-            ]
-        };
+        return getFallbackOfferings();
     } catch (e) {
         console.error("❌ Failed to fetch offerings:", e);
-        // Fallback even on error
-        return {
-            availablePackages: [
-                {
-                    identifier: 'monthly',
-                    packageType: 'MONTHLY',
-                    product: {
-                        identifier: 'manifestation_monthly',
-                        description: 'Monthly unlimited AI access',
-                        title: 'Premium Monthly',
-                        price: 4.99,
-                        priceString: '$4.99/mo',
-                        currencyCode: 'USD',
-                    }
-                },
-                {
-                    identifier: 'yearly',
-                    packageType: 'ANNUAL',
-                    product: {
-                        identifier: 'manifestation_yearly',
-                        description: 'Yearly vision roadmap + Pro features',
-                        title: 'Premium Yearly',
-                        price: 29.99,
-                        priceString: '$29.99/yr',
-                        currencyCode: 'USD',
-                    }
-                }
-            ]
-        };
+        return getFallbackOfferings();
     }
 };
+
+const getFallbackOfferings = () => ({
+    availablePackages: [
+        {
+            identifier: 'monthly',
+            packageType: 'MONTHLY',
+            product: {
+                identifier: 'manifestation_monthly',
+                description: 'Monthly unlimited AI access',
+                title: 'Premium Monthly',
+                price: 4.99,
+                priceString: '$4.99/mo',
+                currencyCode: 'USD',
+            }
+        },
+        {
+            identifier: 'yearly',
+            packageType: 'ANNUAL',
+            product: {
+                identifier: 'manifestation_yearly',
+                description: 'Yearly vision roadmap + Pro features',
+                title: 'Premium Yearly',
+                price: 29.99,
+                priceString: '$29.99/yr',
+                currencyCode: 'USD',
+            }
+        }
+    ]
+});
 
 /**
  * Check if the user has an active pro subscription.
  */
 export const checkSubscriptionStatus = async (): Promise<boolean> => {
     try {
+        if (!await ensureInitialized()) return false;
+        
         // If no key is set and we're on Android, we're in mock mode
         if (Platform.OS === 'android' && REVENUECAT_API_KEY.google === 'goog_EXAMPLE_GOOGLE_KEY') {
             return false;
@@ -146,16 +176,16 @@ export const checkSubscriptionStatus = async (): Promise<boolean> => {
 
 /**
  * Purchase a specific package.
+ * Includes a development mock mode if the service is not initialized or uses example keys.
  */
 export const purchasePackage = async (packageToPurchase: any) => {
     try {
-        // 🧪 Handle Mock Packages for Dev/Testing
-        const isMock = packageToPurchase.identifier === 'monthly' || packageToPurchase.identifier === 'yearly';
-        if (isMock || (Platform.OS === 'android' && REVENUECAT_API_KEY.google === 'goog_EXAMPLE_GOOGLE_KEY')) {
-            console.log("🛠️ RevenueCat Mock: Simulating successful purchase for", packageToPurchase.identifier);
-            return { success: true };
+        if (!await ensureInitialized()) {
+            console.warn("🛠️ RevenueCat: Mocking purchase for development");
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+            return { success: true, isMock: true };
         }
-
+        
         const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
         if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
             return { success: true, customerInfo };
@@ -169,11 +199,35 @@ export const purchasePackage = async (packageToPurchase: any) => {
         return { success: false, cancelled: true };
     }
 };
+
+/**
+ * Get the latest customer info from RevenueCat.
+ */
+export const getCustomerInfo = async () => {
+    try {
+        if (!await ensureInitialized()) {
+            // Return a mock customerInfo with no active entitlements
+            return { entitlements: { active: {} }, latestExpirationDate: null };
+        }
+        return await Purchases.getCustomerInfo();
+    } catch (e) {
+        console.error("❌ Failed to get customer info:", e);
+        return null;
+    }
+};
+
 /**
  * Restore previously purchased subscriptions.
+ * Includes a development mock mode if the service is not initialized.
  */
 export const restorePurchases = async () => {
     try {
+        if (!await ensureInitialized()) {
+            console.warn("🛠️ RevenueCat: Mocking restore for development - simulating failure to match actual logic");
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return { success: false, isMock: true };
+        }
+        
         const customerInfo = await Purchases.restorePurchases();
         return {
             success: !!customerInfo.entitlements.active[ENTITLEMENT_ID],
@@ -184,3 +238,5 @@ export const restorePurchases = async () => {
         return { success: false, error: e.message };
     }
 };
+
+

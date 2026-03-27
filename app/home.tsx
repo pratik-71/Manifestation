@@ -14,6 +14,7 @@ import { checkNotificationStatus } from '../services/notificationService';
 
 import { getCurrentUser } from '../services/authService';
 import { useUserStore } from '../store/userStore';
+import { getCustomerInfo, ENTITLEMENT_ID } from '../services/purchaseService';
 
 
 export default function Home() {
@@ -88,6 +89,13 @@ export default function Home() {
             if (user) {
                 if (!profile) {
                     await fetchProfile(user.id);
+                }
+                
+                const customerInfo = await getCustomerInfo();
+                const activeEntitlements = customerInfo?.entitlements?.active as Record<string, any>;
+                if (!activeEntitlements?.[ENTITLEMENT_ID]) {
+                    router.replace('/onboarding/paywall?mandatory=true');
+                    return;
                 }
             } else {
                 router.replace('/onboarding/google_signin');

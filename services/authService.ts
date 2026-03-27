@@ -7,10 +7,12 @@ import * as Crypto from 'expo-crypto';
 import { Platform } from 'react-native';
 
 // Complete the auth session if we're in a web environment or redirecting
-WebBrowser.maybeCompleteAuthSession();
-
 export const signInWithGoogle = async (): Promise<any> => {
     try {
+        // Only call this once we are actually starting a web-based auth flow.
+        // Doing this at the top level can sometimes trigger native bridge issues during startup.
+        WebBrowser.maybeCompleteAuthSession();
+        
         const redirectUrl = Linking.createURL('', { scheme: 'manifestation' });
         
         const { data, error } = await supabase.auth.signInWithOAuth({

@@ -1,15 +1,21 @@
 import * as Notifications from 'expo-notifications';
 
 // Configure how notifications are handled when the app is open
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+let notifHandlerSet = false;
+export const initNotifications = () => {
+  if (notifHandlerSet) return;
+  
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+  notifHandlerSet = true;
+};
 
 export const checkNotificationStatus = async () => {
   const { status } = await Notifications.getPermissionsAsync();

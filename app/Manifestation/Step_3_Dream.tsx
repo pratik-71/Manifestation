@@ -43,7 +43,7 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
                 contentContainerStyle={styles.scrollContent}
             >
                 <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
-                    <Text style={styles.subtitle}>Script your vision in the present tense, as if it is happening right now.</Text>
+                    <Text style={styles.subtitle}>Write Whatever you seen in your visualisation</Text>
                 </Animated.View>
 
                 <Animated.View entering={FadeInUp.delay(300)} style={styles.content}>
@@ -60,12 +60,7 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
                         />
                     </BlurView>
 
-                    <View style={styles.guidanceContainer}>
-                        <Ionicons name="sparkles-outline" size={16} color="#FCD34D" />
-                        <Text style={styles.guidanceText}>
-                            Use words like "I am", "I feel", and "I have".
-                        </Text>
-                    </View>
+                   
                 </Animated.View>
             </ScrollView>
 
@@ -126,8 +121,8 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
-        minHeight: height * 0.45,
-        padding: 24,
+        minHeight: height < 700 ? height * 0.35 : height * 0.45,
+        padding: height < 700 ? 16 : 24,
     },
     input: {
         flex: 1,
@@ -153,7 +148,7 @@ const styles = StyleSheet.create({
         width: '100%',
         gap: 12,
         paddingHorizontal: 24,
-        paddingBottom: 30,
+        paddingBottom: height < 700 ? 15 : 30,
     },
     nextBtn: {
         height: 56,

@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        paddingTop: 16,
+        paddingTop: 30,
         paddingBottom: 16,
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(255,255,255,0.03)',
@@ -278,12 +278,11 @@ const styles = StyleSheet.create({
     backButton: {
         width: 44,
         height: 44,
-        borderRadius: 22,
-        backgroundColor: 'rgba(255,255,255,0.06)',
+       
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        
     },
     headerTitle: {
         fontFamily: 'Comfortaa_700Bold',

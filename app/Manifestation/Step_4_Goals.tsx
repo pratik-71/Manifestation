@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
+import { useUserStore } from '../../store/userStore';
+import { clearStaleGoals } from '../../services/goalService';
 import {
     Alert,
     Dimensions,
@@ -33,19 +35,11 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
     useEffect(() => {
         const loadSavedGoals = async () => {
             try {
-                // Check if 24 hours have passed since last save
-                const lastSaveTime = await AsyncStorage.getItem('last_goals_save_time');
-                if (lastSaveTime) {
-                    const saveDate = new Date(lastSaveTime);
-                    const now = new Date();
-                    const diffInHours = (now.getTime() - saveDate.getTime()) / (1000 * 60 * 60);
-
-                    if (diffInHours >= 24) {
-                        console.log("🕒 24 hours passed, clearing goals");
-                        await AsyncStorage.removeItem('today_goals');
-                        await AsyncStorage.removeItem('last_goals_save_time');
-                        return; // Default to initial empty goal
-                    }
+                const wakeTime = useUserStore.getState().profile?.wake_time || '07:00';
+                const wasCleared = await clearStaleGoals(wakeTime);
+                if (wasCleared) {
+                    setIsLoaded(true);
+                    return; // goals were wiped and reset to empty
                 }
 
                 const saved = await AsyncStorage.getItem('today_goals');
@@ -245,7 +239,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(245, 158, 11, 0.05)',
     },
     exampleBlur: {
-        padding: 12,
+        padding: height < 700 ? 10 : 12,
     },
     exampleHeader: {
         flexDirection: 'row',

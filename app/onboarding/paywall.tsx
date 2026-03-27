@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
 import { AppColors } from '../../constants/Colors';
-import { ENTITLEMENT_ID, getOfferings, purchasePackage, restorePurchases, checkSubscriptionStatus } from '../../services/purchaseService';
-import Purchases, { PurchasesPackage } from 'react-native-purchases';
+import { CustomAlertModal } from '../../components/CustomAlertModal';
+import { ENTITLEMENT_ID, getOfferings, purchasePackage, restorePurchases, getCustomerInfo } from '../../services/purchaseService';
+import { PurchasesPackage } from 'react-native-purchases';
 
 const { width, height } = Dimensions.get('window');
 
@@ -90,22 +91,43 @@ const VerticalTicker = ({ items, direction = 'down' }: { items: any[], direction
 
 export default function Paywall() {
     const router = useRouter();
+    const params = useLocalSearchParams<{ mandatory?: string }>();
+    const isMandatory = params.mandatory === 'true';
+    
     const [offerings, setOfferings] = React.useState<PurchasesPackage[]>([]);
     const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [currentSubStatus, setCurrentSubStatus] = useState<'none' | 'monthly' | 'yearly'>('none');
+    
+    // Custom Modal State
+    const [modalConfig, setModalConfig] = useState<{
+        visible: boolean;
+        title: string;
+        message: string;
+        type: 'success' | 'error' | 'info';
+        onClose?: () => void;
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const checkStatus = async () => {
         try {
-            const customerInfo = await Purchases.getCustomerInfo();
-            const activeEntitlements = customerInfo.entitlements.active;
+            const customerInfo = await getCustomerInfo();
+            if (!customerInfo || !customerInfo.entitlements.active) {
+                setCurrentSubStatus('none');
+                return;
+            }
+
+            const activeEntitlements = customerInfo.entitlements.active as any;
+            const sub = activeEntitlements[ENTITLEMENT_ID];
             
-            if (activeEntitlements[ENTITLEMENT_ID]) {
-                const sub = activeEntitlements[ENTITLEMENT_ID];
-                // Check if it's monthly vs annual based on product identifier or package type
-                // In mock mode we use identifiers 'monthly'/'yearly'
-                if (sub.productIdentifier.includes('monthly') || sub.productIdentifier.includes('MONTHLY')) {
+            if (sub) {
+                const prodId = sub.productIdentifier.toLowerCase();
+                if (prodId.includes('monthly')) {
                     setCurrentSubStatus('monthly');
                 } else {
                     setCurrentSubStatus('yearly');
@@ -115,6 +137,7 @@ export default function Paywall() {
             }
         } catch (e) {
             console.error("Status check failed", e);
+            setCurrentSubStatus('none');
         }
     };
 
@@ -157,7 +180,12 @@ export default function Paywall() {
                     setCurrentSubStatus('yearly');
                 }
             } else if (!result.cancelled) {
-                Alert.alert('Purchase Failed', result.error || 'Please try again later.');
+                setModalConfig({
+                    visible: true,
+                    title: 'Purchase Failed',
+                    message: result.error || 'Please try again later.',
+                    type: 'error'
+                });
             }
         } catch (err) {
             console.error(err);
@@ -174,15 +202,32 @@ export default function Paywall() {
         try {
             const result = await restorePurchases();
             if (result.success) {
-                Alert.alert('Success', 'Your purchase has been restored.', [
-                    { text: 'OK', onPress: () => router.replace('/home') }
-                ]);
+                setModalConfig({
+                    visible: true,
+                    title: 'Success!',
+                    message: 'Your manifestation frequency has been restored.',
+                    type: 'success',
+                    onClose: () => {
+                        setModalConfig(prev => ({ ...prev, visible: false }));
+                        router.replace('/home');
+                    }
+                });
             } else {
-                Alert.alert('Notice', 'No active subscriptions found for your account.');
+                setModalConfig({
+                    visible: true,
+                    title: 'Notice',
+                    message: 'No active subscriptions found for your account.',
+                    type: 'info'
+                });
             }
         } catch (err) {
             console.error(err);
-            Alert.alert('Error', 'An unexpected error occurred during restore.');
+            setModalConfig({
+                visible: true,
+                title: 'Error',
+                message: 'An unexpected error occurred during restore.',
+                type: 'error'
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -201,14 +246,16 @@ export default function Paywall() {
             <SafeAreaView style={styles.safe}>
                 <ScrollView 
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}
+                    contentContainerStyle={[styles.scrollContent, { paddingTop: isMandatory ? 40 : 0 }]}
                 >
-                    {/* Header with Back Button */}
-                    <View style={styles.headerRow}>
-                        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                            <Ionicons name="chevron-back" size={24} color="#fff" />
-                        </TouchableOpacity>
-                    </View>
+                    {/* Header with Back Button (only if not mandatory) */}
+                    {!isMandatory && (
+                        <View style={styles.headerRow}>
+                            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                                <Ionicons name="chevron-back" size={24} color="#fff" />
+                            </TouchableOpacity>
+                        </View>
+                    )}
 
                     {/* Brand Section */}
                     <Animated.View entering={FadeInUp.duration(600)} style={styles.brandSection}>
@@ -222,7 +269,7 @@ export default function Paywall() {
                     {/* Hero Section */}
                     <Animated.View entering={FadeInUp.delay(200).duration(800)} style={styles.hero}>
                         <Text style={styles.title}>
-                            {currentSubStatus === 'none' ? 'Step Into Your Dream' : 'WOWWWW'}
+                            {currentSubStatus === 'none' ? 'Step Into Your Dream' : 'PRO ACCESS ACTIVE'}
                         </Text>
                         {currentSubStatus !== 'none' && (
                             <Animated.View entering={FadeInUp.delay(400)}>
@@ -250,61 +297,85 @@ export default function Paywall() {
                     <View style={styles.plansContainer}>
                         {isLoading ? (
                             <ActivityIndicator size="large" color="#fb923c" />
-                        ) : currentSubStatus === 'none' ? (
-                            [...offerings]
-                                .sort((a, b) => {
-                                    if (a.packageType === 'ANNUAL') return -1;
-                                    if (b.packageType === 'ANNUAL') return 1;
-                                    return 0;
-                                })
-                                .map((pkg, index) => {
-                                    const isBestValue = pkg.packageType === 'ANNUAL';
-                                    return (
-                                        <View key={pkg.identifier} style={styles.cardWrapper}>
-                                            {isBestValue && (
-                                                <Animated.View
-                                                    entering={FadeInDown.delay(600).duration(400)}
-                                                    style={styles.floatingBadge}
-                                                >
-                                                    <Text style={styles.bestValueText}>BEST VALUE</Text>
-                                                </Animated.View>
-                                            )}
-                                            <Animated.View
-                                                entering={FadeInDown.delay(400 + index * 100).duration(600)}
-                                                style={{ width: '100%' }}
-                                            >
-                                                <TouchableOpacity
-                                                    activeOpacity={0.85}
-                                                    onPress={() => handlePurchase(pkg)}
-                                                    style={[
-                                                        styles.planCard,
-                                                        selectedPackage?.identifier === pkg.identifier ? styles.planCardActive : styles.planCardInactive
-                                                    ]}
-                                                >
-                                                    <View style={styles.radioRow}>
-                                                        <View style={[
-                                                            styles.radioCircle,
-                                                            { borderColor: selectedPackage?.identifier === pkg.identifier ? '#fb923c' : 'rgba(255,255,255,0.15)' }
-                                                        ]}>
-                                                            {selectedPackage?.identifier === pkg.identifier && <View style={styles.radioInner} />}
-                                                        </View>
-                                                        <View style={styles.planInfo}>
-                                                            <Text style={styles.planName}>{pkg.product.title}</Text>
-                                                            <Text style={styles.planSubtext}>
-                                                                {pkg.packageType === 'ANNUAL' ? '3 days free, then full access' : 'Full access'}
-                                                            </Text>
-                                                        </View>
-                                                        <View style={styles.priceContainer}>
-                                                            <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
-                                                            <Text style={styles.planPeriod}>{pkg.packageType === 'ANNUAL' ? '/year' : '/period'}</Text>
-                                                        </View>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            </Animated.View>
-                                        </View>
-                                    );
-                                })
-                        ) : (
+                        ) : currentSubStatus === 'none' ? (() => {
+                            const monthlyPkg = offerings.find(p => p.packageType === 'MONTHLY');
+                            const yearlyPkg = offerings.find(p => p.packageType === 'ANNUAL');
+
+                            return (
+                                <>
+                                    {[...offerings]
+                                        .sort((a, b) => {
+                                            if (a.packageType === 'ANNUAL') return -1;
+                                            if (b.packageType === 'ANNUAL') return 1;
+                                            return 0;
+                                        })
+                                        .map((pkg, index) => {
+                                            const isBestValue = pkg.packageType === 'ANNUAL';
+                                            let discountDisplay = null;
+
+                                            // Calculate dynamic discount
+                                            if (isBestValue && monthlyPkg && yearlyPkg && monthlyPkg.product.price && yearlyPkg.product.price) {
+                                                const totalMonthlyCost = monthlyPkg.product.price * 12;
+                                                const discount = Math.round(((totalMonthlyCost - yearlyPkg.product.price) / totalMonthlyCost) * 100);
+                                                if (discount > 0) {
+                                                    discountDisplay = <Text style={styles.discountHighlight}> • SAVE {discount}%</Text>;
+                                                }
+                                            }
+
+                                            return (
+                                                <View key={pkg.identifier} style={styles.cardWrapper}>
+                                                    {isBestValue && (
+                                                        <Animated.View
+                                                            entering={FadeInDown.delay(600).duration(400)}
+                                                            style={styles.floatingBadge}
+                                                        >
+                                                            <Text style={styles.bestValueText}>BEST VALUE</Text>
+                                                        </Animated.View>
+                                                    )}
+                                                    <Animated.View
+                                                        entering={FadeInDown.delay(400 + index * 100).duration(600)}
+                                                        style={{ width: '100%' }}
+                                                    >
+                                                        <TouchableOpacity
+                                                            activeOpacity={0.85}
+                                                            onPress={() => handlePurchase(pkg)}
+                                                            style={[
+                                                                styles.planCard,
+                                                                selectedPackage?.identifier === pkg.identifier ? styles.planCardActive : styles.planCardInactive
+                                                            ]}
+                                                        >
+                                                            <View style={styles.radioRow}>
+                                                                <View style={[
+                                                                    styles.radioCircle,
+                                                                    { borderColor: selectedPackage?.identifier === pkg.identifier ? '#fb923c' : 'rgba(255,255,255,0.15)' }
+                                                                ]}>
+                                                                    {selectedPackage?.identifier === pkg.identifier && <View style={styles.radioInner} />}
+                                                                </View>
+                                                                <View style={styles.planInfo}>
+                                                                    <Text style={styles.planName}>{pkg.product.title}</Text>
+                                                                    <Text style={styles.planSubtext}>
+                                                                        {pkg.packageType === 'ANNUAL' ? 'Billed Yearly' : 'Billed Monthly'}
+                                                                        {discountDisplay}
+                                                                    </Text>
+                                                                </View>
+                                                                <View style={styles.priceContainer}>
+                                                                    <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
+                                                                    <Text style={styles.planPeriod}>{pkg.packageType === 'ANNUAL' ? '/year' : '/mo'}</Text>
+                                                                </View>
+                                                            </View>
+                                                        </TouchableOpacity>
+                                                    </Animated.View>
+                                                </View>
+                                            );
+                                        })}
+                                    
+                                    <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.trialNoticeContainer}>
+                                        <Ionicons name="shield-checkmark" size={16} color="#10b981" />
+                                        <Text style={styles.trialNoticeText}>3 Days Free Trial, Cancel Anytime</Text>
+                                    </Animated.View>
+                                </>
+                            );
+                        })() : (
                             <Animated.View entering={FadeInUp} style={styles.activePlanContainer}>
                                 {currentSubStatus === 'monthly' ? (
                                     <View style={styles.upgradeSection}>
@@ -352,10 +423,10 @@ export default function Paywall() {
                                 )}
                                 
                                 <TouchableOpacity 
-                                    style={[styles.manageBtn, { marginTop: 20, borderColor: 'rgba(255,255,255,0.2)' }]} 
+                                    style={[styles.manageBtn, { marginTop: 20, borderColor: 'rgba(255,255,255,0.4)', backgroundColor: 'rgba(251, 146, 60, 0.1)' }]} 
                                     onPress={() => router.replace('/home')}
                                 >
-                                    <Text style={[styles.manageBtnText, { color: '#fff' }]}>CONTINUE TO APP</Text>
+                                    <Text style={[styles.manageBtnText, { color: '#fb923c', fontFamily: 'Comfortaa_700Bold' }]}>CONTINUE TO APP</Text>
                                 </TouchableOpacity>
                             </Animated.View>
                         )}
@@ -392,18 +463,17 @@ export default function Paywall() {
 
                             </>
                         )}
-                        {/* Subtle Skip button for development/testing */}
-                        <TouchableOpacity 
-                            style={styles.skipBtn} 
-                            onPress={() => router.replace('/home')}
-                            activeOpacity={0.7}
-                        >
-                            <Text style={styles.skipBtnText}>Skip for now</Text>
-                        </TouchableOpacity>
-
                     </View>
                 </ScrollView>
             </SafeAreaView>
+
+            <CustomAlertModal
+                visible={modalConfig.visible}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                type={modalConfig.type}
+                onClose={modalConfig.onClose || (() => setModalConfig(prev => ({ ...prev, visible: false })))}
+            />
         </View>
     );
 }
@@ -455,8 +525,8 @@ const styles = StyleSheet.create({
     },
     brandSection: {
         alignItems: 'center',
-        marginTop: 25,
-        marginBottom: 15,
+        marginTop: 0,
+        marginBottom: 0,
     },
     logoImage: {
         width: 44,
@@ -609,9 +679,25 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     planSubtext: {
-        fontFamily: 'Comfortaa_400Regular',
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.4)',
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.5)',
+    },
+    discountHighlight: {
+        fontFamily: 'Comfortaa_700Bold',
+        color: '#10b981',
+    },
+    trialNoticeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 15,
+        gap: 6,
+    },
+    trialNoticeText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 12,
+        color: '#10b981',
     },
     priceContainer: {
         alignItems: 'flex-end',

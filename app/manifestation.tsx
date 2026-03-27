@@ -23,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { useUserStore } from '../store/userStore';
+import { clearStaleGoals } from '../services/goalService';
 
 const { width } = Dimensions.get('window');
 
@@ -47,14 +48,49 @@ export default function ManifestHub() {
         clearManifestTasks,
     } = useUserStore();
 
-    const challengeDay = profile?.challenge_day ?? 1;
+    // Logic to determine the displayed day based on wake-time cycle
+    const getDisplayedChallengeState = () => {
+        const actualDay = profile?.challenge_day ?? 1;
+        const lastManifest = profile?.last_manifest_date;
+        const wakeTime = profile?.wake_time || '07:00';
+        
+        if (!lastManifest) return { day: actualDay, isDone: false };
+
+        const now = new Date();
+        const manifestDate = new Date(lastManifest);
+        
+        // Use the same threshold logic as goal reset (1 hour before wake time)
+        const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+        const thresholdToday = new Date(now);
+        thresholdToday.setHours(wakeH - 1, wakeM, 0, 0);
+
+        let currentCycleStart: Date;
+        if (now >= thresholdToday) {
+            currentCycleStart = thresholdToday;
+        } else {
+            currentCycleStart = new Date(thresholdToday);
+            currentCycleStart.setDate(currentCycleStart.getDate() - 1);
+        }
+
+        // If manifest was done AFTER the start of the current cycle, it belongs to "today"
+        const isDoneForCycle = manifestDate >= currentCycleStart;
+
+        if (isDoneForCycle && actualDay > 1) {
+            // We've already incremented in store, but user wants to stay on current day UI
+            return { day: actualDay - 1, isDone: true };
+        }
+        
+        return { day: actualDay, isDone: false };
+    };
+
+    const { day: displayDay, isDone: isDoneToday } = getDisplayedChallengeState();
     const challengeDuration = profile?.challenge_duration || 7;
     const isChallengeComplete = profile?.is_challenge_complete || false;
     const streakCount = profile?.streak_count ?? 0;
     const username = profile?.username || 'Seeker';
 
-    // Completed days = days where user fully finished all rituals (day starts at 1 = 0 completed)
-    const completedDays = Math.max(0, challengeDay - 1);
+    // Completed days for the progress bar
+    const completedDays = isDoneToday ? displayDay : Math.max(0, displayDay - 1);
     const progressPct = challengeDuration > 0 ? (completedDays / challengeDuration) * 100 : 0;
 
     // Failure detection: last_manifest_date exists, challenge is active, and last completed day was >1 calendar day ago
@@ -157,12 +193,19 @@ export default function ManifestHub() {
     useEffect(() => {
         const loadGoals = async () => {
             try {
+                const wakeTime = profile?.wake_time || '07:00';
+                await clearStaleGoals(wakeTime);
+                
                 const data = await AsyncStorage.getItem('today_goals');
                 if (data) {
                     const parsed = JSON.parse(data);
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         setSavedGoals(parsed);
+                    } else {
+                        setSavedGoals([]);
                     }
+                } else {
+                    setSavedGoals([]);
                 }
             } catch (e) { }
         };
@@ -247,7 +290,7 @@ export default function ManifestHub() {
                     {/* Hero: Completed Days */}
                     <Animated.View entering={FadeInDown.duration(800)} style={styles.heroContainer}>
                         <Text style={styles.dayText}>
-                            {isChallengeComplete ? '🏆' : hasFailed ? '💔' : `Day ${completedDays + 1}`}
+                            {isChallengeComplete ? '🏆' : hasFailed ? '💔' : `Day ${displayDay}${isDoneToday ? ' ✓' : ''}`}
                         </Text>
                         <Text style={styles.durationText}>
                             {isChallengeComplete
@@ -257,32 +300,40 @@ export default function ManifestHub() {
                                     : `${completedDays} of ${challengeDuration} days done`}
                         </Text>
                     </Animated.View>
-
                     {/* ── CHALLENGE COMPLETE ── */}
                     {isChallengeComplete ? (
                         <Animated.View entering={FadeInDown.duration(800)} style={styles.sectionWrapper}>
                             <BlurView intensity={25} tint="dark" style={styles.glassCard}>
                                 <View style={styles.completeContent}>
-                                    <Ionicons name="medal-outline" size={40} color="#B45309" style={{ marginBottom: 16 }} />
-                                    <Text style={styles.completeTitle}>Challenge Complete! 🏆</Text>
-                                    <Text style={styles.completeSubtitle}>You've fully completed your {challengeDuration}-day sprint. Great job on staying committed!</Text>
+                                    <Ionicons name={challengeDuration >= 30 ? "star" : "medal-outline"} size={40} color="#fb923c" style={{ marginBottom: 16 }} />
+                                    <View style={{ alignItems: 'center' }}>
+                                        <Text style={styles.completeTitle}>
+                                            {challengeDuration >= 30 ? 'Mastery Reached! 🌟' : 'Sprint Complete! 🏆'}
+                                        </Text>
+                                        <Text style={styles.completeSubtitle}>
+                                            {challengeDuration >= 30 
+                                                ? `You've mastered the ${challengeDuration}-day cycle. Your frequency is now at its peak. Your global streak will continue as you begin your next journey.`
+                                                : `You've fully completed your ${challengeDuration}-day sprint. Great job on staying committed! Now it's time to build deep subconscious habits.`}
+                                        </Text>
 
-                                    <TouchableOpacity
-                                        activeOpacity={0.8}
-                                        style={styles.upgradeButton}
-                                        onPress={() => startChallenge(30)}
-                                    >
-                                        <LinearGradient
-                                            colors={['#fb923c', '#ea580c']}
-                                            style={styles.upgradeGrad}
+                                        <TouchableOpacity
+                                            activeOpacity={0.8}
+                                            style={styles.upgradeButton}
+                                            onPress={() => startChallenge(30)}
                                         >
-                                            <Text style={styles.upgradeButtonText}>Start 30 Day Mastery 🚀</Text>
-                                        </LinearGradient>
-                                    </TouchableOpacity>
+                                            <LinearGradient
+                                                colors={['#fb923c', '#ea580c']}
+                                                style={styles.upgradeGrad}
+                                            >
+                                                <Text style={styles.upgradeButtonText}>
+                                                    {challengeDuration >= 30 ? 'Begin New 30-Day Mastery 🚀' : 'Start 30 Day Mastery 🚀'}
+                                                </Text>
+                                            </LinearGradient>
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
-                            </BlurView>
+                             </BlurView>
                         </Animated.View>
-
                     ) : hasFailed ? (
                         /* ── FAILED STATE ── */
                         <Animated.View entering={FadeInDown.duration(800)} style={styles.sectionWrapper}>
@@ -348,9 +399,7 @@ export default function ManifestHub() {
                                     <View style={styles.progressBarBg}>
                                         <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
                                     </View>
-                                    {completedDays === 0 && (
-                                        <Text style={styles.progressHint}>Complete today's rituals below to mark Day 1 ✓</Text>
-                                    )}
+                                   
                                 </BlurView>
                             </Animated.View>
 
@@ -360,18 +409,18 @@ export default function ManifestHub() {
                                 <BlurView intensity={25} tint="dark" style={styles.glassCard}>
                                     <View style={[styles.cardHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                                         <Text style={styles.cardTitle}>Daily Rituals</Text>
-                                        {profile?.last_manifest_date === getLocalDateString() && (
+                                        {isDoneToday && (
                                             <View style={styles.doneBadge}>
                                                 <Ionicons name="checkmark-circle" size={14} color="#10b981" />
                                                 <Text style={styles.doneBadgeText}>DONE TODAY</Text>
                                             </View>
                                         )}
                                     </View>
-                                    <View style={profile?.last_manifest_date === getLocalDateString() ? { opacity: 0.6 } : null} pointerEvents={profile?.last_manifest_date === getLocalDateString() ? 'none' : 'auto'}>
+                                    <View style={isDoneToday ? { opacity: 0.6 } : null} pointerEvents={isDoneToday ? 'none' : 'auto'}>
                                         <RitualRow
                                             icon="flash-outline"
                                             label="Take Action Toward Your Goal"
-                                            checked={manifestTasks.tookAction || profile?.last_manifest_date === getLocalDateString()}
+                                            checked={manifestTasks.tookAction || isDoneToday}
                                             onToggle={savedGoals.length > 0 ? null : () => toggleManifestTask('tookAction')}
                                             showBorder={savedGoals.length === 0}
                                             hint={savedGoals.length > 0 ? "Mark all sub-goals below to complete" : null}
@@ -381,7 +430,6 @@ export default function ManifestHub() {
                                         {savedGoals.length > 0 && (
                                             <View style={styles.savedGoalsSection}>
                                                 {savedGoals.map((goal, idx) => {
-                                                    const isDoneToday = profile?.last_manifest_date === getLocalDateString();
                                                     return (
                                                         <Pressable
                                                             key={idx}
@@ -409,13 +457,13 @@ export default function ManifestHub() {
                                         <RitualRow
                                             icon="play-circle-outline"
                                             label="Watch Content Related to Your Goal"
-                                            checked={manifestTasks.watchedContent || profile?.last_manifest_date === getLocalDateString()}
+                                            checked={manifestTasks.watchedContent || isDoneToday}
                                             onToggle={() => toggleManifestTask('watchedContent')}
                                         />
                                         <RitualRow
                                             icon="people-outline"
                                             label="Connect with People of Similar Mindset"
-                                            checked={manifestTasks.connectedWithPeople || profile?.last_manifest_date === getLocalDateString()}
+                                            checked={manifestTasks.connectedWithPeople || isDoneToday}
                                             onToggle={() => toggleManifestTask('connectedWithPeople')}
                                             showBorder={false}
                                         />
@@ -524,12 +572,7 @@ export default function ManifestHub() {
                             {/* AI Roadmap Section */}
                             {profile?.ai_roadmap && profile.ai_roadmap.length > 0 && profile.ai_roadmap.map((plan, planIdx) => (
                                 <Animated.View key={planIdx} entering={FadeInDown.delay(200 + planIdx * 100).duration(600)} style={styles.modalSection}>
-                                    <View style={styles.sectionHeaderRow}>
-                                        <View style={[styles.sectionIcon, { backgroundColor: 'rgba(251, 146, 60, 0.1)' }]}>
-                                            <Ionicons name="compass" size={12} color="#fb923c" />
-                                        </View>
-                                        <Text style={[styles.modalSectionLabel, { color: '#fb923c' }]}>STRATEGY: {plan.goal.toUpperCase()}</Text>
-                                    </View>
+                                   
                                     
                                     <View style={styles.subSection}>
                                         <View style={styles.subSectionHeader}>
@@ -1066,9 +1109,7 @@ const styles = StyleSheet.create({
         flex: 1,
         lineHeight: 20,
     },
-    subSection: {
-        marginTop: 20,
-    },
+   
     subSectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',

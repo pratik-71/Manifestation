@@ -254,110 +254,115 @@ export default function RecordFuture() {
         );
     }
 
-    if (!cameraPermission.granted || !microphonePermission.granted || !mediaLibraryPermission.granted) {
+    const anyPermissionMissing = !cameraPermission.granted || !microphonePermission.granted || !mediaLibraryPermission.granted;
+
+    if (anyPermissionMissing) {
         return (
-            <View style={styles.permissionContainer}>
-                <StatusBar barStyle="light-content" />
-                <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
-                <View style={styles.permissionOverlay} pointerEvents="none" />
+            <Modal visible={anyPermissionMissing} animationType="slide" transparent={false}>
+                <View style={styles.permissionContainer}>
+                    <StatusBar barStyle="light-content" />
+                    <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
+                    <View style={styles.permissionOverlay} pointerEvents="none" />
 
-                <SafeAreaView style={styles.permissionSafe}>
-                    <View>
-                        <View style={styles.permissionHeader}>
-                            <TouchableOpacity onPress={() => router.back()} style={styles.miniBackButton}>
-                                <Ionicons name="chevron-back" size={24} color="#fff" />
-                            </TouchableOpacity>
-
-                            {isOnboarding && (
-                                <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
-                                    <Text style={styles.skipNavText}>Skip</Text>
-                                    <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
+                    <SafeAreaView style={styles.permissionSafe}>
+                        <View>
+                            <View style={styles.permissionHeader}>
+                                <TouchableOpacity onPress={() => router.back()} style={styles.miniBackButton}>
+                                    <Ionicons name="chevron-back" size={24} color="#fff" />
                                 </TouchableOpacity>
-                            )}
+
+                                {isOnboarding && (
+                                    <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
+                                        <Text style={styles.skipNavText}>Skip</Text>
+                                        <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+
+                            <Animated.View entering={FadeInDown.duration(800)} style={styles.permissionHero}>
+                                <View style={styles.heroIconInner}>
+                                    <Ionicons name="lock-open-outline" size={28} color="#f59e0b" />
+                                </View>
+                                <Text style={styles.permissionTitle}>Permissions Needed</Text>
+                                <Text style={styles.permissionSubtitle}>
+                                    To record your future self, we need access to your camera and audio. We value your privacy above all.
+                                </Text>
+                            </Animated.View>
                         </View>
 
-                        <Animated.View entering={FadeInDown.duration(800)} style={styles.permissionHero}>
-                            <View style={styles.heroIconInner}>
-                                <Ionicons name="videocam" size={28} color="#f59e0b" />
-                            </View>
-                            <Text style={styles.permissionTitle}>Record Your Future</Text>
-                            <Text style={styles.permissionSubtitle}>
-                                A message from your future self — already living the life you dreamed of.
-                            </Text>
-                        </Animated.View>
-                    </View>
-
-                    <Animated.View entering={FadeIn.delay(400).duration(800)} style={styles.instructionCard}>
-                        <Text style={styles.instructionHeading}>How to make it powerful</Text>
-                        {[
-                            {
-                                step: '01',
-                                icon: 'sunny-outline' as const,
-                                title: 'Find good lighting',
-                                tip: 'Sit facing a window or lamp so your face is visible.',
-                            },
-                            {
-                                step: '02',
-                                icon: 'mic-outline' as const,
-                                title: 'Speak in present tense',
-                                tip: '"I wake up grateful every morning..." — as if it already happened.',
-                            },
-                            {
-                                step: '03',
-                                icon: 'heart-outline' as const,
-                                title: 'Be specific & emotional',
-                                tip: 'Describe your home, career, joy. The more vivid, the more powerful.',
-                            },
-                            {
-                                step: '04',
-                                icon: 'time-outline' as const,
-                                title: 'Aim for 1–3 minutes',
-                                tip: 'Short and powerful. You can always record again anytime.',
-                            },
-                        ].map((item, i, arr) => (
-                            <View key={i} style={[styles.instructionRow, i < arr.length - 1 && styles.instructionRowBorder]}>
-                                <View style={styles.stepBadge}>
-                                    <Text style={styles.stepText}>{item.step}</Text>
-                                </View>
-                                <View style={styles.instructionContent}>
-                                    <View style={styles.instructionTitleRow}>
-                                        <Ionicons name={item.icon} size={13} color="#f59e0b" style={{ marginRight: 5 }} />
-                                        <Text style={styles.instructionTitle}>{item.title}</Text>
+                        <Animated.View entering={FadeIn.delay(400).duration(800)} style={styles.instructionCard}>
+                            <Text style={styles.instructionHeading}>Why we need these:</Text>
+                            
+                            {!cameraPermission.granted && (
+                                <View style={styles.permissionReasonRow}>
+                                    <View style={styles.permissionIconCircle}>
+                                        <Ionicons name="camera" size={20} color="#f59e0b" />
                                     </View>
-                                    <Text style={styles.instructionTip}>{item.tip}</Text>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.permissionReasonTitle}>Camera Access</Text>
+                                        <Text style={styles.permissionReasonText}>Needed to capture your high-vibration existence on video.</Text>
+                                    </View>
                                 </View>
+                            )}
+
+                            {!microphonePermission.granted && (
+                                <View style={styles.permissionReasonRow}>
+                                    <View style={styles.permissionIconCircle}>
+                                        <Ionicons name="mic" size={20} color="#f59e0b" />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.permissionReasonTitle}>Microphone Access</Text>
+                                        <Text style={styles.permissionReasonText}>Needed to hear your confident present-tense affirmations.</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {!mediaLibraryPermission.granted && (
+                                <View style={styles.permissionReasonRow}>
+                                    <View style={styles.permissionIconCircle}>
+                                        <Ionicons name="images" size={20} color="#f59e0b" />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.permissionReasonTitle}>Storage Access</Text>
+                                        <Text style={styles.permissionReasonText}>Technically required by the system to save/load your internal video files.</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            <View style={styles.privacyTipRow}>
+                                <Ionicons name="shield-checkmark" size={14} color="#34d399" />
+                                <Text style={styles.privacyTipText}>Your videos stay private on your device.</Text>
                             </View>
-                        ))}
-                    </Animated.View>
+                        </Animated.View>
 
-                    <Animated.View entering={FadeInUp.delay(700).duration(800)} style={styles.permissionFooter}>
-                        <TouchableOpacity
-                            activeOpacity={0.85}
-                            onPress={async () => {
-                                const cam = await requestCameraPermission();
-                                const mic = await requestMicrophonePermission();
-                                const med = await requestMediaLibraryPermission();
+                        <Animated.View entering={FadeInUp.delay(700).duration(800)} style={styles.permissionFooter}>
+                            <TouchableOpacity
+                                activeOpacity={0.85}
+                                onPress={async () => {
+                                    if (!cameraPermission.granted) await requestCameraPermission();
+                                    if (!microphonePermission.granted) await requestMicrophonePermission();
+                                    if (!mediaLibraryPermission.granted) await requestMediaLibraryPermission();
 
-                                if (!cam?.granted || !mic?.granted || !med?.granted) {
-                                    Alert.alert(
-                                        "Permissions Required",
-                                        "Please enable Camera, Microphone, and Photos access in your device settings to record your future.",
-                                        [
-                                            { text: "Cancel", style: "cancel" },
-                                            { text: "Open Settings", onPress: () => Linking.openSettings() }
-                                        ]
-                                    );
-                                }
-                            }}
-                            style={styles.mainActionButton}
-                        >
-                            <Ionicons name="videocam" size={17} color="#fff" style={{ marginRight: 10 }} />
-                            <Text style={styles.actionButtonText}>I'm Ready — Start Recording</Text>
-                        </TouchableOpacity>
-
-                    </Animated.View>
-                </SafeAreaView>
-            </View>
+                                    if (!cameraPermission.granted || !microphonePermission.granted || !mediaLibraryPermission.granted) {
+                                        Alert.alert(
+                                            "Permissions Needed",
+                                            "Some permissions were not granted. Please go to your device settings to enable them manually.",
+                                            [
+                                                { text: "Cancel", style: "cancel" },
+                                                { text: "Open Settings", onPress: () => Linking.openSettings() }
+                                            ]
+                                        );
+                                    }
+                                }}
+                                style={styles.mainActionButton}
+                            >
+                                <Text style={styles.actionButtonText}>Grant Missing Permissions</Text>
+                                <Ionicons name="arrow-forward" size={17} color="#fff" style={{ marginLeft: 10 }} />
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </SafeAreaView>
+                </View>
+            </Modal>
         );
     }
 
@@ -952,6 +957,47 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.35,
         shadowRadius: 20,
         elevation: 10,
+    },
+    permissionReasonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    permissionIconCircle: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    permissionReasonTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 14,
+        color: '#fff',
+        marginBottom: 2,
+    },
+    permissionReasonText: {
+        fontFamily: 'Comfortaa_400Regular',
+        fontSize: 12,
+        color: 'rgba(255,255,255,0.4)',
+        lineHeight: 18,
+    },
+    privacyTipRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 20,
+    },
+    privacyTipText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 10,
+        color: '#34d399',
+        letterSpacing: 0.5,
     },
     actionButtonText: {
         fontFamily: 'Comfortaa_700Bold',

@@ -22,6 +22,7 @@ import 'react-native-get-random-values';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
 import { initializePurchases } from '../services/purchaseService';
+import { initNotifications } from '../services/notificationService';
 import "../global.css";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -50,7 +51,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) {
       SplashScreen.hideAsync();
-      initializePurchases(); // Start RC setup
+      initNotifications();
+      initializePurchases();
     }
   }, [loaded, error]);
 

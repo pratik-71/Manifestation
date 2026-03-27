@@ -12,8 +12,8 @@ import Animated, {
     withTiming
 } from 'react-native-reanimated';
 
-const { width } = Dimensions.get('window');
-const CIRCLE_SIZE = width * 0.52;
+const { width, height } = Dimensions.get('window');
+const CIRCLE_SIZE = height < 700 ? width * 0.45 : width * 0.52;
 
 const Step_1_Breath = ({ onComplete }: { onComplete?: () => void }) => {
     const [isActive, setIsActive] = useState(false);
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
         width: CIRCLE_SIZE * 1.8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: height < 700 ? 5 : 20,
     },
     outerRing1: {
         position: 'absolute',

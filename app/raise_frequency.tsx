@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BottomBar } from '../components/BottomBar';
+
 
 const { width } = Dimensions.get('window');
 
@@ -228,9 +230,9 @@ const RaiseFrequency = () => {
                         
                         <View style={styles.menuItemsList}>
                             {[
-                                { id: 'what', title: '01 What is Frequency', sub: 'Learn the basics', icon: 'sparkles' },
-                                { id: 'affect', title: '02 How it Affects Life', sub: 'See how it changes your day', icon: 'sync' },
-                                { id: 'how', title: '03 How to Increase', sub: 'Simple habits to raise it', icon: 'flask' }
+                                { id: 'what', title: 'What is Frequency', sub: 'Learn the basics', icon: 'sparkles' },
+                                { id: 'affect', title: 'How it Affects Life', sub: 'See how it changes your day', icon: 'sync' },
+                                { id: 'how', title: 'How to Increase', sub: 'Simple habits to raise it', icon: 'flask' }
                             ].map((item) => (
                                 <TouchableOpacity 
                                     key={item.id} 
@@ -292,7 +294,7 @@ const RaiseFrequency = () => {
                         <View style={styles.sectionHighlight} />
                     </View>
 
-                    <Text style={{ fontFamily: 'Comfortaa_700Bold', color: '#D97706', marginBottom: 12, marginLeft: 4, opacity: 0.8, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>3 Exercises</Text>
+                 
 
                     <View style={styles.actionsGrid}>
                         <View style={styles.actionsRow}>
@@ -334,7 +336,7 @@ const RaiseFrequency = () => {
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={[styles.cardTitleGrid, { textAlign: 'left' }]}>{exercises[2].title}</Text>
-                                    <Text style={{ fontFamily: 'Comfortaa_400Regular', fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{exercises[2].instruction}</Text>
+                                   
                                 </View>
                                 <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.2)" />
                             </TouchableOpacity>
@@ -358,19 +360,23 @@ const RaiseFrequency = () => {
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                             >
-                                <View style={styles.studyIconCircle}>
+                                <View >
                                     <Ionicons name="book" size={24} color="#D97706" />
                                 </View>
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.studyFlowText}>Read The Guide</Text>
-                                    <Text style={styles.studyFlowSub}>3 simple steps to understand energy.</Text>
+                                    
                                 </View>
                                 <Ionicons name="chevron-forward" size={20} color="rgba(217, 119, 6, 0.5)" />
                             </LinearGradient>
                         </TouchableOpacity>
                     </Animated.View>
+                    <View style={{ height: 100 }} />
                 </ScrollView>
             </View>
+
+            <BottomBar />
+
 
             {/* Guide Modal */}
             <Modal
@@ -580,7 +586,7 @@ const styles = StyleSheet.create({
     },
     guideMenuTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 32,
+        fontSize: 26,
         color: 'white',
         marginBottom: 12,
         letterSpacing: -1,
@@ -598,26 +604,27 @@ const styles = StyleSheet.create({
     menuItemClean: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 24,
-        borderRadius: 30,
-        backgroundColor: 'rgba(255,255,255,0.015)',
+        paddingVertical: 18,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.03)',
+        borderColor: 'rgba(255, 255, 255, 0.05)',
     },
     menuIconBox: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
-        backgroundColor: 'rgba(217, 119, 6, 0.05)',
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        backgroundColor: 'rgba(217, 119, 6, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 20,
+        marginRight: 16,
     },
     menuItemTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 17,
+        fontSize: 15,
         color: 'white',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     menuItemSubText: {
         fontFamily: 'Comfortaa_400Regular',
@@ -633,7 +640,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     guideTextContainer: {
-        gap: 28,
+        gap: 20,
     },
     guideSubTitle: {
         fontFamily: 'Comfortaa_700Bold',
@@ -681,11 +688,13 @@ const styles = StyleSheet.create({
     },
     alchemySection: {
         gap: 12,
-        padding: 20,
-        backgroundColor: 'rgba(255,255,255,0.01)',
-        borderRadius: 24,
+        padding: 16,
+        backgroundColor: 'rgba(255,255,255,0.02)',
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.03)',
+        borderLeftWidth: 3,
+        borderColor: 'rgba(255,255,255,0.04)',
+        borderLeftColor: '#D97706',
     },
     alchemyLabel: {
         fontFamily: 'Comfortaa_700Bold',
@@ -742,22 +751,24 @@ const styles = StyleSheet.create({
         letterSpacing: 4,
     },
     stepCardContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-        borderRadius: 24,
-        padding: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 16,
+        padding: 14,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.04)',
+        borderColor: 'rgba(255, 255, 255, 0.06)',
+        borderLeftWidth: 3,
+        borderLeftColor: '#D97706',
     },
     stepCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
-        gap: 12,
+        marginBottom: 8,
+        gap: 10,
     },
     stepIconCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -766,14 +777,14 @@ const styles = StyleSheet.create({
     },
     stepCardTitle: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
+        fontSize: 14,
         color: 'white',
     },
     stepCardText: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 14,
+        fontSize: 12,
         color: 'rgba(255,255,255,0.4)',
-        lineHeight: 22,
+        lineHeight: 18,
     },
     alchemyHeader: {
         flexDirection: 'row',
@@ -785,9 +796,9 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     comparisonCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-        borderRadius: 24,
-        padding: 24,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 20,
+        padding: 18,
         borderWidth: 1,
     },
     comparisonHeader: {
@@ -834,10 +845,8 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     studyFlowButton: {
-        borderRadius: 24,
-        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-        borderWidth: 1,
-        borderColor: 'rgba(217, 119, 6, 0.2)',
+       
+      
         overflow: 'hidden',
     },
     studyFlowGradient: {
@@ -847,17 +856,10 @@ const styles = StyleSheet.create({
         gap: 16,
         borderRadius: 20,
     },
-    studyIconCircle: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: 'rgba(217, 119, 6, 0.1)',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
+
     studyFlowText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
+        fontSize: 12,
         color: 'white',
         marginBottom: 4,
     },

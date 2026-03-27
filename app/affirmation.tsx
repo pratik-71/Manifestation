@@ -151,7 +151,7 @@ export default function AffirmationScreen() {
         try {
             Vibration.cancel();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            Vibration.vibrate([0, 800]);
+            Vibration.vibrate(); // Removed iOS incompatible array pattern
 
             setTimeout(() => {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -201,12 +201,14 @@ export default function AffirmationScreen() {
     const panGesture = Gesture.Pan()
         .shouldCancelWhenOutside(false)
         .onBegin(() => {
+            'worklet';
             if (charge.value >= 1) return; // Don't reset if already finished
             runOnJS(handleBegin)();
             charge.value = 0;
             charge.value = withTiming(1, { duration: 2000 });
         })
         .onEnd((e) => {
+            'worklet';
             if (e.translationY < -100) {
                 runOnJS(handleNext)();
             } else if (e.translationY > 100) {
@@ -214,6 +216,7 @@ export default function AffirmationScreen() {
             }
         })
         .onFinalize(() => {
+            'worklet';
             if (charge.value < 1) {
                 cancelAnimation(charge);
                 charge.value = withSpring(0);
@@ -253,8 +256,7 @@ export default function AffirmationScreen() {
                 opacity={0.8}
             />
 
-            <GestureDetector gesture={panGesture}>
-                <SafeAreaView style={styles.safeArea}>
+            <SafeAreaView style={styles.safeArea}>
                     <View style={styles.header}>
                         <TouchableOpacity
                             onPress={() => router.back()}
@@ -276,12 +278,13 @@ export default function AffirmationScreen() {
                         >
                             <Text style={styles.factText}>{SCIENTIFIC_FACTS[factIndex]}</Text>
                         </Animated.View>
-                        <View style={styles.content} pointerEvents="none">
-                            <Animated.View
-                                key={currentIndex}
-                                entering={direction >= 0 ? FadeInDown.duration(800) : FadeInDown.duration(800)}
-                                style={styles.affirmationWrapper}
-                            >
+                        <GestureDetector gesture={panGesture}>
+                            <View style={styles.content}>
+                                <Animated.View
+                                    key={currentIndex}
+                                    entering={direction >= 0 ? FadeInDown.duration(800) : FadeInDown.duration(800)}
+                                    style={styles.affirmationWrapper}
+                                >
                                 <Text style={styles.label}>SAY OUT LOUD</Text>
                                 <Animated.Text style={[styles.affirmationText, textStyle]}>
                                     {dailyAffirmation}
@@ -301,10 +304,10 @@ export default function AffirmationScreen() {
                                 <Ionicons name="chevron-up" size={20} color="rgba(255,255,255,0.2)" />
                                 <Text style={styles.scrollHintText}>Scroll to move next</Text>
                             </Animated.View>
-                        </View>
+                            </View>
+                        </GestureDetector>
                     </View>
                 </SafeAreaView>
-            </GestureDetector>
         </View>
     );
 }

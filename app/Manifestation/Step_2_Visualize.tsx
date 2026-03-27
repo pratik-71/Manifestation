@@ -3,7 +3,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
 
@@ -95,44 +95,32 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
     return (
         <View style={styles.container}>
             <View style={styles.centerArea}>
-                <Animated.View entering={FadeInDown.duration(800)} style={styles.headerArea}>
 
-                    <Text style={styles.subtitle}>Close your eyes and visualize your goals as if they have already happened.</Text>
-                </Animated.View>
 
                 <View style={styles.timerContainer}>
+                    {/* Inspired by Step 1: Layered Ethereal Rings */}
+                    <Animated.View style={[styles.outerRing1, animatedGlow]} />
+                    <Animated.View style={[styles.outerRing2, innerGlowAnimStyle]} />
 
-                    {/* Outer Awareness Ring - pulsing */}
-                    <Animated.View style={[styles.glowCircle, animatedGlow]}>
-                        <View style={styles.ringBorder} />
-                    </Animated.View>
-
-                    {/* Main orbit ring - clockwise */}
+                    {/* Orbiting Elements - Clockwise */}
                     <Animated.View style={[styles.orbitRing, orbitStyle]}>
-                        <View style={styles.orbitOrb} />
-                        <View style={[styles.orbitOrb, { bottom: 0, top: undefined, width: 4, height: 4, right: 20 }]} />
+                        <View style={styles.orbitDot} />
+                        <View style={[styles.orbitDot, { bottom: -4, top: undefined, left: undefined, right: width * 0.3 }]} />
                     </Animated.View>
 
-                    {/* Counter-orbit ring - anti-clockwise, different radius */}
+                    {/* Orbiting Elements - Anti-Clockwise */}
                     <Animated.View style={[styles.counterOrbitRing, counterOrbitStyle]}>
-                        <View style={styles.counterOrbitOrb} />
-                        <View style={[styles.counterOrbitOrb, { left: undefined, right: -3, top: (width * 0.68) / 2 - 3 }]} />
+                        <View style={styles.counterOrbitDot} />
                     </Animated.View>
 
-                    {/* Inner pulsing glow layer behind circle */}
-                    <Animated.View style={[styles.innerGlowRing, innerGlowAnimStyle]} />
-
-                    {/* Dimensional Portal */}
+                    {/* Main Hollow Portal Core */}
                     <Animated.View style={[styles.mainCircle, portalStyle]}>
-                        <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFill}>
-                            <LinearGradient
-                                colors={['rgba(15, 23, 42, 0.6)', 'rgba(245, 158, 11, 0.1)']}
-                                style={StyleSheet.absoluteFill}
-                            />
+                        <BlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill}>
                             <View style={styles.portalContent}>
                                 <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-                                <Text style={styles.timerLabel}>{isActive ? 'Visualizing...' : 'Time Remaining'}</Text>
+                                <Text style={styles.timerLabel}>{isActive ? 'Visualizing' : 'Focus'}</Text>
                             </View>
+                            <View style={styles.innerSharpRing} />
                         </BlurView>
                     </Animated.View>
                 </View>
@@ -163,11 +151,7 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {timeLeft < 600 && !isActive && (
-                    <TouchableOpacity onPress={() => onComplete?.()} style={styles.finishLink}>
-                        <Text style={styles.finishText}>Finish Early</Text>
-                    </TouchableOpacity>
-                )}
+
 
                 <TouchableOpacity
                     style={styles.skipStepBtn}
@@ -220,107 +204,96 @@ const styles = StyleSheet.create({
         lineHeight: width < 380 ? 24 : 30,
     },
     timerContainer: {
-        width: width * 0.7,
-        height: width * 0.7,
+        width: height < 700 ? width * 0.65 : width * 0.8,
+        height: height < 700 ? width * 0.65 : width * 0.8,
         alignItems: 'center',
         justifyContent: 'center',
-        marginVertical: height < 700 ? 10 : 20,
+        marginVertical: height < 700 ? 5 : 30,
     },
-    glowCircle: {
+    outerRing1: {
         position: 'absolute',
-        width: '100%',
-        height: '100%',
-        borderRadius: width * 0.35,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    ringBorder: {
-        width: '100%',
-        height: '100%',
-        borderRadius: width * 0.35,
+        width: width * 0.78,
+        height: width * 0.78,
+        borderRadius: (width * 0.78) / 2,
         borderWidth: 1,
+        borderColor: 'rgba(245, 158, 11, 0.1)',
+    },
+    outerRing2: {
+        position: 'absolute',
+        width: width * 0.68,
+        height: width * 0.68,
+        borderRadius: (width * 0.68) / 2,
+        borderWidth: 1.5,
         borderColor: 'rgba(245, 158, 11, 0.2)',
     },
     orbitRing: {
         position: 'absolute',
-        width: width * 0.6,
-        height: width * 0.6,
-        borderRadius: width * 0.3,
+        width: width * 0.72,
+        height: width * 0.72,
+        borderRadius: (width * 0.72) / 2,
         borderWidth: 1,
-        borderColor: 'rgba(245, 158, 11, 0.15)',
+        borderColor: 'rgba(245, 158, 11, 0.3)',
         borderStyle: 'dashed',
     },
-    orbitOrb: {
+    orbitDot: {
         position: 'absolute',
-        top: -3,
-        left: (width * 0.6) / 2 - 3,
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        top: -4,
+        left: (width * 0.72) / 2 - 4,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
         backgroundColor: '#FCD34D',
         shadowColor: '#FCD34D',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1,
-        shadowRadius: 5,
-        elevation: 3,
+        shadowRadius: 10,
+        elevation: 5,
     },
     counterOrbitRing: {
         position: 'absolute',
-        width: width * 0.68,
-        height: width * 0.68,
-        borderRadius: width * 0.34,
+        width: width * 0.62,
+        height: width * 0.62,
+        borderRadius: (width * 0.62) / 2,
         borderWidth: 1,
-        borderColor: 'rgba(252, 211, 77, 0.12)',
-        borderStyle: 'dashed',
+        borderColor: 'rgba(252, 211, 77, 0.15)',
     },
-    counterOrbitOrb: {
+    counterOrbitDot: {
         position: 'absolute',
-        top: -4,
-        left: (width * 0.68) / 2 - 4,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        bottom: -3,
+        left: (height < 700 ? width * 0.5 : width * 0.62) / 2 - 3,
+        width: 6,
+        height: 6,
+        borderRadius: 3,
         backgroundColor: '#F59E0B',
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 8,
-        elevation: 4,
     },
-    innerGlowRing: {
+    sacredGlow: {
         position: 'absolute',
-        width: width * 0.52,
-        height: width * 0.52,
-        borderRadius: width * 0.26,
-        backgroundColor: '#F59E0B',
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 40,
-        elevation: 15,
-        opacity: 0.12,
-    },
-    outerGlowBlob: {
-        position: 'absolute',
-        width: width * 0.85,
-        height: width * 0.85,
-        borderRadius: width * 0.425,
-        backgroundColor: '#F59E0B',
+        width: width * 0.5,
+        height: width * 0.5,
+        borderRadius: (width * 0.5) / 2,
         shadowColor: '#F59E0B',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
-        shadowRadius: 60,
-        elevation: 5,
-        opacity: 0.06,
+        shadowRadius: 40,
+        elevation: 20,
     },
     mainCircle: {
-        width: width * 0.5,
-        height: width * 0.5,
-        borderRadius: width * 0.25,
+        width: height < 700 ? width * 0.45 : width * 0.52,
+        height: height < 700 ? width * 0.45 : width * 0.52,
+        borderRadius: (height < 700 ? width * 0.45 : width * 0.52) / 2,
         overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    innerSharpRing: {
+        ...StyleSheet.absoluteFillObject,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(245, 158, 11, 0.2)',
+        borderRadius: width * 0.3,
+        margin: 6,
     },
     portalContent: {
         flex: 1,

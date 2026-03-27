@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
-const CENTER = width * 0.5; // rings fill the full width
+const CENTER = height < 700 ? width * 0.42 : width * 0.5; // rings fill the full width
 
 const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
     const [isReleased, setIsReleased] = useState(false);
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: 'rgba(255,255,255,0.75)',
         textAlign: 'center',
-        marginTop: 8,
-        lineHeight: 24,
+        marginTop: height < 700 ? 4 : 8,
+        lineHeight: height < 700 ? 20 : 24,
         fontFamily: 'Comfortaa_400Regular',
     },
     centerArea: {

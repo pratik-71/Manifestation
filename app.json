@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pratik71.Manifestation",
-      "buildNumber": "1.0.1",
+      "buildNumber": "1.0.15",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -36,7 +36,9 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.pratik71.Manifestation",
+      "versionCode": 14,
       "permissions": [
+        "android.permission.INTERNET",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -97,12 +99,12 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "95e916d0-da70-40bb-918a-44fb8e157b0a"
+        "projectId": "51939aab-6281-4dac-9e7c-7936560e58e8"
       }
     }
   }
