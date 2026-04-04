@@ -52,7 +52,10 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
             const data = await response.json();
 
             if (response.status === 200) {
-                const content = data.choices?.[0]?.message?.content;
+                const raw = data.choices?.[0]?.message?.content;
+                // Guard: Hermes crashes (SIGSEGV in stringPrototypeReplace) if a
+                // non-string value reaches String.prototype.replace internally.
+                const content = typeof raw === 'string' ? raw : null;
                 if (content) {
                     console.log(`--- AI REQUEST SUCCESS (${model}) ---`);
                     return content;

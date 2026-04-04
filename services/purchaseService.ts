@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import Purchases, { LOG_LEVEL, PurchasesOffering } from 'react-native-purchases';
+import Purchases from 'react-native-purchases';
 
 // ⚠️ REVENUECAT CONFIGURATION
 const REVENUECAT_API_KEY = {
@@ -8,6 +8,13 @@ const REVENUECAT_API_KEY = {
 };
 
 export const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
+
+// Development environment detection
+const isLocalDevelopment = __DEV__ && (
+    Platform.OS === 'web' || 
+    process.env.NODE_ENV === 'development' ||
+    process.env.EXPO_ENV === 'development'
+);
 
 let isInitialized = false;
 let initializationPromise: Promise<void> | null = null;
@@ -109,8 +116,8 @@ export const logoutPurchases = async () => {
 export const getOfferings = async (): Promise<any | null> => {
     try {
         if (!await ensureInitialized()) {
-            console.warn("🛠️ RevenueCat: Not initialized. Returning mocks.");
-            return getFallbackOfferings();
+            console.error("❌ RevenueCat not initialized");
+            return null;
         }
         
         const offerings = await Purchases.getOfferings();
@@ -118,51 +125,28 @@ export const getOfferings = async (): Promise<any | null> => {
             return offerings.current;
         }
         
-        return getFallbackOfferings();
+        console.warn("⚠️ No offerings available");
+        return null;
     } catch (e) {
         console.error("❌ Failed to fetch offerings:", e);
-        return getFallbackOfferings();
+        return null;
     }
 };
 
-const getFallbackOfferings = () => ({
-    availablePackages: [
-        {
-            identifier: 'monthly',
-            packageType: 'MONTHLY',
-            product: {
-                identifier: 'manifestation_monthly',
-                description: 'Monthly unlimited AI access',
-                title: 'Premium Monthly',
-                price: 4.99,
-                priceString: '$4.99/mo',
-                currencyCode: 'USD',
-            }
-        },
-        {
-            identifier: 'yearly',
-            packageType: 'ANNUAL',
-            product: {
-                identifier: 'manifestation_yearly',
-                description: 'Yearly vision roadmap + Pro features',
-                title: 'Premium Yearly',
-                price: 29.99,
-                priceString: '$29.99/yr',
-                currencyCode: 'USD',
-            }
-        }
-    ]
-});
 
 /**
  * Check if the user has an active pro subscription.
  */
 export const checkSubscriptionStatus = async (): Promise<boolean> => {
+    // Auto-grant subscription in local development
+    if (isLocalDevelopment) {
+        console.log("🛠️ Local development: Auto-granting subscription");
+        return true;
+    }
+
     try {
-        if (!await ensureInitialized()) return false;
-        
-        // If no key is set and we're on Android, we're in mock mode
-        if (Platform.OS === 'android' && REVENUECAT_API_KEY.google === 'goog_EXAMPLE_GOOGLE_KEY') {
+        if (!await ensureInitialized()) {
+            console.error("❌ RevenueCat not initialized for subscription check");
             return false;
         }
 
@@ -176,14 +160,19 @@ export const checkSubscriptionStatus = async (): Promise<boolean> => {
 
 /**
  * Purchase a specific package.
- * Includes a development mock mode if the service is not initialized or uses example keys.
  */
 export const purchasePackage = async (packageToPurchase: any) => {
+    // Mock successful purchase in local development
+    if (isLocalDevelopment) {
+        console.log("🛠️ Local development: Mocking successful purchase");
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+        return { success: true, isMock: true };
+    }
+
     try {
         if (!await ensureInitialized()) {
-            console.warn("🛠️ RevenueCat: Mocking purchase for development");
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-            return { success: true, isMock: true };
+            console.error("❌ RevenueCat not initialized for purchase");
+            return { success: false, error: 'Purchase service not available' };
         }
         
         const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
@@ -204,28 +193,50 @@ export const purchasePackage = async (packageToPurchase: any) => {
  * Get the latest customer info from RevenueCat.
  */
 export const getCustomerInfo = async () => {
+    // Return mock active subscription in local development
+    if (isLocalDevelopment) {
+        console.log("🛠️ Local development: Returning mock customer info with active subscription");
+        return {
+            entitlements: {
+                active: {
+                    [ENTITLEMENT_ID]: {
+                        productIdentifier: 'manifestation_yearly',
+                        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+                    }
+                }
+            },
+            latestExpirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+        };
+    }
+
     try {
         if (!await ensureInitialized()) {
-            // Return a mock customerInfo with no active entitlements
+            console.error("❌ RevenueCat not initialized for customer info");
             return { entitlements: { active: {} }, latestExpirationDate: null };
         }
         return await Purchases.getCustomerInfo();
     } catch (e) {
-        console.error("❌ Failed to get customer info:", e);
-        return null;
+        console.error("❌ getCustomerInfo failed:", e);
+        // Never return null — callers access .entitlements.active which would crash
+        return { entitlements: { active: {} }, latestExpirationDate: null };
     }
 };
 
 /**
  * Restore previously purchased subscriptions.
- * Includes a development mock mode if the service is not initialized.
  */
 export const restorePurchases = async () => {
+    // Mock successful restore in local development
+    if (isLocalDevelopment) {
+        console.log("🛠️ Local development: Mocking successful restore");
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { success: true, isMock: true };
+    }
+
     try {
         if (!await ensureInitialized()) {
-            console.warn("🛠️ RevenueCat: Mocking restore for development - simulating failure to match actual logic");
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return { success: false, isMock: true };
+            console.error("❌ RevenueCat not initialized for restore");
+            return { success: false, error: 'Purchase service not available' };
         }
         
         const customerInfo = await Purchases.restorePurchases();

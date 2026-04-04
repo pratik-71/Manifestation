@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ActivityIndicator, Dimensions, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
-import { BreathingBackground } from '../../components/BreathingBackground';
-import { AppColors } from '../../constants/Colors';
-import { CustomAlertModal } from '../../components/CustomAlertModal';
-import { ENTITLEMENT_ID, getOfferings, purchasePackage, restorePurchases, getCustomerInfo } from '../../services/purchaseService';
+import { ActivityIndicator, Dimensions, Image, Linking, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { PurchasesPackage } from 'react-native-purchases';
+import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { BreathingBackground } from '../../components/BreathingBackground';
+import { CustomAlertModal } from '../../components/CustomAlertModal';
+import { AppColors } from '../../constants/Colors';
+import { ENTITLEMENT_ID, getCustomerInfo, getOfferings, purchasePackage, restorePurchases } from '../../services/purchaseService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -127,7 +127,7 @@ export default function Paywall() {
             
             if (sub) {
                 const prodId = sub.productIdentifier.toLowerCase();
-                if (prodId.includes('monthly')) {
+                if (/monthly/i.test(prodId)) {
                     setCurrentSubStatus('monthly');
                 } else {
                     setCurrentSubStatus('yearly');
@@ -297,85 +297,96 @@ export default function Paywall() {
                     <View style={styles.plansContainer}>
                         {isLoading ? (
                             <ActivityIndicator size="large" color="#fb923c" />
-                        ) : currentSubStatus === 'none' ? (() => {
-                            const monthlyPkg = offerings.find(p => p.packageType === 'MONTHLY');
-                            const yearlyPkg = offerings.find(p => p.packageType === 'ANNUAL');
+                        ) : currentSubStatus === 'none' ? (
+                            offerings && offerings.length > 0 ? (() => {
+                                const monthlyPkg = offerings.find(p => p.packageType === 'MONTHLY');
+                                const yearlyPkg = offerings.find(p => p.packageType === 'ANNUAL');
 
-                            return (
-                                <>
-                                    {[...offerings]
-                                        .sort((a, b) => {
-                                            if (a.packageType === 'ANNUAL') return -1;
-                                            if (b.packageType === 'ANNUAL') return 1;
-                                            return 0;
-                                        })
-                                        .map((pkg, index) => {
-                                            const isBestValue = pkg.packageType === 'ANNUAL';
-                                            let discountDisplay = null;
+                                return (
+                                    <>
+                                        {[...offerings]
+                                            .sort((a, b) => {
+                                                if (a.packageType === 'ANNUAL') return -1;
+                                                if (b.packageType === 'ANNUAL') return 1;
+                                                return 0;
+                                            })
+                                            .map((pkg, index) => {
+                                                const isBestValue = pkg.packageType === 'ANNUAL';
+                                                let discountDisplay = null;
 
-                                            // Calculate dynamic discount
-                                            if (isBestValue && monthlyPkg && yearlyPkg && monthlyPkg.product.price && yearlyPkg.product.price) {
-                                                const totalMonthlyCost = monthlyPkg.product.price * 12;
-                                                const discount = Math.round(((totalMonthlyCost - yearlyPkg.product.price) / totalMonthlyCost) * 100);
-                                                if (discount > 0) {
-                                                    discountDisplay = <Text style={styles.discountHighlight}> • SAVE {discount}%</Text>;
+                                                // Calculate dynamic discount
+                                                if (isBestValue && monthlyPkg && yearlyPkg && monthlyPkg.product.price && yearlyPkg.product.price) {
+                                                    const totalMonthlyCost = monthlyPkg.product.price * 12;
+                                                    const discount = Math.round(((totalMonthlyCost - yearlyPkg.product.price) / totalMonthlyCost) * 100);
+                                                    if (discount > 0) {
+                                                        discountDisplay = <Text style={styles.discountHighlight}> • SAVE {discount}%</Text>;
+                                                    }
                                                 }
-                                            }
 
-                                            return (
-                                                <View key={pkg.identifier} style={styles.cardWrapper}>
-                                                    {isBestValue && (
+                                                return (
+                                                    <View key={pkg.identifier} style={styles.cardWrapper}>
+                                                        {isBestValue && (
+                                                            <Animated.View
+                                                                entering={FadeInDown.delay(600).duration(400)}
+                                                                style={styles.floatingBadge}
+                                                            >
+                                                                <Text style={styles.bestValueText}>BEST VALUE</Text>
+                                                            </Animated.View>
+                                                        )}
                                                         <Animated.View
-                                                            entering={FadeInDown.delay(600).duration(400)}
-                                                            style={styles.floatingBadge}
+                                                            entering={FadeInDown.delay(400 + index * 100).duration(600)}
+                                                            style={{ width: '100%' }}
                                                         >
-                                                            <Text style={styles.bestValueText}>BEST VALUE</Text>
+                                                            <TouchableOpacity
+                                                                activeOpacity={0.85}
+                                                                onPress={() => handlePurchase(pkg)}
+                                                                style={[
+                                                                    styles.planCard,
+                                                                    selectedPackage?.identifier === pkg.identifier ? styles.planCardActive : styles.planCardInactive
+                                                                ]}
+                                                            >
+                                                                <View style={styles.radioRow}>
+                                                                    <View style={[
+                                                                        styles.radioCircle,
+                                                                        { borderColor: selectedPackage?.identifier === pkg.identifier ? '#fb923c' : 'rgba(255,255,255,0.15)' }
+                                                                    ]}>
+                                                                        {selectedPackage?.identifier === pkg.identifier && <View style={styles.radioInner} />}
+                                                                    </View>
+                                                                    <View style={styles.planInfo}>
+                                                                        <Text style={styles.planName}>{pkg.product.title}</Text>
+                                                                        <Text style={styles.planSubtext}>
+                                                                            {pkg.packageType === 'ANNUAL' ? 'Billed Yearly' : 'Billed Monthly'}
+                                                                            {discountDisplay}
+                                                                        </Text>
+                                                                    </View>
+                                                                    <View style={styles.priceContainer}>
+                                                                        <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
+                                                                        <Text style={styles.planPeriod}>{pkg.packageType === 'ANNUAL' ? '/year' : '/mo'}</Text>
+                                                                    </View>
+                                                                </View>
+                                                            </TouchableOpacity>
                                                         </Animated.View>
-                                                    )}
-                                                    <Animated.View
-                                                        entering={FadeInDown.delay(400 + index * 100).duration(600)}
-                                                        style={{ width: '100%' }}
-                                                    >
-                                                        <TouchableOpacity
-                                                            activeOpacity={0.85}
-                                                            onPress={() => handlePurchase(pkg)}
-                                                            style={[
-                                                                styles.planCard,
-                                                                selectedPackage?.identifier === pkg.identifier ? styles.planCardActive : styles.planCardInactive
-                                                            ]}
-                                                        >
-                                                            <View style={styles.radioRow}>
-                                                                <View style={[
-                                                                    styles.radioCircle,
-                                                                    { borderColor: selectedPackage?.identifier === pkg.identifier ? '#fb923c' : 'rgba(255,255,255,0.15)' }
-                                                                ]}>
-                                                                    {selectedPackage?.identifier === pkg.identifier && <View style={styles.radioInner} />}
-                                                                </View>
-                                                                <View style={styles.planInfo}>
-                                                                    <Text style={styles.planName}>{pkg.product.title}</Text>
-                                                                    <Text style={styles.planSubtext}>
-                                                                        {pkg.packageType === 'ANNUAL' ? 'Billed Yearly' : 'Billed Monthly'}
-                                                                        {discountDisplay}
-                                                                    </Text>
-                                                                </View>
-                                                                <View style={styles.priceContainer}>
-                                                                    <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
-                                                                    <Text style={styles.planPeriod}>{pkg.packageType === 'ANNUAL' ? '/year' : '/mo'}</Text>
-                                                                </View>
-                                                            </View>
-                                                        </TouchableOpacity>
-                                                    </Animated.View>
-                                                </View>
-                                            );
-                                        })}
-                                    
-                                    <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.trialNoticeContainer}>
-                                        <Ionicons name="shield-checkmark" size={16} color="#10b981" />
-                                        <Text style={styles.trialNoticeText}>3 Days Free Trial, Cancel Anytime</Text>
-                                    </Animated.View>
-                                </>
-                            );
-                        })() : (
+                                                    </View>
+                                                );
+                                            })}
+                                        
+                                        <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.trialNoticeContainer}>
+                                            <Ionicons name="shield-checkmark" size={16} color="#10b981" />
+                                            <Text style={styles.trialNoticeText}>3 Days Free Trial, Cancel Anytime</Text>
+                                        </Animated.View>
+                                    </>
+                                );
+                            })() : (
+                                <View style={styles.errorContainer}>
+                                    <Ionicons name="warning" size={48} color="#fb923c" />
+                                    <Text style={styles.errorTitle}>Unable to Load Plans</Text>
+                                    <Text style={styles.errorText}>Please check your internet connection and try again.</Text>
+                                    <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/onboarding/paywall')}>
+                                        <Text style={styles.retryBtnText}>Retry</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )
+                        ) : (
                             <Animated.View entering={FadeInUp} style={styles.activePlanContainer}>
                                 {currentSubStatus === 'monthly' ? (
                                     <View style={styles.upgradeSection}>
@@ -522,6 +533,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.05)',
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 20,
     },
     brandSection: {
         alignItems: 'center',
@@ -755,17 +767,49 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        marginTop: 5,
-        paddingBottom: 10,
+        marginTop: 20,
     },
     legalText: {
         fontFamily: 'Comfortaa_400Regular',
         fontSize: 10,
         color: 'rgba(255,255,255,0.3)',
+        textDecorationLine: 'underline',
     },
     legalDot: {
+        color: 'rgba(255,255,255,0.3)',
         fontSize: 10,
-        color: 'rgba(255,255,255,0.2)',
+    },
+    errorContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 40,
+        paddingHorizontal: 24,
+        gap: 16,
+    },
+    errorTitle: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 18,
+        color: '#fff',
+        textAlign: 'center',
+    },
+    errorText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.6)',
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    retryBtn: {
+        backgroundColor: '#fb923c',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 20,
+        marginTop: 8,
+    },
+    retryBtnText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 14,
+        color: '#fff',
     },
     disclosureSection: {
         marginTop: 15,

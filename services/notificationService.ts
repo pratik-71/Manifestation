@@ -5,16 +5,20 @@ let notifHandlerSet = false;
 export const initNotifications = () => {
   if (notifHandlerSet) return;
   
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    }),
-  });
-  notifHandlerSet = true;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    notifHandlerSet = true;
+  } catch (error) {
+    console.warn('[Notifications] Initialization failed during startup:', error);
+  }
 };
 
 export const checkNotificationStatus = async () => {

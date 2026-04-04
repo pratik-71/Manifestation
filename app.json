@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pratik71.Manifestation",
-      "buildNumber": "1.0.15",
+      "buildNumber": "1.0.25",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -36,7 +36,7 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.pratik71.Manifestation",
-      "versionCode": 14,
+      "versionCode": 19,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.READ_MEDIA_IMAGES",

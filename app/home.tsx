@@ -85,19 +85,38 @@ export default function Home() {
 
     useEffect(() => {
         const init = async () => {
-            const user = await getCurrentUser();
-            if (user) {
+            try {
+                const user = await getCurrentUser();
+                if (!user) {
+                    router.replace('/onboarding/google_signin');
+                    return;
+                }
+
+                // Fetch profile first (no RC dependency)
                 if (!profile) {
                     await fetchProfile(user.id);
                 }
-                
-                const customerInfo = await getCustomerInfo();
-                const activeEntitlements = customerInfo?.entitlements?.active as Record<string, any>;
-                if (!activeEntitlements?.[ENTITLEMENT_ID]) {
-                    router.replace('/onboarding/paywall?mandatory=true');
-                    return;
+
+                // Delay paywall check to give RevenueCat SDK time to initialize.
+                // RC is initialized after 4500ms in _layout.tsx; calling it too
+                // early triggers a native exception that crashes Hermes (SIGSEGV
+                // in stringPrototypeReplace via TurboModule backtrace formatting).
+                await new Promise(resolve => setTimeout(resolve, 5000));
+
+                try {
+                    const customerInfo = await getCustomerInfo();
+                    const activeEntitlements = customerInfo?.entitlements?.active as Record<string, any> | undefined;
+                    if (!activeEntitlements?.[ENTITLEMENT_ID]) {
+                        router.replace('/onboarding/paywall?mandatory=true');
+                        return;
+                    }
+                } catch (rcError) {
+                    // RC check failed — don't crash, just log and let user in
+                    // A failed RC check should never hard-crash the app
+                    console.warn('[Home] RC entitlement check failed safely');
                 }
-            } else {
+            } catch (authError) {
+                console.warn('[Home] Auth check failed safely');
                 router.replace('/onboarding/google_signin');
             }
         };

@@ -43,6 +43,8 @@ interface Message {
  * Typewriter Animation Component
  */
 const TypewriterText = ({ text, onComplete }: { text: string; onComplete?: () => void }) => {
+    // Defensive coercion: Hermes SIGSEGV if non-string reaches String.prototype internals
+    const safeText = typeof text === 'string' ? text : String(text ?? '');
     const [displayedText, setDisplayedText] = useState("");
     const index = useRef(0);
     const [showCursor, setShowCursor] = useState(true);
@@ -53,8 +55,8 @@ const TypewriterText = ({ text, onComplete }: { text: string; onComplete?: () =>
         }, 500);
 
         const type = () => {
-            if (index.current < text.length) {
-                setDisplayedText(text.substring(0, index.current + 1));
+            if (index.current < safeText.length) {
+                setDisplayedText(safeText.substring(0, index.current + 1));
                 index.current += 1;
                 const baseSpeed = 20;
                 const randomSpeed = Math.random() * 15;
@@ -68,7 +70,7 @@ const TypewriterText = ({ text, onComplete }: { text: string; onComplete?: () =>
 
         type();
         return () => clearInterval(cursorInterval);
-    }, [text]);
+    }, [safeText]);
 
     return (
         <Text style={styles.messageText}>

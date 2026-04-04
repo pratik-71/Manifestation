@@ -96,7 +96,7 @@ export const signInWithApple = async (): Promise<any> => {
             return { data };
         }
     } catch (error: any) {
-        if (error.code === 'ERR_CANCELED' || error.message?.includes('cancel')) {
+        if (error.code === 'ERR_CANCELED' || (error.message && /cancel/i.test(error.message))) {
             return null;
         }
         console.error('Apple Sign-in Error:', error);
