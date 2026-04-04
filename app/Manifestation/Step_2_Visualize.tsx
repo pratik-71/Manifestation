@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useState } from 'react';
+import { Audio } from 'expo-av';
+import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { Easing, FadeIn, interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
@@ -9,12 +10,61 @@ const { width, height } = Dimensions.get('window');
 
 const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
     const [isActive, setIsActive] = useState(false);
+    const soundRef = useRef<Audio.Sound | null>(null);
     const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
 
     const glowScale = useSharedValue(1);
-    const rot = useSharedValue(0);
-    const counterRot = useSharedValue(0);
     const innerPulse = useSharedValue(0.6);
+    const ring1Scale = useSharedValue(1);
+    const ring2Scale = useSharedValue(0.92);
+    const ring3Scale = useSharedValue(0.85);
+    const ring4Scale = useSharedValue(0.97);
+    const ring5Scale = useSharedValue(1.05);
+
+    // Load and play / pause 6hz binaural audio
+    useEffect(() => {
+        let mounted = true;
+        const handleAudio = async () => {
+            try {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: false,
+                    playsInSilentModeIOS: true,
+                    staysActiveInBackground: false,
+                });
+                if (isActive) {
+                    if (!soundRef.current) {
+                        const { sound } = await Audio.Sound.createAsync(
+                            require('../../assets/6hz.mp3'),
+                            { isLooping: true, volume: 0.6 }
+                        );
+                        if (mounted) {
+                            soundRef.current = sound;
+                            await sound.playAsync();
+                        } else {
+                            await sound.unloadAsync();
+                        }
+                    } else {
+                        await soundRef.current.playAsync();
+                    }
+                } else {
+                    if (soundRef.current) {
+                        await soundRef.current.pauseAsync();
+                    }
+                }
+            } catch (e) {
+                console.warn('Audio error:', e);
+            }
+        };
+        handleAudio();
+        return () => { mounted = false; };
+    }, [isActive]);
+
+    // Cleanup sound on unmount
+    useEffect(() => {
+        return () => {
+            soundRef.current?.unloadAsync().catch(() => {});
+        };
+    }, []);
 
     useEffect(() => {
         let timer: any;
@@ -30,28 +80,62 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
     }, [isActive, timeLeft]);
 
     useEffect(() => {
+        // Outer halo pulse
         glowScale.value = withRepeat(
             withSequence(
-                withTiming(1.2, { duration: 4000 }),
-                withTiming(1, { duration: 4000 })
+                withTiming(1.22, { duration: 5000, easing: Easing.inOut(Easing.sin) }),
+                withTiming(0.95, { duration: 5000, easing: Easing.inOut(Easing.sin) })
             ),
-            -1,
-            true
+            -1, true
         );
-        // Main orbit - slow clockwise
-        rot.value = withRepeat(withTiming(360, { duration: 25000, easing: Easing.linear }), -1);
-        // Counter orbit - faster anti-clockwise
-        counterRot.value = withRepeat(withTiming(-360, { duration: 15000, easing: Easing.linear }), -1);
-        // Inner glow pulse
+        // Inner glow opacity
         innerPulse.value = withRepeat(
             withSequence(
-                withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.sin) }),
-                withTiming(0.4, { duration: 2500, easing: Easing.inOut(Easing.sin) })
+                withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+                withTiming(0.3, { duration: 2200, easing: Easing.inOut(Easing.sin) })
             ),
-            -1,
-            true
+            -1, true
         );
-        // Outer glow pulse removed per user request
+        // Ring 1 — outermost, slow expand
+        ring1Scale.value = withRepeat(
+            withSequence(
+                withTiming(1.15, { duration: 4200, easing: Easing.inOut(Easing.sin) }),
+                withTiming(0.90, { duration: 4200, easing: Easing.inOut(Easing.sin) })
+            ),
+            -1, true
+        );
+        // Ring 2 — contracting while ring1 expands
+        ring2Scale.value = withRepeat(
+            withSequence(
+                withTiming(0.84, { duration: 3400, easing: Easing.inOut(Easing.sin) }),
+                withTiming(1.10, { duration: 3400, easing: Easing.inOut(Easing.sin) })
+            ),
+            -1, true
+        );
+        // Ring 3 — mid speed
+        ring3Scale.value = withRepeat(
+            withSequence(
+                withTiming(1.12, { duration: 2800, easing: Easing.inOut(Easing.sin) }),
+                withTiming(0.88, { duration: 2800, easing: Easing.inOut(Easing.sin) })
+            ),
+            -1, true
+        );
+        // Ring 4 — fast, inverse phase
+        ring4Scale.value = withRepeat(
+            withSequence(
+                withTiming(0.86, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+                withTiming(1.08, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+            ),
+            -1, true
+        );
+        // Ring 5 — fastest shimmer
+        ring5Scale.value = withRepeat(
+            withSequence(
+                withTiming(1.14, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+                withTiming(0.92, { duration: 1800, easing: Easing.inOut(Easing.sin) })
+            ),
+            -1, true
+        );
     }, []);
 
     const formatTime = (seconds: number) => {
@@ -74,22 +158,64 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
         )
     }));
 
-    const orbitStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${rot.value}deg` }]
-    }));
-
-    const counterOrbitStyle = useAnimatedStyle(() => ({
-        transform: [{ rotate: `${counterRot.value}deg` }]
-    }));
-
     const innerGlowAnimStyle = useAnimatedStyle(() => ({
-        opacity: innerPulse.value,
-        transform: [{ scale: interpolate(innerPulse.value, [0.4, 1], [0.95, 1.05]) }],
+        opacity: interpolate(innerPulse.value, [0.3, 1], [0.4, 1]),
+        transform: [{ scale: interpolate(innerPulse.value, [0.3, 1], [0.93, 1.07]) }],
+        borderColor: interpolateColor(
+            innerPulse.value,
+            [0.3, 1],
+            ['rgba(139, 92, 246, 0.6)', 'rgba(253, 186, 116, 0.9)']
+        ),
     }));
 
-    const outerGlowAnimStyle = useAnimatedStyle(() => ({
-        opacity: 0, // removed
-        transform: [{ scale: 1 }],
+    const ring1AnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ring1Scale.value }],
+        opacity: interpolate(ring1Scale.value, [0.90, 1.15], [0.3, 0.9]),
+        borderColor: interpolateColor(
+            ring1Scale.value,
+            [0.90, 1.15],
+            ['rgba(245, 158, 11, 0.2)', 'rgba(245, 158, 11, 0.85)']
+        ),
+    }));
+
+    const ring2AnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ring2Scale.value }],
+        opacity: interpolate(ring2Scale.value, [0.84, 1.10], [0.25, 0.85]),
+        borderColor: interpolateColor(
+            ring2Scale.value,
+            [0.84, 1.10],
+            ['rgba(252, 211, 77, 0.15)', 'rgba(252, 211, 77, 0.8)']
+        ),
+    }));
+
+    const ring3AnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ring3Scale.value }],
+        opacity: interpolate(ring3Scale.value, [0.88, 1.12], [0.2, 0.8]),
+        borderColor: interpolateColor(
+            ring3Scale.value,
+            [0.88, 1.12],
+            ['rgba(167, 139, 250, 0.2)', 'rgba(167, 139, 250, 0.75)']
+        ),
+    }));
+
+    const ring4AnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ring4Scale.value }],
+        opacity: interpolate(ring4Scale.value, [0.86, 1.08], [0.2, 0.75]),
+        borderColor: interpolateColor(
+            ring4Scale.value,
+            [0.86, 1.08],
+            ['rgba(251, 191, 36, 0.15)', 'rgba(251, 191, 36, 0.7)']
+        ),
+    }));
+
+    const ring5AnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: ring5Scale.value }],
+        opacity: interpolate(ring5Scale.value, [0.92, 1.14], [0.15, 0.65]),
+        borderColor: interpolateColor(
+            ring5Scale.value,
+            [0.92, 1.14],
+            ['rgba(196, 181, 253, 0.1)', 'rgba(196, 181, 253, 0.6)']
+        ),
     }));
 
     return (
@@ -98,20 +224,16 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
 
 
                 <View style={styles.timerContainer}>
-                    {/* Inspired by Step 1: Layered Ethereal Rings */}
-                    <Animated.View style={[styles.outerRing1, animatedGlow]} />
-                    <Animated.View style={[styles.outerRing2, innerGlowAnimStyle]} />
+                    {/* Glowing halo behind rings */}
+                    <Animated.View style={[styles.haloGlow, animatedGlow]} />
 
-                    {/* Orbiting Elements - Clockwise */}
-                    <Animated.View style={[styles.orbitRing, orbitStyle]}>
-                        <View style={styles.orbitDot} />
-                        <View style={[styles.orbitDot, { bottom: -4, top: undefined, left: undefined, right: width * 0.3 }]} />
-                    </Animated.View>
-
-                    {/* Orbiting Elements - Anti-Clockwise */}
-                    <Animated.View style={[styles.counterOrbitRing, counterOrbitStyle]}>
-                        <View style={styles.counterOrbitDot} />
-                    </Animated.View>
+                    {/* 5 pulsing concentric rings */}
+                    <Animated.View style={[styles.outerRing1, ring1AnimStyle]} />
+                    <Animated.View style={[styles.outerRing2, ring2AnimStyle]} />
+                    <Animated.View style={[styles.outerRing3, ring3AnimStyle]} />
+                    <Animated.View style={[styles.outerRing4, ring4AnimStyle]} />
+                    <Animated.View style={[styles.outerRing5, ring5AnimStyle]} />
+                    <Animated.View style={[styles.innerGlowRing, innerGlowAnimStyle]} />
 
                     {/* Main Hollow Portal Core */}
                     <Animated.View style={[styles.mainCircle, portalStyle]}>
@@ -210,71 +332,94 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginVertical: height < 700 ? 5 : 30,
     },
+    haloGlow: {
+        position: 'absolute',
+        width: width * 0.82,
+        height: width * 0.82,
+        borderRadius: (width * 0.82) / 2,
+        backgroundColor: 'rgba(245, 158, 11, 0.06)',
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 60,
+        elevation: 30,
+    },
     outerRing1: {
         position: 'absolute',
-        width: width * 0.78,
-        height: width * 0.78,
-        borderRadius: (width * 0.78) / 2,
-        borderWidth: 1,
-        borderColor: 'rgba(245, 158, 11, 0.1)',
+        width: width * 0.88,
+        height: width * 0.88,
+        borderRadius: (width * 0.88) / 2,
+        borderWidth: 1.5,
+        borderColor: 'rgba(245, 158, 11, 0.5)',
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 18,
+        elevation: 12,
     },
     outerRing2: {
         position: 'absolute',
-        width: width * 0.68,
-        height: width * 0.68,
-        borderRadius: (width * 0.68) / 2,
-        borderWidth: 1.5,
-        borderColor: 'rgba(245, 158, 11, 0.2)',
-    },
-    orbitRing: {
-        position: 'absolute',
-        width: width * 0.72,
-        height: width * 0.72,
-        borderRadius: (width * 0.72) / 2,
-        borderWidth: 1,
-        borderColor: 'rgba(245, 158, 11, 0.3)',
-        borderStyle: 'dashed',
-    },
-    orbitDot: {
-        position: 'absolute',
-        top: -4,
-        left: (width * 0.72) / 2 - 4,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: '#FCD34D',
+        width: width * 0.76,
+        height: width * 0.76,
+        borderRadius: (width * 0.76) / 2,
+        borderWidth: 2,
+        borderColor: 'rgba(252, 211, 77, 0.6)',
         shadowColor: '#FCD34D',
         shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        elevation: 5,
+        shadowOpacity: 0.7,
+        shadowRadius: 22,
+        elevation: 16,
     },
-    counterOrbitRing: {
+    outerRing3: {
         position: 'absolute',
-        width: width * 0.62,
-        height: width * 0.62,
-        borderRadius: (width * 0.62) / 2,
+        width: width * 0.66,
+        height: width * 0.66,
+        borderRadius: (width * 0.66) / 2,
+        borderWidth: 1.5,
+        borderColor: 'rgba(167, 139, 250, 0.55)',
+        shadowColor: '#A78BFA',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 20,
+        elevation: 14,
+    },
+    outerRing4: {
+        position: 'absolute',
+        width: width * 0.60,
+        height: width * 0.60,
+        borderRadius: (width * 0.60) / 2,
+        borderWidth: 2.5,
+        borderColor: 'rgba(251, 191, 36, 0.5)',
+        shadowColor: '#FBBF24',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.65,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    outerRing5: {
+        position: 'absolute',
+        width: width * 0.54,
+        height: width * 0.54,
+        borderRadius: (width * 0.54) / 2,
         borderWidth: 1,
-        borderColor: 'rgba(252, 211, 77, 0.15)',
-    },
-    counterOrbitDot: {
-        position: 'absolute',
-        bottom: -3,
-        left: (height < 700 ? width * 0.5 : width * 0.62) / 2 - 3,
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#F59E0B',
-    },
-    sacredGlow: {
-        position: 'absolute',
-        width: width * 0.5,
-        height: width * 0.5,
-        borderRadius: (width * 0.5) / 2,
-        shadowColor: '#F59E0B',
+        borderColor: 'rgba(196, 181, 253, 0.45)',
+        shadowColor: '#C4B5FD',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.5,
-        shadowRadius: 40,
+        shadowRadius: 14,
+        elevation: 8,
+    },
+    innerGlowRing: {
+        position: 'absolute',
+        width: width * 0.54,
+        height: width * 0.54,
+        borderRadius: (width * 0.54) / 2,
+        borderWidth: 2.5,
+        borderColor: 'rgba(245, 158, 11, 0.8)',
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 1,
+        shadowRadius: 30,
         elevation: 20,
     },
     mainCircle: {
@@ -282,11 +427,16 @@ const styles = StyleSheet.create({
         height: height < 700 ? width * 0.45 : width * 0.52,
         borderRadius: (height < 700 ? width * 0.45 : width * 0.52) / 2,
         overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: 'rgba(245, 158, 11, 0.3)',
+        borderWidth: 3,
+        borderColor: 'rgba(245, 158, 11, 0.7)',
         backgroundColor: 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#F59E0B',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 40,
+        elevation: 30,
     },
     innerSharpRing: {
         ...StyleSheet.absoluteFillObject,

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-
+import { Audio } from 'expo-av';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Dimensions, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Vibration } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -88,10 +88,43 @@ const SCIENTIFIC_FACTS = [
 
 export default function AffirmationScreen() {
     const router = useRouter();
+    const soundRef = useRef<Audio.Sound | null>(null);
     const charge = useSharedValue(0);
     // Removed unused rotation and pulsing shared values for simpler animation
     const rotation = useSharedValue(0); // Kept for style reference diffs but unused logic
     const textPulse = useSharedValue(1);
+
+    // Play 8hz binaural audio in loop while this screen is open
+    useEffect(() => {
+        let mounted = true;
+        const startAudio = async () => {
+            try {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: false,
+                    playsInSilentModeIOS: true,
+                    staysActiveInBackground: false,
+                });
+                const { sound } = await Audio.Sound.createAsync(
+                    require('../assets/8hz.mp3'),
+                    { isLooping: true, volume: 0.5 }
+                );
+                if (mounted) {
+                    soundRef.current = sound;
+                    await sound.playAsync();
+                } else {
+                    await sound.unloadAsync();
+                }
+            } catch (e) {
+                console.warn('8hz audio error:', e);
+            }
+        };
+        startAudio();
+        return () => {
+            mounted = false;
+            soundRef.current?.stopAsync().then(() => soundRef.current?.unloadAsync()).catch(() => {});
+            soundRef.current = null;
+        };
+    }, []);
 
 
 

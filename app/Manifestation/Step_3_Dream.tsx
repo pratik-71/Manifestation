@@ -1,14 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Video } from 'expo-video';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import React, { useRef, useState } from 'react';
 import {
     Alert,
     Dimensions,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -24,6 +21,19 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [permission, requestPermission] = useCameraPermissions();
     const cameraRef = useRef<CameraView>(null);
+    const videoRef = useRef<Video>(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+
+    const togglePlay = async () => {
+        if (!videoRef.current) return;
+        if (isPlaying) {
+            await videoRef.current.pauseAsync();
+            setIsPlaying(false);
+        } else {
+            await videoRef.current.playAsync();
+            setIsPlaying(true);
+        }
+    };
 
     const handleStartRecording = async () => {
         if (!permission?.granted) {
@@ -90,14 +100,7 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
     }
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-            >
+        <View style={styles.container}>
                 <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
                     <Text style={styles.subtitle}>Record a video explaining how you see your future in your vision</Text>
                 </Animated.View>
@@ -127,16 +130,43 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
                     ) : (
                         <View style={styles.videoPreviewContainer}>
                             <Video
+                                ref={videoRef}
                                 source={{ uri: videoUri }}
                                 style={styles.videoPreview}
-                                useNativeControls
-                                resizeMode="cover"
+                                resizeMode={ResizeMode.COVER}
                                 isLooping
+                                shouldPlay
+                                onPlaybackStatusUpdate={(status: AVPlaybackStatus) => {
+                                    if (status.isLoaded) setIsPlaying(status.isPlaying);
+                                }}
                             />
+                            {/* Centered play/pause */}
+                            <TouchableOpacity
+                                style={styles.playPauseOverlay}
+                                onPress={togglePlay}
+                                activeOpacity={1}
+                            >
+                                {!isPlaying && (
+                                    <View style={styles.playBtn}>
+                                        <Ionicons name="play" size={36} color="white" />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                            {/* Dim pill bottom-left */}
+                            <TouchableOpacity
+                                style={styles.dimPill}
+                                onPress={togglePlay}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons
+                                    name={isPlaying ? 'pause' : 'play'}
+                                    size={14}
+                                    color="rgba(255,255,255,0.85)"
+                                />
+                            </TouchableOpacity>
                         </View>
                     )}
                 </Animated.View>
-            </ScrollView>
 
             <View style={styles.footer}>
                 {!videoUri ? (
@@ -202,19 +232,15 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
                     <Text style={styles.skipStepText}>Continue to Goals</Text>
                 </TouchableOpacity>
             </View>
-        </KeyboardAvoidingView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    scrollContent: {
         paddingHorizontal: 24,
         paddingTop: 16,
-        paddingBottom: 40,
-        flexGrow: 1,
     },
     header: {
         alignItems: 'center',
@@ -237,8 +263,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
         flex: 1,
-        minHeight: height * 0.6,
-        maxHeight: height * 0.7,
     },
     camera: {
         flex: 1,
@@ -275,11 +299,35 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
         flex: 1,
-        minHeight: height * 0.6,
-        maxHeight: height * 0.7,
     },
     videoPreview: {
         flex: 1,
+    },
+    playPauseOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    playBtn: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    dimPill: {
+        position: 'absolute',
+        bottom: 14,
+        left: 14,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        borderRadius: 20,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.15)',
     },
     videoSuccessContainer: {
         flex: 1,
