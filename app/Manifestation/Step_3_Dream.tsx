@@ -50,7 +50,7 @@ const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
                 setVideoUri(video.uri);
             }
         } catch (error) {
-            console.error('Error recording video:', error);
+            console.warn('Error recording video [Safe String]');
             Alert.alert('Error', 'Failed to record video');
         } finally {
             setIsRecording(false);

@@ -49,7 +49,7 @@ export const clearStaleGoals = async (wakeTime: string = "07:00") => {
             return true;
         }
     } catch (e) {
-        console.error("Error clearing stale goals:", e);
+        console.warn("Error clearing stale goals [Safe String]");
     }
     return false;
 };

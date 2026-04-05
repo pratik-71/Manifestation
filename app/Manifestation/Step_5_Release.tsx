@@ -1,6 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import ConfettiCannon from 'react-native-confetti-cannon';
 import React, { useState } from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
@@ -141,14 +140,6 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
                 </Animated.View>
 
                 {/* Success overlay */}
-                {showConfetti && (
-                    <ConfettiCannon 
-                        count={60} 
-                        origin={{ x: width / 2, y: height / 2 }} 
-                        fadeOut={true}
-                        fallSpeed={2500}
-                    />
-                )}
                 {isReleased && (
                     <Animated.View style={[styles.successOverlay, successStyle]}>
                         <Text style={styles.successText}>You're all set.</Text>

@@ -17,7 +17,7 @@ export const initNotifications = () => {
     });
     notifHandlerSet = true;
   } catch (error) {
-    console.warn('[Notifications] Initialization failed during startup:', error);
+    console.warn('[Notifications] Initialization failed during startup [Safe String]');
   }
 };
 

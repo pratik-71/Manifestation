@@ -57,10 +57,10 @@ export const initializePurchases = async (userId?: string) => {
                 isInitialized = true;
                 console.log("✅ RevenueCat initialized");
             } catch (err) {
-                console.error("❌ RC configure error:", err);
+                console.warn("❌ RC configure failure [Safe String]");
             }
         } catch (e) {
-            console.error("❌ RC: Unexpected error in init():", e);
+            console.warn("❌ RC: Unexpected error [Safe String]");
         } finally {
             initializationPromise = null;
         }
@@ -92,7 +92,7 @@ export const identifyUser = async (userId: string) => {
         console.log("✅ User identified in RevenueCat:", userId);
         return result.customerInfo;
     } catch (e) {
-        console.error("❌ Failed to identify user in RevenueCat:", e);
+        console.warn("❌ RevenueCat user ID failed [Safe String]");
         return null;
     }
 };
@@ -106,7 +106,7 @@ export const logoutPurchases = async () => {
         await Purchases.logOut();
         console.log("✅ Logged out from RevenueCat");
     } catch (e) {
-        console.error("❌ Failed to logout from RevenueCat:", e);
+        console.warn("❌ RevenueCat logout failed [Safe String]");
     }
 };
 
@@ -128,7 +128,7 @@ export const getOfferings = async (): Promise<any | null> => {
         console.warn("⚠️ No offerings available");
         return null;
     } catch (e) {
-        console.error("❌ Failed to fetch offerings:", e);
+        console.warn("❌ RevenueCat offerings fetch failed [Safe String]");
         return null;
     }
 };
@@ -153,7 +153,7 @@ export const checkSubscriptionStatus = async (): Promise<boolean> => {
         const customerInfo = await Purchases.getCustomerInfo();
         return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
     } catch (e) {
-        console.error("❌ Failed to check subscription status:", e);
+        console.warn("❌ RevenueCat checkStatus failed [Safe String]");
         return false;
     }
 };
@@ -182,8 +182,8 @@ export const purchasePackage = async (packageToPurchase: any) => {
         return { success: false, error: 'Entitlement not active' };
     } catch (error: any) {
         if (!error.userCancelled) {
-            console.error("❌ Purchase failed:", error);
-            return { success: false, error: error.message };
+            console.warn("❌ Purchase failed [Safe String]");
+            return { success: false, error: 'Purchase failed' };
         }
         return { success: false, cancelled: true };
     }
@@ -216,7 +216,7 @@ export const getCustomerInfo = async () => {
         }
         return await Purchases.getCustomerInfo();
     } catch (e) {
-        console.error("❌ getCustomerInfo failed:", e);
+        console.warn("❌ getCustomerInfo failed [Safe String]");
         // Never return null — callers access .entitlements.active which would crash
         return { entitlements: { active: {} }, latestExpirationDate: null };
     }
@@ -245,8 +245,8 @@ export const restorePurchases = async () => {
             customerInfo
         };
     } catch (e: any) {
-        console.error("❌ Restore failed:", e);
-        return { success: false, error: e.message };
+        console.warn("❌ Restore failed [Safe String]");
+        return { success: false, error: 'Restore failed' };
     }
 };
 

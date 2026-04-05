@@ -191,7 +191,7 @@ export default function UniverseChat() {
 
             setMessages((prev) => [...prev, assistantMsg]);
         } catch (error) {
-            console.error("Chat Error:", error);
+            console.warn("Chat Error [Safe String]");
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 text: "I'm having trouble connecting right now. Please try again in a moment.",

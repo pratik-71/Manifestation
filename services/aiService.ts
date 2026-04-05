@@ -68,7 +68,7 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
                 continue;
             }
         } catch (error) {
-            console.error(`AI Fetch Error (${model}):`, error);
+            console.warn(`AI Fetch Error (${model}) [Safe String]`);
             continue;
         }
     }

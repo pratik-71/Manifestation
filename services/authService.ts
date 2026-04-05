@@ -52,7 +52,7 @@ export const signInWithGoogle = async (): Promise<any> => {
         
         return null;
     } catch (error: any) {
-        console.error('Web-based Sign-in Error:', error);
+        console.warn('Web-based Sign-in Error: [Safe String]');
         throw error;
     }
 };
@@ -99,7 +99,7 @@ export const signInWithApple = async (): Promise<any> => {
         if (error.code === 'ERR_CANCELED' || (error.message && /cancel/i.test(error.message))) {
             return null;
         }
-        console.error('Apple Sign-in Error:', error);
+        console.warn('Apple Sign-in Error: [Safe String]');
         throw error;
     }
 };
@@ -109,7 +109,7 @@ export const signOut = async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
     } catch (error) {
-        console.error('Sign-out Error:', error);
+        console.warn('Sign-out Error: [Safe String]');
         throw error;
     }
 };
@@ -131,7 +131,7 @@ export const deleteAccount = async () => {
         // After successful deletion on server, sign out locally
         await supabase.auth.signOut();
     } catch (error: any) {
-        console.error('Delete-account Error:', error);
+        console.warn('Delete-account Error: [Safe String]');
         
         // Try to extract the detailed message from the function response
         if (error.context && typeof error.context.json === 'function') {
@@ -150,7 +150,7 @@ export const deleteAccount = async () => {
 export const getCurrentUser = async () => {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
-        console.error('Error getting session:', error);
+        console.warn('Error getting session: [Safe String]');
         return null;
     }
     return session?.user || null;

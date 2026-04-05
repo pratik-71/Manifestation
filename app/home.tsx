@@ -38,7 +38,7 @@ export default function Home() {
             setVideoUri(videoPath);
             setShowVideoModal(true);
         } catch (error) {
-            console.error("Watch Future Error:", error);
+            console.warn("Watch Future Error [Safe String]");
             Alert.alert("Error", "Something went wrong while trying to play your message.");
         }
     };

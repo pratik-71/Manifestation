@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import { Comfortaa_300Light, Comfortaa_400Regular, Comfortaa_500Medium, Comfortaa_600SemiBold, Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
 import {
   CormorantGaramond_400Regular,
@@ -20,8 +21,9 @@ import { SplashScreen, Stack } from 'expo-router';
 import React, { useEffect, useState, useRef } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import 'react-native-get-random-values';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// ------------------------------------------------------------------
 import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
 import { initializePurchases } from '../services/purchaseService';
 import { initNotifications } from '../services/notificationService';
@@ -71,7 +73,7 @@ export default function RootLayout() {
         try {
           await SplashScreen.hideAsync();
         } catch (e) {
-          console.warn("Error hiding splash screen:", e);
+          console.warn("[Layout] Splash hide safely deferred");
         }
       }, 500);
       return () => clearTimeout(timer);

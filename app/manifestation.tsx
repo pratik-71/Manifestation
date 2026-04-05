@@ -7,7 +7,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated as RNAnimated,
     Dimensions,
-    Easing,
     Image,
     Modal,
     Pressable,
@@ -18,7 +17,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
@@ -107,10 +106,10 @@ export default function ManifestHub() {
     // Animated streak counter
     const [displayedStreak, setDisplayedStreak] = useState(0);
     const [isDetailsVisible, setIsDetailsVisible] = useState(false);
-    const flamePulse = useRef(new RNAnimated.Value(1)).current;
+    const flamePulse = useSharedValue(1);
     const streakAnimRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    // Fetch profile if not loaded yet (direct navigation to this screen)
+    // Fetch profile if not loaded yet
     useEffect(() => {
         const init = async () => {
             const { getCurrentUser } = await import('../services/authService');
@@ -152,16 +151,22 @@ export default function ManifestHub() {
     // Flame pulse when streak > 0
     useEffect(() => {
         if (streakCount > 0) {
-            RNAnimated.loop(
-                RNAnimated.sequence([
-                    RNAnimated.timing(flamePulse, { toValue: 1.3, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-                    RNAnimated.timing(flamePulse, { toValue: 1.0, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-                ])
-            ).start();
+            flamePulse.value = withRepeat(
+                withSequence(
+                    withTiming(1.3, { duration: 700, easing: Easing.inOut(Easing.ease) }),
+                    withTiming(1.0, { duration: 700, easing: Easing.inOut(Easing.ease) })
+                ),
+                -1,
+                true
+            );
         } else {
-            flamePulse.setValue(1);
+            flamePulse.value = 1;
         }
     }, [streakCount]);
+
+    const flameAnimStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: flamePulse.value }]
+    }));
 
     useEffect(() => {
         const allTasksDone = manifestTasks.tookAction &&
@@ -275,11 +280,10 @@ export default function ManifestHub() {
                             />
                             <Text style={styles.greetingText}>Hello, {profile?.username || 'Seeker'} </Text>
                         </View>
-                        {/* Streak Badge */}
                         <View style={styles.streakBadge}>
-                            <RNAnimated.View style={{ transform: [{ scale: flamePulse }] }}>
+                            <Animated.View style={flameAnimStyle}>
                                 <Ionicons name="flame" size={16} color={displayedStreak > 0 ? '#f97316' : '#B45309'} />
-                            </RNAnimated.View>
+                            </Animated.View>
                             <Text style={styles.streakBadgeText}>{displayedStreak}</Text>
                         </View>
                     </View>
@@ -1108,6 +1112,9 @@ const styles = StyleSheet.create({
         color: '#fff',
         flex: 1,
         lineHeight: 20,
+    },
+    subSection: {
+        marginBottom: 20,
     },
    
     subSectionHeader: {
