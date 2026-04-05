@@ -136,7 +136,7 @@ export default function Paywall() {
                 setCurrentSubStatus('none');
             }
         } catch (e) {
-            console.error("Status check failed", e);
+            console.warn("Status check failed: [Safe String]");
             setCurrentSubStatus('none');
         }
     };
@@ -155,7 +155,7 @@ export default function Paywall() {
                     setSelectedPackage(yearly || currentOffering.availablePackages[0]);
                 }
             } catch (err) {
-                console.error("Failed to initialize paywall", err);
+                console.warn("Failed to initialize paywall: [Safe String]");
             } finally {
                 setIsLoading(false);
             }

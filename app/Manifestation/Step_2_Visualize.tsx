@@ -52,7 +52,7 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
                     }
                 }
             } catch (e) {
-                console.warn('Audio error:', e);
+                console.warn("Audio error: [Safe String]");
             }
         };
         handleAudio();

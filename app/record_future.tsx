@@ -480,7 +480,7 @@ export default function RecordFuture() {
                 saveVideo(video.uri);
             }
         } catch (error) {
-            console.error("Recording error:", error);
+            console.warn("Recording error: [Safe String]");
             setIsRecording(false);
             Alert.alert("Error", "Failed to record video.");
         }
@@ -521,7 +521,7 @@ export default function RecordFuture() {
 
             setShowSuccessModal(true);
         } catch (error) {
-            console.error("Saving error:", error);
+            console.warn("Saving error: [Safe String]");
             Alert.alert("Error", "Failed to save your message internally.");
         } finally {
             setIsSaving(false);

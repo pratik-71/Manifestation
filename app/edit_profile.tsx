@@ -24,6 +24,7 @@ import { BreathingBackground } from '../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../components/TimeWheelPicker';
 import { requestNotificationPermissions, scheduleManifestationNotifications } from '../services/notificationService';
 import { useUserStore } from '../store/userStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -55,12 +56,21 @@ export default function EditProfile() {
     const [wakeTime, setWakeTime] = useState<TimeValue>(h24ToTimeValue(profile?.wake_time || '07:00'));
     const [sleepTime, setSleepTime] = useState<TimeValue>(h24ToTimeValue(profile?.sleep_time || '23:00'));
     const [manifestTime, setManifestTime] = useState<TimeValue>(h24ToTimeValue(profile?.manifest_time || '10:00'));
+    const [calmMindInterval, setCalmMindInterval] = useState<number>(0);
     
     const [isSaving, setIsSaving] = useState(false);
     const [isReady, setIsReady] = useState(false);
 
     React.useEffect(() => {
-        const task = InteractionManager.runAfterInteractions(() => {
+        const task = InteractionManager.runAfterInteractions(async () => {
+            try {
+                const storedInterval = await AsyncStorage.getItem('calm_mind_interval');
+                if (storedInterval !== null) {
+                    setCalmMindInterval(parseInt(storedInterval, 10));
+                }
+            } catch (e) {
+                console.warn('Failed to load interval');
+            }
             setIsReady(true);
         });
         return () => task.cancel();
@@ -90,13 +100,16 @@ export default function EditProfile() {
                     return { hour, minute: parseInt(val.minute) };
                 };
 
+                await AsyncStorage.setItem('calm_mind_interval', calmMindInterval.toString());
+
                 await scheduleManifestationNotifications({
                     wakeTime: parseTime(wakeTime),
                     sleepTime: parseTime(sleepTime),
                     manifestTime: parseTime(manifestTime),
+                    calmMindInterval: calmMindInterval === 0 ? undefined : calmMindInterval,
                 });
             } catch (err) {
-                console.error("Failed to reschedule notifications", err);
+                console.warn("Failed to reschedule notifications: [Safe String]");
             }
 
             Alert.alert("Success", "Profile updated successfully!");
@@ -205,6 +218,33 @@ export default function EditProfile() {
                                         <ActivityIndicator color="rgba(255,255,255,0.2)" />
                                     </View>
                                 )}
+                            </View>
+                        </Animated.View>
+
+                        {/* Calm Mind Interval Section */}
+                        <Animated.View entering={FadeInDown.delay(550).duration(800)} style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Ionicons name="leaf-outline" size={16} color="#fb923c" />
+                                <Text style={styles.sectionLabel}>CORTISOL REDUCTION REMINDER</Text>
+                            </View>
+                            <View style={styles.intervalContainer}>
+                                {[0, 60, 90, 120, 150, 180].map((val) => (
+                                    <TouchableOpacity
+                                        key={val}
+                                        style={[
+                                            styles.intervalButton,
+                                            calmMindInterval === val ? styles.intervalSelected : styles.intervalUnselected
+                                        ]}
+                                        onPress={() => setCalmMindInterval(val)}
+                                    >
+                                        <Text style={[
+                                            styles.intervalText,
+                                            { color: calmMindInterval === val ? '#fb923c' : '#fff' }
+                                        ]}>
+                                            {val === 0 ? "Off" : `${val} min`}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </Animated.View>
 
@@ -337,6 +377,31 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 20,
         elevation: 10,
+    },
+    intervalContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        paddingVertical: 4,
+        gap: 8,
+    },
+    intervalButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+    },
+    intervalSelected: {
+        backgroundColor: 'rgba(251, 146, 60, 0.1)',
+        borderColor: '#fb923c',
+    },
+    intervalUnselected: {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    intervalText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 14,
     },
     saveButton: {
         borderRadius: 30,

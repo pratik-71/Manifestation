@@ -17,11 +17,12 @@ interface OnboardingState {
     wakeTime: string;
     sleepTime: string;
     manifestTime: string;
+    calmMindInterval: number; // in minutes
     goals: string[];
     aiRoadmap: AiRoadmapItem[];
 
     // Actions
-    setUserData: (data: { username: string; wakeTime: string; sleepTime: string; manifestTime: string }) => void;
+    setUserData: (data: { username: string; wakeTime: string; sleepTime: string; manifestTime: string; calmMindInterval: number; }) => void;
     setGoals: (goals: string[]) => void;
     setAiRoadmap: (aiRoadmap: AiRoadmapItem[]) => void;
     reset: () => void;
@@ -32,6 +33,7 @@ const defaultState = {
     wakeTime: '07:00',
     sleepTime: '23:00',
     manifestTime: '10:00',
+    calmMindInterval: 120,
     goals: [] as string[],
     aiRoadmap: [] as AiRoadmapItem[],
 };
@@ -45,6 +47,7 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
             wakeTime: data.wakeTime,
             sleepTime: data.sleepTime,
             manifestTime: data.manifestTime,
+            calmMindInterval: data.calmMindInterval,
         }),
 
     setGoals: (goals) => set({ goals }),

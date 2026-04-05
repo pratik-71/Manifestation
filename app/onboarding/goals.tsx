@@ -138,7 +138,7 @@ export default function Goals() {
             setAiResponse(data);
             setAiRoadmap(data);
         } catch (error) {
-            console.error('AI Coach error:', error);
+            console.warn('AI Coach error (safely caught)');
             // Fallback handled inside generateAIRoadmap
         } finally {
             setAiLoading(false);
@@ -423,7 +423,7 @@ export default function Goals() {
                                                                 router.push('/record_future?fromOnboarding=1');
                                                             }
                                                         } catch (err) {
-                                                            console.error('Failed to update goals:', err);
+                                                            console.warn('Failed to update goals (safely caught)');
                                                         } finally {
                                                             setIsSubmitting(false);
                                                         }

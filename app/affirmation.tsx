@@ -115,7 +115,7 @@ export default function AffirmationScreen() {
                     await sound.unloadAsync();
                 }
             } catch (e) {
-                console.warn('8hz audio error:', e);
+                console.warn("8hz audio error: [Safe String]");
             }
         };
         startAudio();
@@ -197,7 +197,7 @@ export default function AffirmationScreen() {
             }, 1500);
 
         } catch (error) {
-            console.warn("Vibration feedback failed", error);
+            console.warn("Vibration feedback failed: [Safe String]");
         }
     }, [handleNext]);
 

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Dimensions, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
@@ -11,7 +12,7 @@ import { requestNotificationPermissions, scheduleManifestationNotifications } fr
 import { useOnboardingStore } from '../../store/onboardingStore';
 
 const { width } = Dimensions.get('window');
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 type HeaderProps = {
     currentStep: number;
@@ -195,6 +196,37 @@ const StepThree = memo(({ manifestTime, onChangeManifest }: StepThreeProps) => {
     prev.manifestTime.ampm === next.manifestTime.ampm
 );
 
+type StepFourProps = {
+    interval: number;
+    onChangeInterval: (value: number) => void;
+};
+
+const StepFour = memo(({ interval, onChangeInterval }: StepFourProps) => (
+    <View style={styles.stepContainer}>
+        <View style={styles.questionContainer}>
+            <Text style={styles.questionText}>
+                How often should we remind you to calm your mind?
+            </Text>
+        </View>
+        <View style={styles.gridOptionsContainer}>
+            {[0, 60, 90, 120, 150, 180].map((val) => (
+                <TouchableOpacity
+                    key={val}
+                    style={[
+                        styles.gridOptionButton,
+                        interval === val ? styles.optionSelected : styles.optionUnselected
+                    ]}
+                    onPress={() => onChangeInterval(val)}
+                >
+                    <Text style={[styles.gridOptionText, { color: interval === val ? '#fb923c' : 'rgba(255,255,255,0.7)' }]}>
+                        {val === 0 ? "Off" : `${val} min`}
+                    </Text>
+                </TouchableOpacity>
+            ))}
+        </View>
+    </View>
+));
+
 // Helper: convert 12-hour TimeValue to "HH:MM" 24-hour string
 const timeValueTo24h = (val: { hour: string; minute: string; ampm: 'AM' | 'PM' }): string => {
     let hour = parseInt(val.hour, 10);
@@ -213,6 +245,7 @@ export default function Questionnaire() {
     const [wakeTime, setWakeTime] = useState<TimeValue>({ hour: '07', minute: '00', ampm: 'AM' });
     const [sleepTime, setSleepTime] = useState<TimeValue>({ hour: '11', minute: '00', ampm: 'PM' });
     const [manifestTime, setManifestTime] = useState<TimeValue>({ hour: '10', minute: '00', ampm: 'AM' });
+    const [calmMindInterval, setCalmMindInterval] = useState<number>(120);
     const [isProcessing, setIsProcessing] = useState(false);
 
     // Use refs to access current values without recreating callbacks
@@ -220,16 +253,19 @@ export default function Questionnaire() {
     const sleepTimeRef = useRef(sleepTime);
     const manifestTimeRef = useRef(manifestTime);
     const usernameRef = useRef(username);
+    const calmMindIntervalRef = useRef(calmMindInterval);
 
     wakeTimeRef.current = wakeTime;
     sleepTimeRef.current = sleepTime;
     manifestTimeRef.current = manifestTime;
     usernameRef.current = username;
+    calmMindIntervalRef.current = calmMindInterval;
 
     const isStepValid = useCallback(() => {
         if (currentStep === 1) return usernameRef.current.length >= 3 && usernameRef.current.length <= 10;
         if (currentStep === 2) return true;
         if (currentStep === 3) return true;
+        if (currentStep === 4) return true;
         return false;
     }, [currentStep]);
 
@@ -253,6 +289,7 @@ export default function Questionnaire() {
                     wakeTime: wake24,
                     sleepTime: sleep24,
                     manifestTime: manifest24,
+                    calmMindInterval: calmMindIntervalRef.current,
                 });
 
                 console.log('Onboarding data saved to store:', {
@@ -269,19 +306,23 @@ export default function Questionnaire() {
                         return { hour, minute: parseInt(val.minute) };
                     };
 
+                    // Save interval locally
+                    await AsyncStorage.setItem('calm_mind_interval', calmMindIntervalRef.current.toString());
+
                     await scheduleManifestationNotifications({
                         wakeTime: parseTime(wakeTimeRef.current),
                         sleepTime: parseTime(sleepTimeRef.current),
                         manifestTime: parseTime(manifestTimeRef.current),
+                        calmMindInterval: calmMindIntervalRef.current === 0 ? undefined : calmMindIntervalRef.current,
                     });
                 } catch (err) {
-                    console.error("Failed to schedule notifications", err);
+                    console.warn("Failed to schedule notifications: [Safe String]");
                 }
 
                 router.push('/onboarding/goals');
             }
         } catch (err) {
-            console.error("Error in handleNext:", err);
+            console.warn("Error in handleNext: [Safe String]");
         } finally {
             // Delay resetting to prevent quick double taps even after processing
             setTimeout(() => setIsProcessing(false), 500);
@@ -313,6 +354,10 @@ export default function Questionnaire() {
         setManifestTime(value);
     }, []);
 
+    const handleIntervalChange = useCallback((value: number) => {
+        setCalmMindInterval(value);
+    }, []);
+
     const renderStepContent = useCallback(() => {
         switch (currentStep) {
             case 1:
@@ -328,6 +373,8 @@ export default function Questionnaire() {
                 );
             case 3:
                 return <StepThree manifestTime={manifestTime} onChangeManifest={handleManifestTimeChange} />;
+            case 4:
+                return <StepFour interval={calmMindInterval} onChangeInterval={handleIntervalChange} />;
             default:
                 return null;
         }
@@ -337,10 +384,12 @@ export default function Questionnaire() {
         wakeTime,
         sleepTime,
         manifestTime,
+        calmMindInterval,
         handleUsernameChange,
         handleWakeTimeChange,
         handleSleepTimeChange,
         handleManifestTimeChange,
+        handleIntervalChange,
     ]);
 
     const footerText = useMemo(() => {
@@ -352,6 +401,9 @@ export default function Questionnaire() {
         }
         if (currentStep === 3) {
             return "Pick a time when your intention feels most powerful.";
+        }
+        if (currentStep === 4) {
+            return "Taking brief moments to breathe reduces cortisol and centers your energy.";
         }
         return "";
     }, [currentStep]);
@@ -446,10 +498,10 @@ const styles = StyleSheet.create({
     },
     questionText: {
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 22,
+        fontSize: 18,
         color: '#fff',
         marginBottom: 4,
-        lineHeight: 46,
+        lineHeight: 36,
         textShadowColor: 'rgba(251, 146, 60, 0.3)', // subtle orange shadow
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 10,
@@ -676,5 +728,26 @@ const styles = StyleSheet.create({
         color: '#fb923c',
         letterSpacing: 1,
         textAlign: 'center',
+    },
+    gridOptionsContainer: {
+        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginTop: 10,
+        justifyContent: 'space-between',
+    },
+    gridOptionButton: {
+        width: '47%',
+        paddingVertical: 18,
+        borderRadius: 16,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.03)',
+    },
+    gridOptionText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 16,
     },
 });

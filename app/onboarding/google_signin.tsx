@@ -107,7 +107,7 @@ export default function GoogleSignIn() {
                     }
                 }
             } catch (err) {
-                console.error("Initial check fail:", err);
+                console.warn("Initial check fail: [Safe String]");
             } finally {
                 setIsLoading(false);
             }
@@ -131,7 +131,7 @@ export default function GoogleSignIn() {
                 router.replace('/onboarding/questionnaire');
             }
         } catch (error: any) {
-            console.error('Login failed', error);
+            console.warn('Login failed: [Safe String]');
             if (error.code !== 'SIGN_IN_CANCELLED') {
                 Alert.alert("Connection Failed", "The Universe couldn't verify your signal. Please try again.");
             }
@@ -156,7 +156,7 @@ export default function GoogleSignIn() {
                 router.replace('/onboarding/questionnaire');
             }
         } catch (error: any) {
-            console.error('Apple login failed', error);
+            console.warn('Apple login failed: [Safe String]');
             if (error.code !== 'ERR_CANCELED') {
                 Alert.alert("Connection Failed", "The Universe couldn't verify your Apple ID. Please try again.");
             }

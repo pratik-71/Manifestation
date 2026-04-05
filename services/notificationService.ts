@@ -40,6 +40,7 @@ interface MultiTimeConfig {
   wakeTime: { hour: number; minute: number }; // 24h format
   sleepTime: { hour: number; minute: number }; // 24h format
   manifestTime: { hour: number; minute: number }; // 24h format
+  calmMindInterval?: number; // minutes
 }
 
 export const scheduleManifestationNotifications = async (config: MultiTimeConfig) => {
@@ -114,6 +115,38 @@ export const scheduleManifestationNotifications = async (config: MultiTimeConfig
       minute: config.manifestTime.minute,
     },
   });
+
+  // 5. Calm Mind Interval (between wake to sleep)
+  if (config.calmMindInterval) {
+    const wakeTotal = config.wakeTime.hour * 60 + config.wakeTime.minute;
+    let sleepTotal = config.sleepTime.hour * 60 + config.sleepTime.minute;
+    
+    // Handle overnight schedules
+    if (sleepTotal <= wakeTotal) {
+      sleepTotal += 24 * 60;
+    }
+
+    let currentMin = wakeTotal + config.calmMindInterval;
+    while (currentMin < sleepTotal) {
+      const h = Math.floor(currentMin / 60) % 24;
+      const m = currentMin % 60;
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Breathe & Center",
+          body: "Take a moment to calm your mind and lower your cortisol.",
+          data: { url: '/calm_mind' },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: h,
+          minute: m,
+        },
+      });
+
+      currentMin += config.calmMindInterval;
+    }
+  }
 
   console.log('Notifications scheduled successfully');
 };

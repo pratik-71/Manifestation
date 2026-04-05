@@ -103,7 +103,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
 
             onComplete?.();
         } catch (error) {
-            console.error('Error saving goals:', error);
+            console.warn("Error saving goals: [Safe String]");
             Alert.alert('Error', 'Failed to save your goals. Please try again.');
         } finally {
             setIsSaving(false);

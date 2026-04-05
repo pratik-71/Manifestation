@@ -217,17 +217,17 @@ export default function Home() {
                             </View>
 
                             <View style={styles.actionsRow}>
-                                {/* Raise Frequency */}
+                                {/* Calm Mind */}
                                 <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
-                                        onPress={() => router.push('/raise_frequency')}
+                                        onPress={() => router.push('/calm_mind' as any)}
                                         activeOpacity={0.9}
                                         style={[styles.actionCard, styles.cardBorderOrange]}
                                     >
                                         <View style={styles.iconCircle}>
-                                            <Ionicons name="flash" size={22} color="#B45309" />
+                                            <Ionicons name="leaf" size={22} color="#B45309" />
                                         </View>
-                                        <Text style={styles.cardTitle}>Frequency</Text>
+                                        <Text style={styles.cardTitle}>Calm Mind</Text>
                                     </TouchableOpacity>
                                 </Animated.View>
 

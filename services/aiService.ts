@@ -61,7 +61,7 @@ export const getAIResponse = async (userMessage: string, history: { role: 'user'
                     return content;
                 }
             } else {
-                console.warn(`Model ${model} failed with status ${response.status}:`, data.error?.message);
+                console.warn(`Model ${model} failed with status ${response.status}: ${typeof data.error?.message === 'string' ? data.error.message : 'Unknown'}`);
                 if (response.status === 401) {
                     return "Your API key appears to be invalid or expired. Please check your OpenRouter account.";
                 }
