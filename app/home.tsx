@@ -123,10 +123,12 @@ export default function Home() {
         init();
 
         const checkPerms = async () => {
+            // Defensive delay for direct deep links / fast mounts
+            await new Promise(resolve => setTimeout(resolve, 2000));
             const status = await checkNotificationStatus();
             if (status !== 'granted') {
-                // Delay slightly to not overwhelm on mount
-                setTimeout(() => setShowNotifModal(true), 2000);
+                // Delay slightly more once the initial check finishes
+                setTimeout(() => setShowNotifModal(true), 1000);
             }
         };
 

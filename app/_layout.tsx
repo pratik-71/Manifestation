@@ -2,16 +2,12 @@ import 'react-native-get-random-values';
 import { Comfortaa_300Light, Comfortaa_400Regular, Comfortaa_500Medium, Comfortaa_600SemiBold, Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
 import {
   CormorantGaramond_400Regular,
-  CormorantGaramond_400Regular_Italic,
-  CormorantGaramond_500Medium,
   CormorantGaramond_600SemiBold,
   CormorantGaramond_700Bold,
   CormorantGaramond_700Bold_Italic
 } from '@expo-google-fonts/cormorant-garamond';
 import { 
   DancingScript_400Regular,
-  DancingScript_500Medium,
-  DancingScript_600SemiBold,
   DancingScript_700Bold 
 } from '@expo-google-fonts/dancing-script';
 
@@ -29,8 +25,9 @@ import { initializePurchases } from '../services/purchaseService';
 import { initNotifications } from '../services/notificationService';
 import "../global.css";
 
-// Stage 0: Keep native splash screen visible while JS bridge stabilizes
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Stage 0: Splash screen handled inside RootLayout effect to avoid
+// race conditions with the New Architecture bridge initialization.
+// SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   useKeepAwake();
@@ -44,25 +41,29 @@ export default function RootLayout() {
     Comfortaa_600SemiBold,
     Comfortaa_700Bold,
     CormorantGaramond_400Regular,
-    CormorantGaramond_500Medium,
     CormorantGaramond_600SemiBold,
     CormorantGaramond_700Bold,
-    CormorantGaramond_400Regular_Italic,
     CormorantGaramond_700Bold_Italic,
     DancingScript_400Regular,
-    DancingScript_500Medium,
-    DancingScript_600SemiBold,
     DancingScript_700Bold
   });
 
   useEffect(() => {
     // Stage 1: Stabilization Blackout
-    // Wait 800ms BEFORE we allow the React tree to mount AppMain
-    // This allows Hermes engine and Native modules to finish handshake
+    // Ensure splash screen is locked native-side before we do anything
+    try {
+      SplashScreen.preventAutoHideAsync().catch(() => {});
+    } catch (e) {
+      // Ignored
+    }
+
+    // Wait 1200ms BEFORE we allow the React tree to mount AppMain
+    // This allows Hermes engine, Fabric native commits, and TurboModules to finish handshake.
+    // 800ms was sometimes too short for the New Architecture overhead.
     const initTimer = setTimeout(() => {
       setAppReady(true);
       setIsInitialized(true);
-    }, 800);
+    }, 1200);
 
     return () => clearTimeout(initTimer);
   }, []);
@@ -92,8 +93,13 @@ export default function RootLayout() {
 // ------------------------------------------------------------------
 const AppMain = React.memo(() => {
   const rcInitialized = useRef(false);
+  const [showCosmic, setShowCosmic] = useState(false);
 
   useEffect(() => {
+    // Phase in the cosmic background AFTER the first paint and initial layout
+    // This avoids resource contention with the initial Stack/Screen commit.
+    const cosmicTimer = setTimeout(() => setShowCosmic(true), 1500);
+
     // Stage 2: Background Service Lifecycle
     const t1 = setTimeout(() => {
       try {
@@ -102,7 +108,7 @@ const AppMain = React.memo(() => {
         // Use a simple string to avoid Hermes error stack generation during fragile JSI init
         console.warn('[Layout] Notifications init failed safely');
       }
-    }, 3000);
+    }, 4000);
 
     // Stage 3: Service Phase-in
     const t2 = setTimeout(async () => {
@@ -113,9 +119,10 @@ const AppMain = React.memo(() => {
       } catch (e) {
         console.warn('[Layout] Purchases init failed safely');
       }
-    }, 4500);
+    }, 5500);
 
     return () => {
+      clearTimeout(cosmicTimer);
       clearTimeout(t1);
       clearTimeout(t2);
     };
@@ -125,7 +132,7 @@ const AppMain = React.memo(() => {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
-        <GlobalCosmicBackground />
+        {showCosmic && <GlobalCosmicBackground />}
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

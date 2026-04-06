@@ -19,7 +19,7 @@ export default function Index() {
                         const { identifyUser } = await import('../services/purchaseService');
                         await identifyUser(user.id);
                     } catch (rcError) {
-                        console.warn("RC identify deferred");
+                        console.warn("RC identify deferred [Safe String]");
                     }
 
                     try {
@@ -29,17 +29,17 @@ export default function Index() {
                             nextRoute = '/home';
                         }
                     } catch (profError) {
-                        console.warn("Profile check deferred");
+                        console.warn("Profile check deferred [Safe String]");
                     }
                 }
             } catch (err) {
                 // Avoid logging 'err' object itself to prevent Hermes stack-getter crash
-                console.warn("Auth check deferred safely");
+                console.warn("Auth check deferred safely [Safe String]");
             } finally {
                 setDestination(nextRoute);
                 setLoading(false);
             }
-        }, 800);
+        }, 1500);
 
         return () => clearTimeout(timer);
     }, []);
