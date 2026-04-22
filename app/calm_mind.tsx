@@ -27,7 +27,7 @@ export default function CalmMind() {
     const circleScale = useSharedValue(1);
 
     useEffect(() => {
-        let timer: NodeJS.Timeout;
+        let timer: any;
         if (isActive) {
             timer = setInterval(() => {
                 setTimeLeft((prev) => {

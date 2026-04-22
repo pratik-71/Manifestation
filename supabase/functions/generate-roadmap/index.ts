@@ -1,5 +1,5 @@
-import { serve } from "std/http/server.ts"
 import { OpenAI } from "openai"
+import { serve } from "std/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +54,9 @@ serve(async (req) => {
       response_format: { type: "json_object" }
     })
 
-    const roadmapData = JSON.parse(chatCompletion.choices[0].message.content || '{"roadmaps": []}')
+    const roadmapData = JSON.parse(
+      chatCompletion.choices?.[0]?.message?.content || '{"roadmaps": []}'
+    );
     const finalData = roadmapData.roadmaps || roadmapData
 
     return new Response(

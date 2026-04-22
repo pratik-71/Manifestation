@@ -195,7 +195,7 @@ export default function Trust1() {
                         </TouchableOpacity>
                     </Animated.View>
 
-                    <Text style={styles.footerNote}>Free to try · Cancel anytime</Text>
+                    <Text style={styles.footerNote}>Completely Free · No Subscription Required</Text>
 
                 </Animated.View>
             </SafeAreaView>

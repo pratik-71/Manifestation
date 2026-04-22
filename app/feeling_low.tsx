@@ -1,11 +1,11 @@
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { Alert, Dimensions, Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
     FadeIn,
     FadeInDown,
@@ -617,14 +617,12 @@ function CommitmentVideoModal({ uri, onClose }: { uri: string; onClose: () => vo
                     />
                 </View>
                 <Text style={videoStyles.reminder}>
-                    You made this promise to yourself. Honor it. 🔥
+                    You made this promise to yourself. Honor it. 
                 </Text>
             </View>
         </Modal>
     );
 }
-
-const { width: SCREEN_W } = Dimensions.get('window');
 
 const videoStyles = StyleSheet.create({
     backdrop: {
@@ -658,7 +656,7 @@ const videoStyles = StyleSheet.create({
         marginLeft: 12,
     },
     playerWrapper: {
-        width: SCREEN_W - 32,
+        width: '90%',
         aspectRatio: 9 / 16,
         borderRadius: 20,
         overflow: 'hidden',

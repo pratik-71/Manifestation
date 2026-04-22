@@ -8,14 +8,15 @@ import Animated, {
     withTiming
 } from 'react-native-reanimated';
 
-const { width, height } = Dimensions.get('window');
-
 const BLINKING_STARS_COUNT = 5;
 
 const BlinkingStar = React.memo(({ index }: { index: number }) => {
     const opacity = useSharedValue(Math.random());
     const translateX = useSharedValue(0);
     const translateY = useSharedValue(0);
+
+    // Get dimensions safely within component
+    const { width, height } = Dimensions.get('window');
 
     // Stabilize random values using useMemo or useRef so they persist across re-renders
     const config = useMemo(() => ({
@@ -24,7 +25,7 @@ const BlinkingStar = React.memo(({ index }: { index: number }) => {
         size: Math.random() * 2 + 1.5,
         opacityDuration: 2000 + Math.random() * 3000,
         moveDuration: 5000 + Math.random() * 5000,
-    }), []);
+    }), [width, height]);
 
     useEffect(() => {
         opacity.value = withRepeat(

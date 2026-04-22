@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Animated as RNAnimated, AppState, Dimensions, Easing, Image, Modal, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
+import { useRouter } from 'expo-router';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Easing, Image, Modal, Animated as RNAnimated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
@@ -13,8 +12,8 @@ import { NotificationPermissionModal } from '../components/NotificationPermissio
 import { checkNotificationStatus } from '../services/notificationService';
 
 import { getCurrentUser } from '../services/authService';
+import { ENTITLEMENT_ID, getCustomerInfo } from '../services/purchaseService';
 import { useUserStore } from '../store/userStore';
-import { getCustomerInfo, ENTITLEMENT_ID } from '../services/purchaseService';
 
 
 export default function Home() {
@@ -328,9 +327,7 @@ function VideoPlayerModal({ uri, onClose }: { uri: string; onClose: () => void }
             </View>
         </Modal>
     );
-}
-
-const { width: SCREEN_W } = Dimensions.get('window');
+};
 
 const videoStyles = StyleSheet.create({
     backdrop: {
@@ -340,7 +337,7 @@ const videoStyles = StyleSheet.create({
         alignItems: 'center',
     },
     playerWrapper: {
-        width: SCREEN_W - 24,
+        width: '90%',
         aspectRatio: 9 / 16,
         borderRadius: 20,
         overflow: 'hidden',

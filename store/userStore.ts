@@ -73,7 +73,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                     // Profile not found, create a default one
                     const { data: userData } = await supabase.auth.getUser();
                     const email = userData?.user?.email || '';
-                    const username = email.split('@')[0] || 'Seeker';
+                    const username = (email || '').split('@')[0] || 'Seeker';
 
                     const newProfile = {
                         id: userId,

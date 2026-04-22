@@ -3,8 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
-import { useUserStore } from '../../store/userStore';
-import { clearStaleGoals } from '../../services/goalService';
 import {
     Alert,
     Dimensions,
@@ -18,6 +16,8 @@ import {
     View
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp, FadeOut, Layout } from 'react-native-reanimated';
+import { clearStaleGoals } from '../../services/goalService';
+import { useUserStore } from '../../store/userStore';
 
 const { width, height } = Dimensions.get('window');
 
@@ -44,12 +44,16 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
 
                 const saved = await AsyncStorage.getItem('today_goals');
                 if (saved) {
-                    const parsed: string[] = JSON.parse(saved);
-                    if (parsed.length > 0) {
-                        setGoals(parsed.map((text, i) => ({
-                            id: `loaded_${i}_${Date.now()}`,
-                            text
-                        })));
+                    try {
+                        const parsed: string[] = JSON.parse(saved);
+                        if (parsed.length > 0) {
+                            setGoals(parsed.map((text, i) => ({
+                                id: `loaded_${i}_${Date.now()}`,
+                                text
+                            })));
+                        }
+                    } catch (parseError) {
+                        console.warn('Failed to parse saved goals:', parseError);
                     }
                 }
             } catch (e) {
@@ -85,7 +89,15 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
         setIsSaving(true);
         try {
             const existingData = await AsyncStorage.getItem('manifestation_history');
-            const history = existingData ? JSON.parse(existingData) : [];
+            let history = [];
+            if (existingData) {
+                try {
+                    history = JSON.parse(existingData);
+                } catch (parseError) {
+                    console.warn('Failed to parse manifestation history:', parseError);
+                    history = [];
+                }
+            }
 
             const sessionData = {
                 date: new Date().toISOString(),

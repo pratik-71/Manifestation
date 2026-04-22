@@ -1,139 +1,179 @@
-import 'react-native-get-random-values';
-import { Comfortaa_300Light, Comfortaa_400Regular, Comfortaa_500Medium, Comfortaa_600SemiBold, Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
-import {
-  CormorantGaramond_400Regular,
-  CormorantGaramond_600SemiBold,
-  CormorantGaramond_700Bold,
-  CormorantGaramond_700Bold_Italic
-} from '@expo-google-fonts/cormorant-garamond';
-import { 
-  DancingScript_400Regular,
-  DancingScript_700Bold 
-} from '@expo-google-fonts/dancing-script';
+/**
+ * ROOT LAYOUT: Total Stabilization Protocol (v3)
+ * 
+ * We are implementing a extreme serialization of the startup sequence.
+ * 1. Absolute Blackout (0-2.5s): No native calls, no bridge activity.
+ * 2. Bridge Warmup (2.5-3.5s): Mount basic providers but no UI.
+ * 3. Font Loading (3.5-5.5s): Trigger font loading via expo-font.
+ * 4. UI Readiness (5.5s+): Reveal the Stack and hide the Splash.
+ */
 
 import { useFonts } from 'expo-font';
-import { useKeepAwake } from 'expo-keep-awake';
 import { SplashScreen, Stack } from 'expo-router';
-import React, { useEffect, useState, useRef } from 'react';
-import { View } from 'react-native';
+import * as SystemUI from 'expo-system-ui';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-// ------------------------------------------------------------------
-import { GlobalCosmicBackground } from '../components/GlobalCosmicBackground';
-import { initializePurchases } from '../services/purchaseService';
-import { initNotifications } from '../services/notificationService';
+import { Comfortaa_400Regular, Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
+import {
+    CormorantGaramond_400Regular,
+    CormorantGaramond_700Bold
+} from '@expo-google-fonts/cormorant-garamond';
+import { 
+  DancingScript_700Bold 
+} from '@expo-google-fonts/dancing-script';
+
 import "../global.css";
 
-// Stage 0: Splash screen handled inside RootLayout effect to avoid
-// race conditions with the New Architecture bridge initialization.
-// SplashScreen.preventAutoHideAsync().catch(() => {});
-
-export default function RootLayout() {
-  useKeepAwake();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [appReady, setAppReady] = useState(false);
-
-  const [loaded, error] = useFonts({
-    Comfortaa_300Light,
-    Comfortaa_400Regular,
-    Comfortaa_500Medium,
-    Comfortaa_600SemiBold,
-    Comfortaa_700Bold,
-    CormorantGaramond_400Regular,
-    CormorantGaramond_600SemiBold,
-    CormorantGaramond_700Bold,
-    CormorantGaramond_700Bold_Italic,
-    DancingScript_400Regular,
-    DancingScript_700Bold
-  });
-
-  useEffect(() => {
-    // Stage 1: Stabilization Blackout
-    // Ensure splash screen is locked native-side before we do anything
-    try {
-      SplashScreen.preventAutoHideAsync().catch(() => {});
-    } catch (e) {
-      // Ignored
-    }
-
-    // Wait 1200ms BEFORE we allow the React tree to mount AppMain
-    // This allows Hermes engine, Fabric native commits, and TurboModules to finish handshake.
-    // 800ms was sometimes too short for the New Architecture overhead.
-    const initTimer = setTimeout(() => {
-      setAppReady(true);
-      setIsInitialized(true);
-    }, 1200);
-
-    return () => clearTimeout(initTimer);
-  }, []);
-
-  useEffect(() => {
-    if ((loaded || error) && appReady) {
-      const timer = setTimeout(async () => {
-        try {
-          await SplashScreen.hideAsync();
-        } catch (e) {
-          console.warn("[Layout] Splash hide safely deferred");
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [loaded, error, appReady]);
-
-  if (!loaded || !isInitialized) {
-    return <View style={{ flex: 1, backgroundColor: 'black' }} />;
-  }
-
-  return <AppMain />;
+// Prevent auto-hide immediately to take control of splash lifecycle
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
 }
 
-// ------------------------------------------------------------------
-// APP MAIN: Only mounts once the Native Bridge is stable
-// ------------------------------------------------------------------
-const AppMain = React.memo(() => {
-  const rcInitialized = useRef(false);
-  const [showCosmic, setShowCosmic] = useState(false);
+// Delayed load for secondary assets
+const GlobalCosmicBackground = React.lazy(() => import('../components/GlobalCosmicBackground').then(m => ({ default: m.GlobalCosmicBackground })));
+
+export default function RootLayout() {
+  const [bootStage, setBootStage] = useState(0);
 
   useEffect(() => {
-    // Phase in the cosmic background AFTER the first paint and initial layout
-    // This avoids resource contention with the initial Stack/Screen commit.
-    const cosmicTimer = setTimeout(() => setShowCosmic(true), 1500);
-
-    // Stage 2: Background Service Lifecycle
-    const t1 = setTimeout(() => {
-      try {
-        initNotifications();
-      } catch (e) {
-        // Use a simple string to avoid Hermes error stack generation during fragile JSI init
-        console.warn('[Layout] Notifications init failed safely');
-      }
-    }, 4000);
-
-    // Stage 3: Service Phase-in
-    const t2 = setTimeout(async () => {
-      if (rcInitialized.current) return;
-      rcInitialized.current = true;
-      try {
-        await initializePurchases();
-      } catch (e) {
-        console.warn('[Layout] Purchases init failed safely');
-      }
-    }, 5500);
-
-    return () => {
-      clearTimeout(cosmicTimer);
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    // Stage 1: Initial Blackout Period
+    // Moves initialization out of the high-stress bridge startup window.
+    const timer = setTimeout(() => {
+        setBootStage(1);
+    }, 2500);
+    return () => clearTimeout(timer);
   }, []);
 
-  return (
-    <SafeAreaProvider>
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000' }}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
-        {showCosmic && <GlobalCosmicBackground />}
-      </GestureHandlerRootView>
-    </SafeAreaProvider>
-  );
+  if (bootStage === 0) {
+    return <View style={styles.blackout} />;
+  }
+
+  return <StabilizedProviders />;
+}
+
+function StabilizedProviders() {
+    const [providersReady, setProvidersReady] = useState(false);
+
+    useEffect(() => {
+        // Stage 2: Provider Warmup
+        // We mount providers but give them a moment to settle.
+        const timer = setTimeout(() => {
+            setProvidersReady(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (!providersReady) {
+        return <View style={styles.blackout} />;
+    }
+
+    return (
+        <SafeAreaProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+                <FontLoaderLayer />
+            </GestureHandlerRootView>
+        </SafeAreaProvider>
+    );
+}
+
+function FontLoaderLayer() {
+    const [fontTriggered, setFontTriggered] = useState(false);
+    
+    // Stage 3: Font Loading Delay
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setFontTriggered(true);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (!fontTriggered) {
+        return <View style={styles.blackout} />;
+    }
+
+    return <ActualContentLayer />;
+}
+
+function ActualContentLayer() {
+    const [contentReady, setContentReady] = useState(false);
+
+    // Font loading triggered only after layers of stability
+    const [fontsLoaded, fontError] = useFonts({
+        Comfortaa_400Regular,
+        Comfortaa_700Bold,
+        CormorantGaramond_400Regular,
+        CormorantGaramond_700Bold,
+        DancingScript_700Bold
+    });
+
+    useEffect(() => {
+        // Stage 4: Final Reveal
+        if (fontsLoaded || fontError) {
+            const timer = setTimeout(async () => {
+                // Stabilize System UI Colors before revealing
+                try {
+                    await SystemUI.setBackgroundColorAsync("black");
+                } catch (e) {}
+
+                // Reveal App
+                SplashScreen.hideAsync().catch(() => {});
+                setContentReady(true);
+
+                // App Tracking Transparency (Guideline 5.1.2(i))
+                // Delayed further to happen after UI is visible to avoid JSI crashes
+                if (Platform.OS === 'ios') {
+                    try {
+                        const { requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
+                        setTimeout(async () => {
+                            try {
+                                await requestTrackingPermissionsAsync();
+                            } catch (e) { }
+                        }, 2000);
+                    } catch (e) {}
+                }
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [fontsLoaded, fontError]);
+
+    if (!contentReady) {
+        return <View style={styles.blackout} />;
+    }
+
+    return (
+        <>
+            <Stack screenOptions={{ 
+                headerShown: false, 
+                contentStyle: { backgroundColor: 'transparent' },
+                animation: 'fade' // Switched to fade for maximum stability
+            }} />
+            <React.Suspense fallback={null}>
+                <DelayedCosmic />
+            </React.Suspense>
+        </>
+    );
+}
+
+const DelayedCosmic = () => {
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+        const t = setTimeout(() => setVisible(true), 4000);
+        return () => clearTimeout(t);
+    }, []);
+    if (!visible) return null;
+    return <GlobalCosmicBackground />;
+};
+
+const styles = StyleSheet.create({
+  blackout: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
 });
+
+
+
+

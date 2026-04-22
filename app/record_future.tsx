@@ -19,12 +19,12 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
 
-const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 // ─── Choice screen styles (must be before component for Hermes) ───────────────
 const choiceStyles = StyleSheet.create({

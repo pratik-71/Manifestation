@@ -30,7 +30,7 @@ const KineticShake = () => {
     const [isActive, setIsActive] = useState(false);
     const [timeLeft, setTimeLeft] = useState(60);
     const isActiveRef = useRef(false);
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<any>(null);
 
     const shakeOffset = useSharedValue(0);
 

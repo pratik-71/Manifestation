@@ -2,18 +2,13 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     NativeScrollEvent,
     NativeSyntheticEvent,
-    ScrollView,
     StyleSheet,
     Text,
     View,
     ViewStyle
 } from 'react-native';
 import Animated, {
-    Extrapolation,
-    interpolate,
-    SharedValue,
     useAnimatedScrollHandler,
-    useAnimatedStyle,
     useSharedValue
 } from 'react-native-reanimated';
 
@@ -35,12 +30,16 @@ const REPEAT_AMPM = 5;
 
 // Data Generation
 const HOURS_BASE = ['12', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
-const MINUTES_BASE = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 const AMPM_BASE = ['AM', 'PM'] as const;
 
-const HOURS_DATA = Array.from({ length: REPEAT_HOURS }, () => HOURS_BASE).flat();
-const MINUTES_DATA = Array.from({ length: REPEAT_MINUTES }, () => MINUTES_BASE).flat();
-const AMPM_DATA = Array.from({ length: REPEAT_AMPM }, () => AMPM_BASE).flat();
+// Helper function to generate data safely
+const generateTimeData = () => {
+    const MINUTES_BASE = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+    const HOURS_DATA = Array.from({ length: 3 }, () => HOURS_BASE).flat();
+    const MINUTES_DATA = Array.from({ length: 2 }, () => MINUTES_BASE).flat();
+    const AMPM_DATA = Array.from({ length: 5 }, () => AMPM_BASE).flat();
+    return { HOURS_DATA, MINUTES_DATA, AMPM_DATA };
+};
 
 const AnimatedScrollView = Animated.ScrollView;
 
@@ -191,6 +190,9 @@ export const TimeWheelPicker = React.memo(({ value, onChange }: TimeWheelPickerP
     const valueRef = useRef(value);
     valueRef.current = value;
 
+    // Generate data safely inside component
+    const { HOURS_DATA, MINUTES_DATA, AMPM_DATA } = useMemo(() => generateTimeData(), []);
+
     const handleHourChange = useCallback((newHour: string) => {
         onChange({ ...valueRef.current, hour: newHour });
     }, [onChange]);
@@ -218,14 +220,14 @@ export const TimeWheelPicker = React.memo(({ value, onChange }: TimeWheelPickerP
                     items={MINUTES_DATA}
                     value={value.minute}
                     onChange={handleMinuteChange}
-                    baseLength={MINUTES_BASE.length}
+                    baseLength={60} // Fixed length for minutes
                     style={styles.wheelFlex}
                 />
                 <Wheel
                     items={AMPM_DATA}
                     value={value.ampm}
                     onChange={handleAmPmChange}
-                    baseLength={AMPM_BASE.length}
+                    baseLength={2} // Fixed length for AM/PM
                     style={styles.wheelFlex}
                 />
             </View>

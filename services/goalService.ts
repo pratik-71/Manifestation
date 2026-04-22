@@ -15,7 +15,7 @@ export const shouldResetGoals = (lastSaveTime: string | null, wakeTime: string):
     const saveDate = new Date(lastSaveTime);
 
     // Calculate the reset threshold (1 hour before wake time)
-    const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+    const [wakeH, wakeM] = (wakeTime || '07:00').split(':').map(Number);
     
     // Create the reset time for "today"
     const thresholdToday = new Date(now);

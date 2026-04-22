@@ -138,24 +138,9 @@ export const getOfferings = async (): Promise<any | null> => {
  * Check if the user has an active pro subscription.
  */
 export const checkSubscriptionStatus = async (): Promise<boolean> => {
-    // Auto-grant subscription in local development
-    if (isLocalDevelopment) {
-        console.log("🛠️ Local development: Auto-granting subscription");
-        return true;
-    }
-
-    try {
-        if (!await ensureInitialized()) {
-            console.error("❌ RevenueCat not initialized for subscription check");
-            return false;
-        }
-
-        const customerInfo = await Purchases.getCustomerInfo();
-        return !!customerInfo.entitlements.active[ENTITLEMENT_ID];
-    } catch (e) {
-        console.warn("❌ RevenueCat checkStatus failed [Safe String]");
-        return false;
-    }
+    // Auto-grant subscription for all users (Free Access)
+    console.log("🔓 Free Access: Auto-granting subscription");
+    return true;
 };
 
 /**
@@ -193,33 +178,19 @@ export const purchasePackage = async (packageToPurchase: any) => {
  * Get the latest customer info from RevenueCat.
  */
 export const getCustomerInfo = async () => {
-    // Return mock active subscription in local development
-    if (isLocalDevelopment) {
-        console.log("🛠️ Local development: Returning mock customer info with active subscription");
-        return {
-            entitlements: {
-                active: {
-                    [ENTITLEMENT_ID]: {
-                        productIdentifier: 'manifestation_yearly',
-                        expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-                    }
+    // Return mock active subscription for all users (Free Access)
+    console.log("🔓 Free Access: Returning active subscription info");
+    return {
+        entitlements: {
+            active: {
+                [ENTITLEMENT_ID]: {
+                    productIdentifier: 'manifestation_yearly',
+                    expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString(), // 10 years from now
                 }
-            },
-            latestExpirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-        };
-    }
-
-    try {
-        if (!await ensureInitialized()) {
-            console.error("❌ RevenueCat not initialized for customer info");
-            return { entitlements: { active: {} }, latestExpirationDate: null };
-        }
-        return await Purchases.getCustomerInfo();
-    } catch (e) {
-        console.warn("❌ getCustomerInfo failed [Safe String]");
-        // Never return null — callers access .entitlements.active which would crash
-        return { entitlements: { active: {} }, latestExpirationDate: null };
-    }
+            }
+        },
+        latestExpirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString()
+    };
 };
 
 /**

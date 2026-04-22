@@ -1,10 +1,9 @@
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
-import { Alert } from 'react-native';
-import { supabase } from './supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
+import { supabase } from './supabase';
 
 // Complete the auth session if we're in a web environment or redirecting
 export const signInWithGoogle = async (): Promise<any> => {
@@ -32,8 +31,8 @@ export const signInWithGoogle = async (): Promise<any> => {
             const url = result.url;
             const params = Linking.parse(url);
             
-            // Supabase returns access_token and refresh_token in the URL fragment
-            const fragment = url.split('#')[1];
+            // Supabase returns access_token and refresh_token in URL fragment
+            const fragment = (url || '').split('#')[1];
             if (fragment) {
                 const fragmentParams = Object.fromEntries(new URLSearchParams(fragment));
                 const accessToken = fragmentParams.access_token;
@@ -60,9 +59,22 @@ export const signInWithGoogle = async (): Promise<any> => {
 export const signInWithApple = async (): Promise<any> => {
     try {
         if (Platform.OS === 'ios') {
-            const rawNonce = await Crypto.getRandomBytesAsync(32);
-            const nonce = Array.from(rawNonce).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-            const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+            let rawNonce: Uint8Array;
+            let nonce: string;
+            let hashedNonce: string;
+            
+            try {
+                rawNonce = await Crypto.getRandomBytesAsync(32);
+                nonce = Array.from(rawNonce).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+                hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
+            } catch (cryptoError) {
+                // Fallback to simple nonce if crypto fails
+                console.warn('Crypto operations failed, using fallback nonce');
+                const randomStr1 = Math.random().toString(36);
+                const randomStr2 = Math.random().toString(36);
+                nonce = (randomStr1.substring(2, 15) || 'abc') + (randomStr2.substring(2, 15) || 'def');
+                hashedNonce = nonce; // Simple fallback
+            }
 
             const appleCredential = await AppleAuthentication.signInAsync({
                 requestedScopes: [

@@ -1,16 +1,16 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Image } from 'react-native';
+import { View } from 'react-native';
 import { getCurrentUser } from '../services/authService';
 
 export default function Index() {
-    const [destination, setDestination] = useState<any>(null);
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Stage 4: Post-Blackout Auth Resolve
         const timer = setTimeout(async () => {
-            let nextRoute = '/onboarding/Opening_Page';
+            let nextRoute: any = '/onboarding/Opening_Page';
             try {
                 const user = await getCurrentUser();
                 if (user) {
@@ -36,18 +36,15 @@ export default function Index() {
                 // Avoid logging 'err' object itself to prevent Hermes stack-getter crash
                 console.warn("Auth check deferred safely [Safe String]");
             } finally {
-                setDestination(nextRoute);
+                // Perform navigation manually once bridge is absolutely stable
+                router.replace(nextRoute);
                 setLoading(false);
             }
-        }, 1500);
+        }, 2000);
 
         return () => clearTimeout(timer);
     }, []);
 
-    if (loading || !destination) {
-        // Return a blank dark screen while checking auth to prevent UI flicker
-        return <View style={{ flex: 1, backgroundColor: '#000' }} />;
-    }
-
-    return <Redirect href={destination} />;
+    // Return a blank dark screen while checking auth to prevent UI flicker
+    return <View style={{ flex: 1, backgroundColor: '#000' }} />;
 }

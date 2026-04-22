@@ -1,11 +1,9 @@
-import React from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
+import React from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 interface CustomAlertModalProps {
     visible: boolean;
@@ -22,7 +20,7 @@ export const CustomAlertModal: React.FC<CustomAlertModalProps> = ({
     message,
     onClose,
     type = 'info',
-    buttonText = 'Okay'
+    buttonText = 'OK'
 }) => {
     const getIcon = () => {
         switch (type) {
@@ -98,7 +96,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.4)',
     },
     modalContainer: {
-        width: width * 0.85,
+        width: '85%',
         borderRadius: 32,
         overflow: 'hidden',
     },

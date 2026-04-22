@@ -5,8 +5,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Animated as RNAnimated,
-    Dimensions,
     Image,
     Modal,
     Pressable,
@@ -21,10 +19,8 @@ import Animated, { Easing, FadeIn, FadeInDown, FadeInUp, useAnimatedStyle, useSh
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
 import { BreathingBackground } from '../components/BreathingBackground';
-import { useUserStore } from '../store/userStore';
 import { clearStaleGoals } from '../services/goalService';
-
-const { width } = Dimensions.get('window');
+import { useUserStore } from '../store/userStore';
 
 // Helper for local date YYYY-MM-DD
 const getLocalDateString = (date: Date = new Date()) => {
@@ -59,7 +55,7 @@ export default function ManifestHub() {
         const manifestDate = new Date(lastManifest);
         
         // Use the same threshold logic as goal reset (1 hour before wake time)
-        const [wakeH, wakeM] = wakeTime.split(':').map(Number);
+        const [wakeH, wakeM] = (wakeTime || '07:00').split(':').map(Number);
         const thresholdToday = new Date(now);
         thresholdToday.setHours(wakeH - 1, wakeM, 0, 0);
 
@@ -203,10 +199,15 @@ export default function ManifestHub() {
                 
                 const data = await AsyncStorage.getItem('today_goals');
                 if (data) {
-                    const parsed = JSON.parse(data);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        setSavedGoals(parsed);
-                    } else {
+                    try {
+                        const parsed = JSON.parse(data);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            setSavedGoals(parsed);
+                        } else {
+                            setSavedGoals([]);
+                        }
+                    } catch (parseError) {
+                        console.warn('Failed to parse saved goals:', parseError);
                         setSavedGoals([]);
                     }
                 } else {
