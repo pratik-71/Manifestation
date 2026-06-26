@@ -39,6 +39,18 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
         },
     ];
 
+    const lastPress = React.useRef(0);
+
+    const handlePress = (route: string) => {
+        if (pathname === route) return; // Prevent pushing current route
+        
+        const now = Date.now();
+        if (now - lastPress.current < 500) return; // 500ms debounce
+        
+        lastPress.current = now;
+        router.push(route as any);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.bar}>
@@ -48,7 +60,8 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
                         <TouchableOpacity
                             key={index}
                             style={styles.tab}
-                            onPress={() => router.push(tab.route as any)}
+                            onPress={() => handlePress(tab.route)}
+                            activeOpacity={0.7}
                         >
                             <Ionicons
                                 name={isActive ? tab.activeIcon : tab.icon}
@@ -66,12 +79,8 @@ export const BottomBar: React.FC<BottomBarProps> = () => {
 
 const styles = StyleSheet.create({
     container: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
         paddingBottom: 10,
-        paddingTop: 0,
+        paddingTop: 10,
         paddingHorizontal: 16,
         backgroundColor: 'transparent',
     },

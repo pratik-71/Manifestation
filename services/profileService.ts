@@ -39,7 +39,7 @@ export const saveOnboardingProfile = async (data: OnboardingProfileData): Promis
         }, { onConflict: 'id' });
 
     if (error) {
-        console.warn('Error saving onboarding profile: [Safe String]');
+        console.warn('Error saving onboarding profile:', error);
         throw error;
     }
 };
@@ -85,7 +85,7 @@ export const generateAIRoadmap = async (goals: string[]): Promise<AiRoadmapItem[
         if (error) throw error;
         return data as AiRoadmapItem[];
     } catch (error) {
-        console.warn('Error generating AI roadmap: [Safe String]');
+        console.warn('Error generating AI roadmap:', error);
         // Fallback to high-quality roadmap if function fails
         return goals.map(goal => ({
             goal,

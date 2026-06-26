@@ -198,6 +198,10 @@ export default function RecordFuture() {
     const [showCamera, setShowCamera] = useState(false);   // true once user picks "Record New"
     const [watchUri, setWatchUri] = useState<string | null>(null);        // set when watching
 
+    // Permission modal state
+    const [modalDismissed, setModalDismissed] = useState(false);
+    const wasMissingInitiallyRef = useRef<boolean | null>(null);
+
     const pulseAnim = useSharedValue(1);
 
     useEffect(() => {
@@ -255,10 +259,16 @@ export default function RecordFuture() {
     }
 
     const anyPermissionMissing = !cameraPermission.granted || !microphonePermission.granted || !mediaLibraryPermission.granted;
+    
+    // Force the modal to stay open if they started with missing permissions, until they click Continue
+    if (wasMissingInitiallyRef.current === null) {
+        wasMissingInitiallyRef.current = anyPermissionMissing;
+    }
+    const isModalVisible = (anyPermissionMissing || wasMissingInitiallyRef.current) && !modalDismissed;
 
-    if (anyPermissionMissing) {
+    if (isModalVisible) {
         return (
-            <Modal visible={anyPermissionMissing} animationType="slide" transparent={false}>
+            <Modal visible={isModalVisible} animationType="slide" transparent={false}>
                 <View style={styles.permissionContainer}>
                     <StatusBar barStyle="light-content" />
                     <BreathingBackground colors={['#02010a', '#0f172a', '#451a03']} opacity={1} />
@@ -274,7 +284,7 @@ export default function RecordFuture() {
                                 {isOnboarding && (
                                     <TouchableOpacity onPress={handleDone} style={styles.skipNav}>
                                         <Text style={styles.skipNavText}>Skip</Text>
-                                        <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.3)" />
+                                        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
                                     </TouchableOpacity>
                                 )}
                             </View>
@@ -291,43 +301,73 @@ export default function RecordFuture() {
                         </View>
 
                         <Animated.View entering={FadeIn.delay(400).duration(800)} style={styles.instructionCard}>
-                            <Text style={styles.instructionHeading}>Why we need these:</Text>
+                            <Text style={styles.instructionHeading}>Permission Checklist:</Text>
                             
-                            {!cameraPermission.granted && (
-                                <View style={styles.permissionReasonRow}>
-                                    <View style={styles.permissionIconCircle}>
-                                        <Ionicons name="camera" size={20} color="#f59e0b" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.permissionReasonTitle}>Camera Access</Text>
-                                        <Text style={styles.permissionReasonText}>Needed to capture your high-vibration existence on video.</Text>
-                                    </View>
+                            <View style={styles.permissionReasonRow}>
+                                <View style={[styles.permissionIconCircle, cameraPermission.granted && { backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: '#34d399' }]}>
+                                    <Ionicons name="camera" size={20} color={cameraPermission.granted ? "#34d399" : "#f59e0b"} />
                                 </View>
-                            )}
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.permissionReasonTitle}>Camera Access</Text>
+                                </View>
+                                <TouchableOpacity 
+                                    onPress={async () => {
+                                        if (!cameraPermission.granted) await requestCameraPermission();
+                                    }} 
+                                    disabled={cameraPermission.granted}
+                                    style={[styles.checklistButton, cameraPermission.granted && styles.checklistButtonGranted]}
+                                >
+                                    {cameraPermission.granted ? (
+                                        <Ionicons name="checkmark" size={20} color="#34d399" />
+                                    ) : (
+                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
 
-                            {!microphonePermission.granted && (
-                                <View style={styles.permissionReasonRow}>
-                                    <View style={styles.permissionIconCircle}>
-                                        <Ionicons name="mic" size={20} color="#f59e0b" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.permissionReasonTitle}>Microphone Access</Text>
-                                        <Text style={styles.permissionReasonText}>Needed to hear your confident present-tense affirmations.</Text>
-                                    </View>
+                            <View style={styles.permissionReasonRow}>
+                                <View style={[styles.permissionIconCircle, microphonePermission.granted && { backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: '#34d399' }]}>
+                                    <Ionicons name="mic" size={20} color={microphonePermission.granted ? "#34d399" : "#f59e0b"} />
                                 </View>
-                            )}
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.permissionReasonTitle}>Microphone Access</Text>
+                                </View>
+                                <TouchableOpacity 
+                                    onPress={async () => {
+                                        if (!microphonePermission.granted) await requestMicrophonePermission();
+                                    }} 
+                                    disabled={microphonePermission.granted}
+                                    style={[styles.checklistButton, microphonePermission.granted && styles.checklistButtonGranted]}
+                                >
+                                    {microphonePermission.granted ? (
+                                        <Ionicons name="checkmark" size={20} color="#34d399" />
+                                    ) : (
+                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
 
-                            {!mediaLibraryPermission.granted && (
-                                <View style={styles.permissionReasonRow}>
-                                    <View style={styles.permissionIconCircle}>
-                                        <Ionicons name="images" size={20} color="#f59e0b" />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.permissionReasonTitle}>Storage Access</Text>
-                                        <Text style={styles.permissionReasonText}>Technically required by the system to save/load your internal video files.</Text>
-                                    </View>
+                            <View style={styles.permissionReasonRow}>
+                                <View style={[styles.permissionIconCircle, mediaLibraryPermission.granted && { backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: '#34d399' }]}>
+                                    <Ionicons name="images" size={20} color={mediaLibraryPermission.granted ? "#34d399" : "#f59e0b"} />
                                 </View>
-                            )}
+                                <View style={{ flex: 1 }}>
+                                    <Text style={styles.permissionReasonTitle}>Storage Access</Text>
+                                </View>
+                                <TouchableOpacity 
+                                    onPress={async () => {
+                                        if (!mediaLibraryPermission.granted) await requestMediaLibraryPermission();
+                                    }} 
+                                    disabled={mediaLibraryPermission.granted}
+                                    style={[styles.checklistButton, mediaLibraryPermission.granted && styles.checklistButtonGranted]}
+                                >
+                                    {mediaLibraryPermission.granted ? (
+                                        <Ionicons name="checkmark" size={20} color="#34d399" />
+                                    ) : (
+                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                    )}
+                                </TouchableOpacity>
+                            </View>
 
                             <View style={styles.privacyTipRow}>
                                 <Ionicons name="shield-checkmark" size={14} color="#34d399" />
@@ -335,31 +375,22 @@ export default function RecordFuture() {
                             </View>
                         </Animated.View>
 
-                        <Animated.View entering={FadeInUp.delay(700).duration(800)} style={styles.permissionFooter}>
-                            <TouchableOpacity
-                                activeOpacity={0.85}
-                                onPress={async () => {
-                                    if (!cameraPermission.granted) await requestCameraPermission();
-                                    if (!microphonePermission.granted) await requestMicrophonePermission();
-                                    if (!mediaLibraryPermission.granted) await requestMediaLibraryPermission();
-
-                                    if (!cameraPermission.granted || !microphonePermission.granted || !mediaLibraryPermission.granted) {
-                                        Alert.alert(
-                                            "Permissions Needed",
-                                            "Some permissions were not granted. Please go to your device settings to enable them manually.",
-                                            [
-                                                { text: "Cancel", style: "cancel" },
-                                                { text: "Open Settings", onPress: () => Linking.openSettings() }
-                                            ]
-                                        );
-                                    }
-                                }}
-                                style={styles.mainActionButton}
-                            >
-                                <Text style={styles.actionButtonText}>Grant Missing Permissions</Text>
-                                <Ionicons name="arrow-forward" size={17} color="#fff" style={{ marginLeft: 10 }} />
-                            </TouchableOpacity>
-                        </Animated.View>
+                        <View style={styles.permissionFooter}>
+                            {anyPermissionMissing ? (
+                                <View style={styles.permissionRequiredContainer}>
+                                    <Text style={styles.permissionRequiredText}>Grant all permissions to proceed</Text>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    activeOpacity={0.85}
+                                    onPress={() => setModalDismissed(true)}
+                                    style={styles.mainActionButton}
+                                >
+                                    <Text style={styles.actionButtonText}>Continue</Text>
+                                    <Ionicons name="arrow-forward" size={17} color="#fff" style={{ marginLeft: 10 }} />
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     </SafeAreaView>
                 </View>
             </Modal>
@@ -489,10 +520,6 @@ export default function RecordFuture() {
     const stopRecording = () => {
         if (!cameraRef.current) return;
         cameraRef.current.stopRecording();
-        setFlashProgress(1);
-        setTimeout(() => {
-            setFlashProgress(0);
-        }, 150);
     };
 
     const saveVideo = async (uri: string) => {
@@ -605,10 +632,6 @@ export default function RecordFuture() {
                     </View>
                 </SafeAreaView>
 
-                {/* Flash Effect */}
-                {flashProgress > 0 && (
-                    <View style={[StyleSheet.absoluteFill, { backgroundColor: '#fff', opacity: flashProgress }]} />
-                )}
             </CameraView>
 
             {/* Success Modal */}
@@ -623,30 +646,40 @@ export default function RecordFuture() {
                         style={styles.successCard}
                     >
                         <View style={styles.successIconContainer}>
-                            <Ionicons name="checkmark-circle" size={80} color="#f59e0b" />
+                            <Ionicons name="shield-checkmark" size={64} color="#10b981" />
                         </View>
 
-                        <Text style={styles.successTitle}>Message Saved!</Text>
+                        <Text style={styles.successTitle}>Vision Captured</Text>
                         <Text style={styles.successText}>
-                            Your video has been saved in your app records.
+                            Your future self's message has been securely locked in your vault.
                         </Text>
 
-                        <TouchableOpacity
-                            style={styles.doneButton}
-                            onPress={() => {
-                                setShowSuccessModal(false);
-                                handleDone();
-                            }}
-                        >
-                            <LinearGradient
-                                colors={['#f97316', '#ea580c']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.doneGradient}
+                        <View style={styles.modalActionCol}>
+                            <TouchableOpacity
+                                style={styles.doneButton}
+                                onPress={() => {
+                                    setShowSuccessModal(false);
+                                    handleDone();
+                                }}
                             >
-                                <Text style={styles.doneButtonText}>{isOnboarding ? 'CONTINUE →' : 'AWESOME'}</Text>
-                            </LinearGradient>
-                        </TouchableOpacity>
+                                <LinearGradient
+                                    colors={['#10b981', '#059669']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.doneGradient}
+                                >
+                                    <Text style={styles.doneButtonText}>{isOnboarding ? 'CONTINUE →' : 'AWESOME'}</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.retakeButton}
+                                onPress={() => setShowSuccessModal(false)}
+                            >
+                                <Ionicons name="refresh" size={16} color="rgba(255,255,255,0.7)" />
+                                <Text style={styles.retakeButtonText}>Retake</Text>
+                            </TouchableOpacity>
+                        </View>
                     </Animated.View>
                 </View>
             </Modal>
@@ -788,9 +821,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 4,
     },
     skipNavText: {
-        fontFamily: 'Comfortaa_500Medium',
-        fontSize: 9,
-        color: 'rgba(255,255,255,0.35)',
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 15,
+        color: 'rgba(255,255,255,0.5)',
         letterSpacing: 0.5,
     },
     permissionHero: {
@@ -957,6 +990,18 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.35,
         shadowRadius: 20,
         elevation: 10,
+    },
+    permissionRequiredContainer: {
+        width: '100%',
+        height: 56,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    permissionRequiredText: {
+        fontFamily: 'Comfortaa_500Medium',
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.4)',
+        letterSpacing: 0.5,
     },
     permissionReasonRow: {
         flexDirection: 'row',
@@ -1245,8 +1290,8 @@ const styles = StyleSheet.create({
     },
     doneButton: {
         width: '100%',
-        height: 60,
-        borderRadius: 30,
+        height: 52,
+        borderRadius: 26,
         overflow: 'hidden',
     },
     doneGradient: {
@@ -1256,8 +1301,52 @@ const styles = StyleSheet.create({
     },
     doneButtonText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
+        fontSize: 14,
         color: '#fff',
-        letterSpacing: 2,
+        letterSpacing: 1,
+    },
+    modalActionCol: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 12,
+        width: '100%',
+        marginTop: 10,
+    },
+    retakeButton: {
+        width: '100%',
+        height: 52,
+        borderRadius: 26,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    retakeButtonText: {
+        fontFamily: 'Comfortaa_600SemiBold',
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.8)',
+    },
+    checklistButton: {
+        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minWidth: 70,
+    },
+    checklistButtonGranted: {
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+    },
+    checklistButtonText: {
+        fontFamily: 'Comfortaa_700Bold',
+        fontSize: 11,
+        color: '#f59e0b',
     },
 });

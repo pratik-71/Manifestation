@@ -11,10 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BreathingBackground } from '../components/BreathingBackground';
+import { BottomBar } from '../components/BottomBar';
 
 const { width } = Dimensions.get('window');
 
-type Phase = 'inhale' | 'hold' | 'exhale';
+type Phase = 'inhale' | 'hold_full' | 'exhale' | 'hold_empty';
 
 export default function CalmMind() {
     const router = useRouter();
@@ -33,8 +34,9 @@ export default function CalmMind() {
                 setTimeLeft((prev) => {
                     if (prev <= 1) {
                         setPhase((currentPhase) => {
-                            if (currentPhase === 'inhale') return 'hold';
-                            else if (currentPhase === 'hold') return 'exhale';
+                            if (currentPhase === 'inhale') return 'hold_full';
+                            else if (currentPhase === 'hold_full') return 'exhale';
+                            else if (currentPhase === 'exhale') return 'hold_empty';
                             else {
                                 setCycle((c) => c + 1);
                                 return 'inhale';
@@ -65,11 +67,13 @@ export default function CalmMind() {
         if (phase === 'inhale') {
             setTimeLeft(4);
             circleScale.value = withTiming(2.2, { duration: 4000, easing: Easing.inOut(Easing.ease) });
-        } else if (phase === 'hold') {
-            setTimeLeft(6);
+        } else if (phase === 'hold_full') {
+            setTimeLeft(4);
         } else if (phase === 'exhale') {
             setTimeLeft(4);
             circleScale.value = withTiming(1, { duration: 4000, easing: Easing.inOut(Easing.ease) });
+        } else if (phase === 'hold_empty') {
+            setTimeLeft(4);
         }
     }, [phase, isActive, cycle]);
 
@@ -114,18 +118,20 @@ export default function CalmMind() {
         if (cycle > totalCycles) return "Session Complete";
         switch (phase) {
             case 'inhale': return 'Inhale';
-            case 'hold': return 'Hold';
+            case 'hold_full': return 'Hold';
             case 'exhale': return 'Exhale';
+            case 'hold_empty': return 'Hold';
         }
     };
 
     const getInstructions = () => {
-        if (!isActive) return "4s Inhale • 6s Hold • 4s Exhale";
+        if (!isActive) return "4s Inhale • 4s Hold • 4s Exhale • 4s Hold";
         if (cycle > totalCycles) return "You did great. Your mind is centered.";
         switch (phase) {
             case 'inhale': return 'Breathe in slowly through your nose';
-            case 'hold': return 'Hold your breath, relax your shoulders';
+            case 'hold_full': return 'Hold your breath, relax your shoulders';
             case 'exhale': return 'Exhale gently through your mouth';
+            case 'hold_empty': return 'Stay empty, stay relaxed';
         }
     };
 
@@ -169,6 +175,9 @@ export default function CalmMind() {
                         </Animated.View>
                     </View>
 
+                </View>
+
+                <View style={styles.actionContainer}>
                     <TouchableOpacity
                         style={[styles.actionButton, isActive ? styles.stopButton : styles.startButton]}
                         onPress={handleToggle}
@@ -182,6 +191,8 @@ export default function CalmMind() {
                         </View>
                     </TouchableOpacity>
                 </View>
+
+                <BottomBar />
             </SafeAreaView>
         </View>
     );
@@ -203,31 +214,31 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 50,
+        paddingVertical: 30,
         paddingHorizontal: 24,
     },
-    textContainer: { alignItems: 'center', height: 120 },
+    textContainer: { alignItems: 'center', height: 100 },
     phaseText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 32,
+        fontSize: 26,
         color: '#fff',
-        marginBottom: 10,
+        marginBottom: 8,
         textShadowColor: 'rgba(251, 146, 60, 0.4)',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 10,
     },
     instructionText: {
         fontFamily: 'Comfortaa_500Medium',
-        fontSize: 14,
+        fontSize: 13,
         color: 'rgba(255,255,255,0.7)',
         textAlign: 'center',
         paddingHorizontal: 20,
-        lineHeight: 22,
-        marginBottom: 12,
+        lineHeight: 20,
+        marginBottom: 8,
     },
     cycleText: {
         fontFamily: 'Comfortaa_600SemiBold',
-        fontSize: 16,
+        fontSize: 14,
         color: '#fb923c',
         letterSpacing: 1,
     },
@@ -268,14 +279,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     timerContainer: { position: 'absolute' },
-    timerText: { fontFamily: 'Comfortaa_700Bold', fontSize: 32, color: '#fff' },
+    timerText: { fontFamily: 'Comfortaa_700Bold', fontSize: 28, color: '#fff' },
+    actionContainer: {
+        paddingHorizontal: 24,
+        paddingBottom: 20,
+        paddingTop: 10,
+    },
     actionButton: {
         width: '100%',
-        height: 60,
-        borderRadius: 30,
+        height: 54,
+        borderRadius: 27,
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 40,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
@@ -297,7 +312,7 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
+        fontSize: 14,
         color: '#02010a',
         letterSpacing: 2,
     },

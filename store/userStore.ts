@@ -107,7 +107,7 @@ export const useUserStore = create<UserState>((set, get) => ({
                 set({ profile: data });
             }
         } catch (error) {
-            console.warn('Error fetching/creating profile: [Safe String]');
+            console.warn('Error fetching/creating profile:', error);
         } finally {
             set({ isLoading: false });
         }
@@ -126,7 +126,7 @@ export const useUserStore = create<UserState>((set, get) => ({
             if (error) throw error;
             set({ profile: { ...profile, ...updates } });
         } catch (error) {
-            console.warn('Error updating profile: [Safe String]');
+            console.warn('Error updating profile:', error);
             throw error;
         }
     },

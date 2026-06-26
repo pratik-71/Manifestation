@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Easing, Image, Modal, Animated as RNAnimated, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomBar } from '../components/BottomBar';
@@ -104,8 +105,10 @@ export default function Home() {
 
                 try {
                     const customerInfo = await getCustomerInfo();
-                    const activeEntitlements = customerInfo?.entitlements?.active as Record<string, any> | undefined;
-                    if (!activeEntitlements?.[ENTITLEMENT_ID]) {
+                    const activeEntitlements = customerInfo?.entitlements?.active;
+                    
+                    // If no entitlements are active, force paywall
+                    if (!activeEntitlements || Object.keys(activeEntitlements).length === 0) {
                         router.replace('/onboarding/paywall?mandatory=true');
                         return;
                     }
@@ -122,6 +125,9 @@ export default function Home() {
         init();
 
         const checkPerms = async () => {
+            const hasDismissed = await AsyncStorage.getItem('has_dismissed_notif_prompt');
+            if (hasDismissed === 'true') return;
+
             // Defensive delay for direct deep links / fast mounts
             await new Promise(resolve => setTimeout(resolve, 2000));
             const status = await checkNotificationStatus();
@@ -145,7 +151,7 @@ export default function Home() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
+            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
             {/* Breathing Background - Keeping existing colors as requested */}
             <BreathingBackground
@@ -180,7 +186,7 @@ export default function Home() {
                         showsVerticalScrollIndicator={false}
                     >
                         {/* Hero Section: Quote of the Day */}
-                        <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.heroCard}>
+                        <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.heroCard}>
                             <Text style={styles.heroQuote}>
                                 You don't get what you want, you get who you are. Live as if you already have it.
                             </Text>
@@ -189,7 +195,7 @@ export default function Home() {
                         <View style={styles.actionsGrid}>
                             <View style={styles.actionsRow}>
                                 {/* Primary CTA: Manifest */}
-                                <Animated.View entering={FadeInUp.delay(400).duration(800)} style={styles.halfWidthCard}>
+                                <Animated.View entering={FadeInUp.delay(200).duration(400)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
                                         onPress={() => router.push('/Manifestation/mani_home')}
                                         activeOpacity={0.9}
@@ -203,7 +209,7 @@ export default function Home() {
                                 </Animated.View>
 
                                 {/* Affirmations */}
-                                <Animated.View entering={FadeInUp.delay(500).duration(800)} style={styles.halfWidthCard}>
+                                <Animated.View entering={FadeInUp.delay(250).duration(400)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
                                         onPress={() => router.push('/affirmation')}
                                         activeOpacity={0.9}
@@ -219,7 +225,7 @@ export default function Home() {
 
                             <View style={styles.actionsRow}>
                                 {/* Calm Mind */}
-                                <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.halfWidthCard}>
+                                <Animated.View entering={FadeInUp.delay(300).duration(400)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
                                         onPress={() => router.push('/calm_mind' as any)}
                                         activeOpacity={0.9}
@@ -233,7 +239,7 @@ export default function Home() {
                                 </Animated.View>
 
                                 {/* Feeling Low */}
-                                <Animated.View entering={FadeInUp.delay(700).duration(800)} style={styles.halfWidthCard}>
+                                <Animated.View entering={FadeInUp.delay(350).duration(400)} style={styles.halfWidthCard}>
                                     <TouchableOpacity
                                         onPress={() => router.push('/feeling_low')}
                                         activeOpacity={0.9}
@@ -249,7 +255,7 @@ export default function Home() {
                         </View>
 
                         {/* Explore Links */}
-                        <Animated.View entering={FadeIn.delay(1000)} style={styles.exploreContainer}>
+                        <Animated.View entering={FadeIn.delay(400).duration(400)} style={styles.exploreContainer}>
                             <TouchableOpacity
                                 onPress={() => router.push('/guide' as any)}
                                 style={styles.exploreButton}
@@ -279,7 +285,10 @@ export default function Home() {
 
             <NotificationPermissionModal
                 isVisible={showNotifModal}
-                onClose={() => setShowNotifModal(false)}
+                onClose={async () => {
+                    await AsyncStorage.setItem('has_dismissed_notif_prompt', 'true');
+                    setShowNotifModal(false);
+                }}
             />
 
             {/* In-App Video Player Modal */}
@@ -337,10 +346,8 @@ const videoStyles = StyleSheet.create({
         alignItems: 'center',
     },
     playerWrapper: {
-        width: '90%',
-        aspectRatio: 9 / 16,
-        borderRadius: 20,
-        overflow: 'hidden',
+        width: '100%',
+        height: '100%',
         backgroundColor: '#000',
         position: 'relative',
     },
@@ -349,11 +356,11 @@ const videoStyles = StyleSheet.create({
     },
     closeBtn: {
         position: 'absolute',
-        top: 12,
-        right: 12,
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        top: 50, // Added padding for top notch/status bar
+        right: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         backgroundColor: 'rgba(0,0,0,0.55)',
         alignItems: 'center',
         justifyContent: 'center',

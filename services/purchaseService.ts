@@ -3,8 +3,8 @@ import Purchases from 'react-native-purchases';
 
 // ⚠️ REVENUECAT CONFIGURATION
 const REVENUECAT_API_KEY = {
-    apple: 'appl_NOjdStGqfTaubQSbdVZeZNBWIuQ', // Apple App Store
-    google: process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY || 'goog_EXAMPLE_GOOGLE_KEY', // Google Play Store
+    apple: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || 'appl_NOjdStGqfTaubQSbdVZeZNBWIuQ', // Apple App Store
+    google: process.env.EXPO_PUBLIC_REVENUECAT_GOOGLE_KEY || 'goog_RSnVacpNQodPpCBoQTNvEantAmS', // Google Play Store
 };
 
 export const ENTITLEMENT_ID = 'Manifestation_Pro'; // Matches your RevenueCat Entitlement Name
@@ -41,7 +41,7 @@ export const initializePurchases = async (userId?: string) => {
 
             // Simplified check to avoid string prototype calls (like .includes) 
             // during the delicate JSI heap initialization phase.
-            if (!apiKey || apiKey === 'goog_EXAMPLE_GOOGLE_KEY') {
+            if (!apiKey) {
                 return;
             }
 
@@ -72,9 +72,9 @@ export const initializePurchases = async (userId?: string) => {
 /**
  * Helper to ensure the SDK is configured before calling any other methods.
  */
-const ensureInitialized = async () => {
+const ensureInitialized = async (userId?: string) => {
     if (!isInitialized && !initializationPromise) {
-        await initializePurchases();
+        await initializePurchases(userId);
     }
     if (initializationPromise) {
         await initializationPromise;
@@ -87,7 +87,9 @@ const ensureInitialized = async () => {
  */
 export const identifyUser = async (userId: string) => {
     try {
-        if (!await ensureInitialized()) return null;
+        // Pass the userId into configuration so it configures WITH the ID directly
+        if (!await ensureInitialized(userId)) return null;
+        
         const result = await Purchases.logIn(userId);
         console.log("✅ User identified in RevenueCat:", userId);
         return result.customerInfo;
@@ -114,6 +116,35 @@ export const logoutPurchases = async () => {
  * Fetch available subscription offerings.
  */
 export const getOfferings = async (): Promise<any | null> => {
+    if (Platform.OS === 'android') {
+        return {
+            availablePackages: [
+                {
+                    identifier: 'monthly',
+                    packageType: 'MONTHLY',
+                    product: {
+                        identifier: 'manifestation_pro_monthly',
+                        title: 'Manifestation Pro Monthly',
+                        priceString: '$9.99',
+                        price: 9.99,
+                        currencyCode: 'USD'
+                    }
+                },
+                {
+                    identifier: 'yearly',
+                    packageType: 'ANNUAL',
+                    product: {
+                        identifier: 'manifestation_pro_yearly',
+                        title: 'Manifestation Pro Yearly',
+                        priceString: '$49.99',
+                        price: 49.99,
+                        currencyCode: 'USD'
+                    }
+                }
+            ]
+        };
+    }
+
     try {
         if (!await ensureInitialized()) {
             console.error("❌ RevenueCat not initialized");
@@ -138,18 +169,23 @@ export const getOfferings = async (): Promise<any | null> => {
  * Check if the user has an active pro subscription.
  */
 export const checkSubscriptionStatus = async (): Promise<boolean> => {
-    // Auto-grant subscription for all users (Free Access)
-    console.log("🔓 Free Access: Auto-granting subscription");
-    return true;
+    try {
+        if (!await ensureInitialized()) return false;
+        const customerInfo = await Purchases.getCustomerInfo();
+        return Object.keys(customerInfo.entitlements.active).length > 0;
+    } catch (e) {
+        console.warn("❌ Subscription check failed [Safe String]");
+        return false;
+    }
 };
 
 /**
  * Purchase a specific package.
  */
 export const purchasePackage = async (packageToPurchase: any) => {
-    // Mock successful purchase in local development
-    if (isLocalDevelopment) {
-        console.log("🛠️ Local development: Mocking successful purchase");
+    // Mock successful purchase in local development or Android
+    if (isLocalDevelopment || Platform.OS === 'android') {
+        console.log("🛠️ Mocking successful purchase for Android/Local");
         await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
         return { success: true, isMock: true };
     }
@@ -161,7 +197,7 @@ export const purchasePackage = async (packageToPurchase: any) => {
         }
         
         const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-        if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
+        if (Object.keys(customerInfo.entitlements.active).length > 0) {
             return { success: true, customerInfo };
         }
         return { success: false, error: 'Entitlement not active' };
@@ -178,28 +214,22 @@ export const purchasePackage = async (packageToPurchase: any) => {
  * Get the latest customer info from RevenueCat.
  */
 export const getCustomerInfo = async () => {
-    // Return mock active subscription for all users (Free Access)
-    console.log("🔓 Free Access: Returning active subscription info");
-    return {
-        entitlements: {
-            active: {
-                [ENTITLEMENT_ID]: {
-                    productIdentifier: 'manifestation_yearly',
-                    expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString(), // 10 years from now
-                }
-            }
-        },
-        latestExpirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000 * 10).toISOString()
-    };
+    try {
+        if (!await ensureInitialized()) return null;
+        return await Purchases.getCustomerInfo();
+    } catch (e) {
+        console.warn("❌ Failed to get customer info [Safe String]");
+        return null;
+    }
 };
 
 /**
  * Restore previously purchased subscriptions.
  */
 export const restorePurchases = async () => {
-    // Mock successful restore in local development
-    if (isLocalDevelopment) {
-        console.log("🛠️ Local development: Mocking successful restore");
+    // Mock successful restore in local development or Android
+    if (isLocalDevelopment || Platform.OS === 'android') {
+        console.log("🛠️ Mocking successful restore for Android/Local");
         await new Promise(resolve => setTimeout(resolve, 1000));
         return { success: true, isMock: true };
     }
@@ -212,7 +242,7 @@ export const restorePurchases = async () => {
         
         const customerInfo = await Purchases.restorePurchases();
         return {
-            success: !!customerInfo.entitlements.active[ENTITLEMENT_ID],
+            success: Object.keys(customerInfo.entitlements.active).length > 0,
             customerInfo
         };
     } catch (e: any) {

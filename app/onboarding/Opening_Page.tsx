@@ -127,18 +127,18 @@ export default function OpeningPage() {
                 </Animated.View>
 
                 {/* Sun Rays / Glow Ring (Rotating) */}
-                <Animated.View style={[animatedSunRaysStyle, { position: 'absolute', opacity: 0.15 }]}>
-                    <View className="w-[500px] h-[500px] border-2 border-amber-100 rounded-full border-dashed" />
+                <Animated.View style={[animatedSunRaysStyle, { position: 'absolute', opacity: 0.4 }]}>
+                    <View className="w-[500px] h-[500px] border-2 border-white rounded-full border-dashed" />
                 </Animated.View>
-                <Animated.View style={[animatedSunRaysStyle, { position: 'absolute', opacity: 0.1, transform: [{ rotate: '45deg' }] }]}>
-                    <View className="w-[400px] h-[400px] border border-white rounded-full" />
+                <Animated.View style={[animatedSunRaysStyle, { position: 'absolute', opacity: 0.3, transform: [{ rotate: '45deg' }] }]}>
+                    <View className="w-[400px] h-[400px] border-2 border-white rounded-full" />
                 </Animated.View>
 
                 {/* Text Container */}
                 {!isFinished && (
                     <Animated.View style={[animatedTextStyle, { alignItems: 'center', zIndex: 10, width: '90%' }]}>
                         <Text
-                            className="text-white font-light text-center opacity-90"
+                            className="text-white font-bold text-center opacity-100"
                             style={{
                                 fontFamily: 'Comfortaa_400Regular',
                                 fontSize: width * 0.09,
@@ -154,7 +154,7 @@ export default function OpeningPage() {
                 {isFinished && (
                     <Animated.View entering={FadeIn.duration(1000)} style={{ alignItems: 'center', zIndex: 10 }}>
                         <Text
-                            className="text-white font-thin text-center tracking-widest mb-2"
+                            className="text-white font-bold text-center tracking-widest mb-2"
                             style={{
                                 fontFamily: 'Comfortaa_400Regular',
                                 fontSize: width * 0.11,
@@ -163,7 +163,7 @@ export default function OpeningPage() {
                         >
                             Welcome
                         </Text>
-                        <Text className="text-white/80 text-lg font-light text-center tracking-widest mt-2" style={{ fontFamily: 'Comfortaa_400Regular' }}>
+                        <Text className="text-white/80 text-lg font-bold text-center tracking-widest mt-2" style={{ fontFamily: 'Comfortaa_400Regular' }}>
                             Your journey begins now.
                         </Text>
                     </Animated.View>

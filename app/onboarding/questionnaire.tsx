@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Dimensions, KeyboardAvoidingView, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BreathingBackground } from '../../components/BreathingBackground';
@@ -22,21 +23,22 @@ type HeaderProps = {
 
 const Header = memo(({ currentStep, totalSteps, onBack }: HeaderProps) => (
     <View style={[styles.header, currentStep === 1 && { paddingTop: 40 }]}>
-        {currentStep > 1 ? (
+        {currentStep > 1 && (
             <TouchableOpacity
                 onPress={onBack}
                 style={{ padding: 8, marginRight: 8, marginLeft: -8 }}
             >
                 <Ionicons name="chevron-back" size={28} color="#fff" />
             </TouchableOpacity>
-        ) : (
-            <View style={{ width: 28, marginRight: 8, marginLeft: -8 }} />
         )}
         <View style={styles.progressBarContainer}>
             <View
                 style={[styles.progressBar, { width: `${(currentStep / totalSteps) * 100}%` }]}
             />
         </View>
+        <Text style={{ color: '#fb923c', fontFamily: 'Comfortaa_700Bold', fontSize: 14, marginLeft: 12 }}>
+            {currentStep}/{totalSteps}
+        </Text>
     </View>
 ));
 
@@ -422,8 +424,10 @@ export default function Questionnaire() {
             <View style={styles.overlay} pointerEvents="none" />
 
             <SafeAreaView style={{ flex: 1 }}>
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                <KeyboardAwareScrollView
+                    contentContainerStyle={{ flexGrow: 1 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
                     style={[styles.container, { backgroundColor: 'transparent' }]}
                 >
                     <Header currentStep={currentStep} totalSteps={TOTAL_STEPS} onBack={handleBack} />
@@ -439,7 +443,7 @@ export default function Questionnaire() {
                             {renderStepContent()}
                         </Animated.View>
                     </View>
-                </KeyboardAvoidingView>
+                </KeyboardAwareScrollView>
 
                 {/* Footer */}
                 <Footer

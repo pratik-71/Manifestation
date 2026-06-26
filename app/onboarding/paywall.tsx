@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Linking, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Linking, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { PurchasesPackage } from 'react-native-purchases';
 import Animated, { Easing, FadeInDown, FadeInUp, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { BreathingBackground } from '../../components/BreathingBackground';
@@ -123,9 +123,10 @@ export default function Paywall() {
             }
 
             const activeEntitlements = customerInfo.entitlements.active as any;
-            const sub = activeEntitlements[ENTITLEMENT_ID];
+            const subKeys = Object.keys(activeEntitlements);
             
-            if (sub) {
+            if (subKeys.length > 0) {
+                const sub = activeEntitlements[subKeys[0]];
                 const prodId = sub.productIdentifier.toLowerCase();
                 if (/monthly/i.test(prodId)) {
                     setCurrentSubStatus('monthly');
@@ -243,20 +244,18 @@ export default function Paywall() {
             />
             <View style={styles.overlay} pointerEvents="none" />
 
+            {/* True Floating Back Button (Outside SafeAreaView) */}
+            {!isMandatory && (
+                <TouchableOpacity onPress={() => router.back()} style={styles.floatingBackBtn}>
+                    <Ionicons name="chevron-back" size={28} color="#fff" />
+                </TouchableOpacity>
+            )}
+
             <SafeAreaView style={styles.safe}>
                 <ScrollView 
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={[styles.scrollContent, { paddingTop: isMandatory ? 40 : 0 }]}
+                    contentContainerStyle={[styles.scrollContent, { paddingTop: isMandatory ? 40 : 60 }]}
                 >
-                    {/* Header with Back Button (only if not mandatory) */}
-                    {!isMandatory && (
-                        <View style={styles.headerRow}>
-                            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                                <Ionicons name="chevron-back" size={24} color="#fff" />
-                            </TouchableOpacity>
-                        </View>
-                    )}
-
                     {/* Brand Section */}
                     <Animated.View entering={FadeInUp.duration(600)} style={styles.brandSection}>
                         <Image
@@ -319,7 +318,11 @@ export default function Paywall() {
                                                     const totalMonthlyCost = monthlyPkg.product.price * 12;
                                                     const discount = Math.round(((totalMonthlyCost - yearlyPkg.product.price) / totalMonthlyCost) * 100);
                                                     if (discount > 0) {
-                                                        discountDisplay = <Text style={styles.discountHighlight}> • SAVE {discount}%</Text>;
+                                                        discountDisplay = (
+                                                            <View style={styles.discountBadge}>
+                                                                <Text style={styles.discountHighlight}>SAVE {discount}%</Text>
+                                                            </View>
+                                                        );
                                                     }
                                                 }
 
@@ -354,10 +357,12 @@ export default function Paywall() {
                                                                     </View>
                                                                     <View style={styles.planInfo}>
                                                                         <Text style={styles.planName}>{pkg.product.title}</Text>
-                                                                        <Text style={styles.planSubtext}>
-                                                                            {pkg.packageType === 'ANNUAL' ? 'Billed Yearly' : 'Billed Monthly'}
+                                                                        <View style={styles.planSubtextContainer}>
+                                                                            <Text style={styles.planSubtext}>
+                                                                                {pkg.packageType === 'ANNUAL' ? 'Billed Yearly' : 'Billed Monthly'}
+                                                                            </Text>
                                                                             {discountDisplay}
-                                                                        </Text>
+                                                                        </View>
                                                                     </View>
                                                                     <View style={styles.priceContainer}>
                                                                         <Text style={styles.planPrice}>{pkg.product.priceString}</Text>
@@ -372,7 +377,7 @@ export default function Paywall() {
                                         
                                         <Animated.View entering={FadeInDown.delay(800).duration(600)} style={styles.trialNoticeContainer}>
                                             <Ionicons name="shield-checkmark" size={16} color="#10b981" />
-                                            <Text style={styles.trialNoticeText}>3 Days Free Trial, Cancel Anytime</Text>
+                                            <Text style={styles.trialNoticeText}>Cancel Anytime. No hidden fees.</Text>
                                         </Animated.View>
                                     </>
                                 );
@@ -520,20 +525,17 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
         paddingTop: 10,
     },
-    headerRow: {
-        width: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    backBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'rgba(255,255,255,0.05)',
+    floatingBackBtn: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 60 : 40,
+        left: 20,
+        zIndex: 999,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255,255,255,0.08)',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 20,
     },
     brandSection: {
         alignItems: 'center',
@@ -578,7 +580,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         lineHeight: 18,
         paddingHorizontal: 15,
-        marginBottom: 10,
+        marginBottom: 0,
     },
     dualTickerContainer: {
         flexDirection: 'row',
@@ -690,13 +692,28 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: 2,
     },
+    planSubtextContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
     planSubtext: {
         fontFamily: 'Comfortaa_500Medium',
         fontSize: 12,
         color: 'rgba(255, 255, 255, 0.5)',
     },
+    discountBadge: {
+        backgroundColor: 'rgba(16, 185, 129, 0.15)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginLeft: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(16, 185, 129, 0.3)',
+    },
     discountHighlight: {
         fontFamily: 'Comfortaa_700Bold',
+        fontSize: 10,
         color: '#10b981',
     },
     trialNoticeContainer: {
@@ -880,13 +897,15 @@ const styles = StyleSheet.create({
     upgradeSection: {
         width: '100%',
         alignItems: 'center',
+        paddingTop: 0,
+        paddingBottom: 20,
     },
     upgradeTitle: {
         fontFamily: 'Comfortaa_700Bold',
         fontSize: 12,
         color: '#fb923c',
         letterSpacing: 2,
-        marginBottom: 15,
+        marginBottom: 25,
         opacity: 0.9,
     },
 });

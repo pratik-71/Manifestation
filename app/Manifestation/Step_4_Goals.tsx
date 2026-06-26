@@ -6,15 +6,14 @@ import React, { useEffect, useState } from 'react';
 import {
     Alert,
     Dimensions,
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, FadeInUp, FadeOut, Layout } from 'react-native-reanimated';
 import { clearStaleGoals } from '../../services/goalService';
 import { useUserStore } from '../../store/userStore';
@@ -123,10 +122,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-        >
+        <View style={styles.container}>
             <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
                 <Text style={styles.subtitle}>List a few small actions you can take today moving you closer towards your goal.</Text>
             </Animated.View>
@@ -141,7 +137,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
                 </BlurView>
             </Animated.View>
 
-            <ScrollView
+            <KeyboardAwareScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
                 keyboardShouldPersistTaps="handled"
@@ -183,7 +179,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
                     </View>
                     <Text style={styles.addBtnText}>Add Another Goal</Text>
                 </TouchableOpacity>
-            </ScrollView>
+            </KeyboardAwareScrollView>
 
             <View style={styles.footer}>
                 <TouchableOpacity
@@ -210,7 +206,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
                     <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.3)" />
                 </TouchableOpacity>
             </View>
-        </KeyboardAvoidingView>
+        </View>
     );
 };
 

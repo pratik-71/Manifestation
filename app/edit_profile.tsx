@@ -7,10 +7,8 @@ import {
     ActivityIndicator,
     Alert,
     Dimensions,
-    KeyboardAvoidingView,
     Platform,
     SafeAreaView,
-    ScrollView,
     StatusBar,
     StyleSheet,
     Text,
@@ -19,6 +17,7 @@ import {
     View,
     InteractionManager,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { BreathingBackground } from '../components/BreathingBackground';
 import { TimeValue, TimeWheelPicker } from '../components/TimeWheelPicker';
@@ -142,11 +141,12 @@ export default function EditProfile() {
                     <View style={{ width: 44 }} />
                 </Animated.View>
 
-                <KeyboardAvoidingView 
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+                <KeyboardAwareScrollView 
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
                     style={{ flex: 1 }}
                 >
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                         
                         {/* Username Section */}
                         <Animated.View entering={FadeInDown.delay(200).duration(800)} style={styles.section}>
@@ -273,8 +273,7 @@ export default function EditProfile() {
                         </Animated.View>
 
                         <View style={{ height: 100 }} />
-                    </ScrollView>
-                </KeyboardAvoidingView>
+                    </KeyboardAwareScrollView>
             </SafeAreaView>
         </View>
     );

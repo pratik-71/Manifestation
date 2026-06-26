@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pratik71.Manifestation",
-      "buildNumber": "1.0.41",
+      "buildNumber": "1.0.43",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -97,7 +97,9 @@
       ],
       "expo-apple-authentication",
       "expo-video",
-      "expo-tracking-transparency"
+      "expo-tracking-transparency",
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

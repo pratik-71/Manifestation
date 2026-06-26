@@ -17,6 +17,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, {
     Easing,
     FadeInDown,
@@ -169,7 +170,7 @@ export default function Goals() {
                         </TouchableOpacity>
                     </View>
 
-                    <ScrollView
+                    <KeyboardAwareScrollView
                         contentContainerStyle={styles.content}
                         keyboardShouldPersistTaps="handled"
                         showsVerticalScrollIndicator={false}
@@ -292,7 +293,7 @@ export default function Goals() {
                                 </Text>
                             </TouchableOpacity>
                         </View>
-                    </ScrollView>
+                    </KeyboardAwareScrollView>
                 </View>
             </SafeAreaView>
 

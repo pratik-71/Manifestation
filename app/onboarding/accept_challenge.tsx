@@ -68,7 +68,7 @@ export default function AcceptChallenge() {
             resetOnboarding();
             router.replace('/onboarding/trust1');
         } catch (error) {
-            console.warn("Failed to finish onboarding: [Safe String]");
+            console.warn("Failed to finish onboarding:", error);
             // Even if save fails, try to go home or show error
             router.replace('/onboarding/trust1');
         } finally {

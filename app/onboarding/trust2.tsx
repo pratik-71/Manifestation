@@ -164,7 +164,7 @@ export default function Trust2() {
                     <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
                         <TouchableOpacity
                             activeOpacity={0.88}
-                            onPress={() => router.push('/home')}
+                            onPress={() => router.push('/onboarding/paywall?mandatory=true')}
                             style={styles.ctaButton}
                         >
                             <LinearGradient

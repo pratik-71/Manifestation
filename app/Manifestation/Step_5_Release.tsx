@@ -116,7 +116,7 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
 
                 <Animated.View style={[styles.ring, styles.ring2, ring2Style]}>
                     <View style={styles.dot2} />
-                    <View style={[styles.dot2, { left: undefined, right: CENTER * 1.05 / 2 - 5, top: CENTER * 1.05 / 2 - 5 }]} />
+                    
                 </Animated.View>
 
                 <Animated.View style={[styles.ring, styles.ring3, ring3Style]}>
@@ -126,7 +126,7 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
 
                 <Animated.View style={[styles.ring, styles.ring4, ring4Style]}>
                     <View style={styles.dot4} />
-                    <View style={[styles.dot4, { left: undefined, right: CENTER * 1.88 / 2 - 4, top: CENTER * 1.88 / 2 - 4 }]} />
+                    
                 </Animated.View>
 
                 <Animated.View style={[styles.ring, styles.ring5, ring5Style]}>

@@ -1,164 +1,102 @@
-/**
- * ROOT LAYOUT: Total Stabilization Protocol (v3)
- * 
- * We are implementing a extreme serialization of the startup sequence.
- * 1. Absolute Blackout (0-2.5s): No native calls, no bridge activity.
- * 2. Bridge Warmup (2.5-3.5s): Mount basic providers but no UI.
- * 3. Font Loading (3.5-5.5s): Trigger font loading via expo-font.
- * 4. UI Readiness (5.5s+): Reveal the Stack and hide the Splash.
- */
-
 import { useFonts } from 'expo-font';
 import { SplashScreen, Stack } from 'expo-router';
-import * as SystemUI from 'expo-system-ui';
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 import { Comfortaa_400Regular, Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
 import {
     CormorantGaramond_400Regular,
-    CormorantGaramond_700Bold
+    CormorantGaramond_700Bold,
 } from '@expo-google-fonts/cormorant-garamond';
-import { 
-  DancingScript_700Bold 
-} from '@expo-google-fonts/dancing-script';
+import { DancingScript_700Bold } from '@expo-google-fonts/dancing-script';
 
-import "../global.css";
+import '../global.css';
 
-// Prevent auto-hide immediately to take control of splash lifecycle
-if (Platform.OS !== 'web') {
-  SplashScreen.preventAutoHideAsync().catch(() => {});
-}
+// Prevent the native splash from auto-hiding before we are ready
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-// Delayed load for secondary assets
-const GlobalCosmicBackground = React.lazy(() => import('../components/GlobalCosmicBackground').then(m => ({ default: m.GlobalCosmicBackground })));
+// Delayed load for secondary assets — does not block startup
+const GlobalCosmicBackground = React.lazy(() =>
+    import('../components/GlobalCosmicBackground').then((m) => ({
+        default: m.GlobalCosmicBackground,
+    }))
+);
 
 export default function RootLayout() {
-  const [bootStage, setBootStage] = useState(0);
-
-  useEffect(() => {
-    // Stage 1: Initial Blackout Period
-    // Moves initialization out of the high-stress bridge startup window.
-    const timer = setTimeout(() => {
-        setBootStage(1);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (bootStage === 0) {
-    return <View style={styles.blackout} />;
-  }
-
-  return <StabilizedProviders />;
-}
-
-function StabilizedProviders() {
-    const [providersReady, setProvidersReady] = useState(false);
-
-    useEffect(() => {
-        // Stage 2: Provider Warmup
-        // We mount providers but give them a moment to settle.
-        const timer = setTimeout(() => {
-            setProvidersReady(true);
-        }, 1000);
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (!providersReady) {
-        return <View style={styles.blackout} />;
-    }
-
-    return (
-        <SafeAreaProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-                <FontLoaderLayer />
-            </GestureHandlerRootView>
-        </SafeAreaProvider>
-    );
-}
-
-function FontLoaderLayer() {
-    const [fontTriggered, setFontTriggered] = useState(false);
-    
-    // Stage 3: Font Loading Delay
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setFontTriggered(true);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
-
-    if (!fontTriggered) {
-        return <View style={styles.blackout} />;
-    }
-
-    return <ActualContentLayer />;
-}
-
-function ActualContentLayer() {
-    const [contentReady, setContentReady] = useState(false);
-
-    // Font loading triggered only after layers of stability
     const [fontsLoaded, fontError] = useFonts({
         Comfortaa_400Regular,
         Comfortaa_700Bold,
         CormorantGaramond_400Regular,
         CormorantGaramond_700Bold,
-        DancingScript_700Bold
+        DancingScript_700Bold,
     });
 
+    const splashHidden = useRef(false);
+
+    const hideSplash = async () => {
+        if (splashHidden.current) return;
+        splashHidden.current = true;
+        try {
+            await SplashScreen.hideAsync();
+        } catch (e) {}
+    };
+
+    // Hide splash when fonts are ready (or errored)
     useEffect(() => {
-        // Stage 4: Final Reveal
         if (fontsLoaded || fontError) {
-            const timer = setTimeout(async () => {
-                // Stabilize System UI Colors before revealing
-                try {
-                    await SystemUI.setBackgroundColorAsync("black");
-                } catch (e) {}
-
-                // Reveal App
-                SplashScreen.hideAsync().catch(() => {});
-                setContentReady(true);
-
-                // App Tracking Transparency (Guideline 5.1.2(i))
-                // Delayed further to happen after UI is visible to avoid JSI crashes
-                if (Platform.OS === 'ios') {
-                    try {
-                        const { requestTrackingPermissionsAsync } = await import('expo-tracking-transparency');
-                        setTimeout(async () => {
-                            try {
-                                await requestTrackingPermissionsAsync();
-                            } catch (e) { }
-                        }, 2000);
-                    } catch (e) {}
-                }
-            }, 1000);
-            return () => clearTimeout(timer);
+            hideSplash();
         }
     }, [fontsLoaded, fontError]);
 
-    if (!contentReady) {
-        return <View style={styles.blackout} />;
-    }
+    // Hard safety timeout: hide splash after 3 seconds no matter what
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            hideSplash();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // iOS tracking transparency — shown after app is visible
+    useEffect(() => {
+        if (Platform.OS === 'ios') {
+            const timer = setTimeout(async () => {
+                try {
+                    const { requestTrackingPermissionsAsync } = await import(
+                        'expo-tracking-transparency'
+                    );
+                    await requestTrackingPermissionsAsync();
+                } catch (e) {}
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     return (
-        <>
-            <Stack screenOptions={{ 
-                headerShown: false, 
-                contentStyle: { backgroundColor: 'transparent' },
-                animation: 'fade' // Switched to fade for maximum stability
-            }} />
-            <React.Suspense fallback={null}>
-                <DelayedCosmic />
-            </React.Suspense>
-        </>
+        <SafeAreaProvider>
+            <KeyboardProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                    <Stack
+                        screenOptions={{
+                            headerShown: false,
+                            contentStyle: { backgroundColor: 'transparent' },
+                            animation: 'slide_from_right',
+                        }}
+                    />
+                    <React.Suspense fallback={null}>
+                        <DelayedCosmic />
+                    </React.Suspense>
+                </GestureHandlerRootView>
+            </KeyboardProvider>
+        </SafeAreaProvider>
     );
 }
 
+// Load the cosmic background only after 4s so it never blocks app startup
 const DelayedCosmic = () => {
-    const [visible, setVisible] = useState(false);
+    const [visible, setVisible] = React.useState(false);
     useEffect(() => {
         const t = setTimeout(() => setVisible(true), 4000);
         return () => clearTimeout(t);
@@ -166,14 +104,3 @@ const DelayedCosmic = () => {
     if (!visible) return null;
     return <GlobalCosmicBackground />;
 };
-
-const styles = StyleSheet.create({
-  blackout: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-});
-
-
-
-
