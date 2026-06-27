@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.pratik71.Manifestation",
-      "buildNumber": "1.0.43",
+      "buildNumber": "1.0.45",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -24,8 +24,7 @@
         ],
         "UIBackgroundModes": [
           "remote-notification"
-        ],
-        "NSUserTrackingUsageDescription": "This identifier will be used to provide a better and more personalized experience for your manifestations."
+        ]
       }
     },
     "android": {
@@ -97,7 +96,6 @@
       ],
       "expo-apple-authentication",
       "expo-video",
-      "expo-tracking-transparency",
       "expo-font",
       "expo-web-browser"
     ],

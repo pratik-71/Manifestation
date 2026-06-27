@@ -26,6 +26,7 @@ import { BreathingBackground } from '../components/BreathingBackground';
 import { deleteAccount, getCurrentUser, signOut } from '../services/authService';
 import { supabase } from '../services/supabase';
 import { useUserStore } from '../store/userStore';
+import { checkSubscriptionStatus } from '../services/purchaseService';
 
 const { width } = Dimensions.get('window');
 
@@ -38,6 +39,9 @@ export default function Profile() {
     // Deletion states
     const [isDeleteStep1Visible, setIsDeleteStep1Visible] = useState(false);
     const [isDeleteStep2Visible, setIsDeleteStep2Visible] = useState(false);
+    
+    // Subscription state
+    const [isPro, setIsPro] = useState(false);
 
     const [isFeedbackVisible, setIsFeedbackVisible] = useState(false);
     const [feedbackName, setFeedbackName] = useState('');
@@ -85,6 +89,10 @@ export default function Profile() {
             } else {
                 router.replace('/onboarding/google_signin');
             }
+            
+            // Fetch subscription status safely
+            const isUserPro = await checkSubscriptionStatus();
+            setIsPro(isUserPro);
         };
         init();
     }, []);
@@ -193,7 +201,7 @@ export default function Profile() {
                             />
                             <MenuRow
                                 icon="card-outline"
-                                label="Subscription"
+                                label={isPro ? "Subscription (Active)" : "Subscription"}
                                 onPress={() => router.push('/onboarding/paywall')}
                             />
                             <MenuRow
