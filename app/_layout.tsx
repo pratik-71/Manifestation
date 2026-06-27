@@ -59,20 +59,7 @@ export default function RootLayout() {
         return () => clearTimeout(timer);
     }, []);
 
-    // iOS tracking transparency — shown after app is visible
-    useEffect(() => {
-        if (Platform.OS === 'ios') {
-            const timer = setTimeout(async () => {
-                try {
-                    const { requestTrackingPermissionsAsync } = await import(
-                        'expo-tracking-transparency'
-                    );
-                    await requestTrackingPermissionsAsync();
-                } catch (e) {}
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, []);
+
 
     return (
         <SafeAreaProvider>
