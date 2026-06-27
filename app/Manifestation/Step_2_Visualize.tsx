@@ -43,6 +43,39 @@ const Step_2_Visualize = ({ onComplete }: { onComplete?: () => void }) => {
         }
     }, [isActive]);
 
+    useEffect(() => {
+        async function handleAudio() {
+            if (isActive) {
+                if (!soundRef.current) {
+                    try {
+                        const { sound } = await Audio.Sound.createAsync(
+                            require('../../assets/6hz.mp3'),
+                            { shouldPlay: true, isLooping: true }
+                        );
+                        soundRef.current = sound;
+                    } catch (e) {
+                        console.log("Error loading audio", e);
+                    }
+                } else {
+                    await soundRef.current.playAsync();
+                }
+            } else {
+                if (soundRef.current) {
+                    await soundRef.current.pauseAsync();
+                }
+            }
+        }
+        handleAudio();
+    }, [isActive]);
+
+    useEffect(() => {
+        return () => {
+            if (soundRef.current) {
+                soundRef.current.unloadAsync();
+            }
+        };
+    }, []);
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;

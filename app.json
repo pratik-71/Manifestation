@@ -97,7 +97,8 @@
       "expo-apple-authentication",
       "expo-video",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-tracking-transparency"
     ],
     "experiments": {
       "typedRoutes": true,
