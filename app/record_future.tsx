@@ -176,11 +176,15 @@ export default function RecordFuture() {
     const cameraRef = useRef<CameraView>(null);
 
     const handleDone = () => {
-        if (isOnboarding) {
-            router.push('/onboarding/accept_challenge');
-        } else {
-            router.back();
-        }
+        setModalDismissed(true);
+        // Add a slight delay to allow modal to close before pushing route
+        setTimeout(() => {
+            if (isOnboarding) {
+                router.push('/onboarding/accept_challenge');
+            } else {
+                router.back();
+            }
+        }, 100);
     };
 
     const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -312,7 +316,15 @@ export default function RecordFuture() {
                                 </View>
                                 <TouchableOpacity 
                                     onPress={async () => {
-                                        if (!cameraPermission.granted) await requestCameraPermission();
+                                        if (!cameraPermission.granted) {
+                                            const req = await requestCameraPermission();
+                                            if (!req.granted && !req.canAskAgain) {
+                                                Alert.alert("Permission Required", "Please enable Camera access in Settings.", [
+                                                    { text: "Cancel", style: "cancel" },
+                                                    { text: "Open Settings", onPress: () => Linking.openSettings() }
+                                                ]);
+                                            }
+                                        }
                                     }} 
                                     disabled={cameraPermission.granted}
                                     style={[styles.checklistButton, cameraPermission.granted && styles.checklistButtonGranted]}
@@ -334,7 +346,15 @@ export default function RecordFuture() {
                                 </View>
                                 <TouchableOpacity 
                                     onPress={async () => {
-                                        if (!microphonePermission.granted) await requestMicrophonePermission();
+                                        if (!microphonePermission.granted) {
+                                            const req = await requestMicrophonePermission();
+                                            if (!req.granted && !req.canAskAgain) {
+                                                Alert.alert("Permission Required", "Please enable Microphone access in Settings.", [
+                                                    { text: "Cancel", style: "cancel" },
+                                                    { text: "Open Settings", onPress: () => Linking.openSettings() }
+                                                ]);
+                                            }
+                                        }
                                     }} 
                                     disabled={microphonePermission.granted}
                                     style={[styles.checklistButton, microphonePermission.granted && styles.checklistButtonGranted]}
@@ -356,7 +376,15 @@ export default function RecordFuture() {
                                 </View>
                                 <TouchableOpacity 
                                     onPress={async () => {
-                                        if (!mediaLibraryPermission.granted) await requestMediaLibraryPermission();
+                                        if (!mediaLibraryPermission.granted) {
+                                            const req = await requestMediaLibraryPermission();
+                                            if (!req.granted && !req.canAskAgain) {
+                                                Alert.alert("Permission Required", "Please enable Storage access in Settings.", [
+                                                    { text: "Cancel", style: "cancel" },
+                                                    { text: "Open Settings", onPress: () => Linking.openSettings() }
+                                                ]);
+                                            }
+                                        }
                                     }} 
                                     disabled={mediaLibraryPermission.granted}
                                     style={[styles.checklistButton, mediaLibraryPermission.granted && styles.checklistButtonGranted]}

@@ -144,6 +144,12 @@ export default function GoogleSignIn() {
         setIsLoading(true);
         try {
             const result = await signInWithApple();
+            
+            // If result is null, it typically means the user canceled the flow.
+            if (result === null) {
+                return;
+            }
+
             const userId = result?.data?.user?.id;
 
             if (userId) {
@@ -154,6 +160,8 @@ export default function GoogleSignIn() {
                     return;
                 }
                 router.replace('/onboarding/questionnaire');
+            } else {
+                Alert.alert("Sign In Failed", "We could not securely verify your Apple ID at this time. Please try again.");
             }
         } catch (error: any) {
             console.warn('Apple login failed: [Safe String]');
@@ -317,6 +325,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 0,
         justifyContent: 'space-between',
         paddingVertical: height * 0.045,
+        width: '100%',
+        maxWidth: 600,
+        alignSelf: 'center',
     },
     header: {
         alignItems: 'center',

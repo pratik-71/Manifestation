@@ -11,12 +11,12 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.pratik71.Manifestation",
-      "buildNumber": "1.0.47",
+      "buildNumber": "1.0.48",
       "icon": "./assets/images/icon.png",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Manifestation needs camera access so you can record visual affirmations and send video messages to your future self.",
-        "NSMicrophoneUsageDescription": "We need microphone access to capture the sound and voice for your future-self video recordings and meditations.",
+        "NSCameraUsageDescription": "Manifestation requires camera access to enable the 'Record Future Self' feature, allowing you to capture a one-time commitment video to your future self that is saved to your device.",
+        "NSMicrophoneUsageDescription": "We need microphone access to capture the sound and voice for your one-time future-self video recording and meditations.",
         "NSPhotoLibraryUsageDescription": "This allows you to save your recorded manifestation journeys and future-self videos directly to your Photo Library.",
         "NSPhotoLibraryAddUsageDescription": "We need permission to add your recorded manifestations to your gallery so you can cherish them forever.",
         "LSApplicationQueriesSchemes": [

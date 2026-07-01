@@ -228,6 +228,9 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 32,
         paddingTop: 30,
+        width: '100%',
+        maxWidth: 600,
+        alignSelf: 'center',
     },
     titleContainer: {
         marginBottom: 30,
