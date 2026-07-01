@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_OPENROUTER_API_KEY": "REPLACE_WITH_YOUR_API_KEY",
+        "EXPO_PUBLIC_OPENROUTER_API_KEY": "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",
         "EXPO_PUBLIC_SUPABASE_URL": "https://zrosrwrfufrmdxeprogp.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyb3Nyd3JmdWZybWR4ZXByb2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTg4MzYsImV4cCI6MjA4Njg3NDgzNn0.ZUy4GnZuyr7yJOBjelDYgQNU7BZaZML8RwDgGW0iQbA",
         "EXPO_PUBLIC_REVENUECAT_APPLE_KEY": "appl_NOjdStGqfTaubQSbdVZeZNBWIuQ",
@@ -18,7 +18,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_OPENROUTER_API_KEY": "REPLACE_WITH_YOUR_API_KEY",
+        "EXPO_PUBLIC_OPENROUTER_API_KEY": "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",
         "EXPO_PUBLIC_SUPABASE_URL": "https://zrosrwrfufrmdxeprogp.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyb3Nyd3JmdWZybWR4ZXByb2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTg4MzYsImV4cCI6MjA4Njg3NDgzNn0.ZUy4GnZuyr7yJOBjelDYgQNU7BZaZML8RwDgGW0iQbA",
         "EXPO_PUBLIC_REVENUECAT_APPLE_KEY": "appl_NOjdStGqfTaubQSbdVZeZNBWIuQ",
@@ -28,7 +28,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_OPENROUTER_API_KEY": "REPLACE_WITH_YOUR_API_KEY",
+        "EXPO_PUBLIC_OPENROUTER_API_KEY": "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",
         "EXPO_PUBLIC_SUPABASE_URL": "https://zrosrwrfufrmdxeprogp.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpyb3Nyd3JmdWZybWR4ZXByb2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyOTg4MzYsImV4cCI6MjA4Njg3NDgzNn0.ZUy4GnZuyr7yJOBjelDYgQNU7BZaZML8RwDgGW0iQbA",
         "EXPO_PUBLIC_REVENUECAT_APPLE_KEY": "appl_NOjdStGqfTaubQSbdVZeZNBWIuQ",
