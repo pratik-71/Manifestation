@@ -332,7 +332,7 @@ export default function RecordFuture() {
                                     {cameraPermission.granted ? (
                                         <Ionicons name="checkmark" size={20} color="#34d399" />
                                     ) : (
-                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                        <Text style={styles.checklistButtonText}>Continue</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -362,7 +362,7 @@ export default function RecordFuture() {
                                     {microphonePermission.granted ? (
                                         <Ionicons name="checkmark" size={20} color="#34d399" />
                                     ) : (
-                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                        <Text style={styles.checklistButtonText}>Continue</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -392,7 +392,7 @@ export default function RecordFuture() {
                                     {mediaLibraryPermission.granted ? (
                                         <Ionicons name="checkmark" size={20} color="#34d399" />
                                     ) : (
-                                        <Text style={styles.checklistButtonText}>Enable</Text>
+                                        <Text style={styles.checklistButtonText}>Continue</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>

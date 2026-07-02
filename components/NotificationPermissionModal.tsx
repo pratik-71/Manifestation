@@ -66,7 +66,7 @@ export const NotificationPermissionModal: React.FC<NotificationPermissionModalPr
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                         >
-                            <Text style={styles.textStyle}>Enable Notifications</Text>
+                            <Text style={styles.textStyle}>Continue</Text>
                         </LinearGradient>
                     </TouchableOpacity>
 
