@@ -1,165 +1,108 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import React, { useState } from 'react';
+import React from 'react';
 import {
     Dimensions,
-    Keyboard,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
+    SafeAreaView,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
-    TouchableWithoutFeedback,
     View,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BreathingBackground } from '../../components/BreathingBackground';
 
 const { width } = Dimensions.get('window');
 
 const Step_3_Dream = ({ onComplete }: { onComplete?: () => void }) => {
-    const [dreamScript, setDreamScript] = useState('');
-    const insets = useSafeAreaInsets();
-
-    const handleNext = () => {
-        if (!dreamScript.trim()) {
-            return;
-        }
-        Keyboard.dismiss();
-        setTimeout(() => {
-            onComplete?.();
-        }, 300);
-    };
-
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.container}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-        >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+            {/* Elegant ambient background replacing the orbs */}
+            <BreathingBackground
+                colors={['#000000', '#09081a', '#170b36', '#320b1b']}
+                opacity={0.6}
+            />
+
+            <SafeAreaView style={styles.safeArea}>
                 <View style={styles.inner}>
-                    <ScrollView 
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                    >
-                        <Animated.View entering={FadeInDown.duration(600)} style={styles.headerArea}>
-                            <View style={styles.iconContainer}>
-                                <Ionicons name="journal-outline" size={32} color="#fb923c" />
-                            </View>
-                            <Text style={styles.title}>The Dream Script</Text>
-                            <Text style={styles.subtitle}>
-                                Write down exactly what you just visualized. Write it in the present tense, as if you are already living it right now.
+                    <View style={styles.content}>
+                        <Animated.View entering={FadeInDown.duration(800)} style={styles.headerArea}>
+                            <Text style={styles.title}>The Stage Is Yours</Text>
+                        </Animated.View>
+
+                        <Animated.View entering={FadeInUp.delay(300).duration(1000)} style={styles.promptWrapper}>
+                            <Text style={styles.promptText}>
+                                Close your eyes.{'\n\n'}
+                                Imagine lakhs of people are watching you.{'\n\n'}
+                                Share your success story with them.{'\n\n'}
+                                Let the feeling wash over you.
                             </Text>
                         </Animated.View>
+                    </View>
 
-                        <Animated.View entering={FadeInUp.delay(200).duration(800)} style={styles.inputWrapper}>
-                            <BlurView intensity={30} tint="dark" style={styles.inputContainer}>
-                                <TextInput
-                                    style={styles.textInput}
-                                    multiline
-                                    placeholder="I am so happy and grateful now that..."
-                                    placeholderTextColor="rgba(255,255,255,0.3)"
-                                    value={dreamScript}
-                                    onChangeText={setDreamScript}
-                                    textAlignVertical="top"
-                                    autoFocus
-                                />
-                            </BlurView>
-                        </Animated.View>
-
-                        <View style={{ height: 100 }} />
-                    </ScrollView>
-
-                    <Animated.View entering={FadeInUp.delay(400).duration(600)} style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+                    <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.footer}>
                         <TouchableOpacity
-                            style={[
-                                styles.nextButton,
-                                !dreamScript.trim() && styles.nextButtonDisabled
-                            ]}
-                            onPress={handleNext}
-                            disabled={!dreamScript.trim()}
+                            style={styles.nextButton}
+                            onPress={() => onComplete?.()}
                             activeOpacity={0.8}
                         >
-                            <Text style={styles.nextButtonText}>Complete Step</Text>
-                            <Ionicons name="arrow-forward" size={20} color={dreamScript.trim() ? '#000' : 'rgba(255,255,255,0.3)'} />
+                            <Text style={styles.nextButtonText}>I Have Shared My Story</Text>
+                            <Ionicons name="sparkles" size={20} color="#000" />
                         </TouchableOpacity>
                     </Animated.View>
                 </View>
-            </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#02010a',
+    },
+    safeArea: {
+        flex: 1,
     },
     inner: {
         flex: 1,
+        justifyContent: 'space-between',
+        paddingVertical: 20,
     },
-    scrollContent: {
-        paddingHorizontal: 24,
-        paddingTop: 10,
-        paddingBottom: 40,
-        flexGrow: 1,
+    content: {
+        flex: 1,
+        paddingHorizontal: 30,
+        justifyContent: 'center',
     },
     headerArea: {
         alignItems: 'center',
-        marginBottom: 20,
-    },
-    iconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        backgroundColor: 'rgba(251, 146, 60, 0.15)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
-        borderWidth: 1,
-        borderColor: 'rgba(251, 146, 60, 0.3)',
+        marginBottom: 30,
     },
     title: {
         fontFamily: 'CormorantGaramond_700Bold',
-        fontSize: 32,
+        fontSize: Math.min(width * 0.09, 36),
         color: '#fff',
-        marginBottom: 12,
         textAlign: 'center',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 10,
     },
-    subtitle: {
-        fontFamily: 'Comfortaa_400Regular',
-        fontSize: 14,
-        color: 'rgba(255,255,255,0.7)',
-        textAlign: 'center',
-        lineHeight: 22,
-        paddingHorizontal: 10,
-    },
-    inputWrapper: {
+    promptWrapper: {
         width: '100%',
-        minHeight: 250,
-        borderRadius: 24,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)',
+        alignItems: 'center',
     },
-    inputContainer: {
-        flex: 1,
-        padding: 20,
-    },
-    textInput: {
-        flex: 1,
+    promptText: {
         fontFamily: 'Comfortaa_400Regular',
-        fontSize: 16,
-        color: '#fff',
-        lineHeight: 28,
-        minHeight: 250,
+        fontSize: Math.min(width * 0.042, 17),
+        color: 'rgba(255,255,255,0.85)',
+        lineHeight: Math.min(width * 0.08, 30),
+        textAlign: 'center',
+        textShadowColor: 'rgba(0,0,0,0.5)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 8,
     },
     footer: {
-        paddingHorizontal: 24,
-        paddingTop: 20,
-        backgroundColor: 'transparent',
+        paddingHorizontal: 30,
+        paddingBottom: 10,
     },
     nextButton: {
         width: '100%',
@@ -176,14 +119,9 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 5,
     },
-    nextButtonDisabled: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        shadowOpacity: 0,
-        elevation: 0,
-    },
     nextButtonText: {
         fontFamily: 'Comfortaa_700Bold',
-        fontSize: 16,
+        fontSize: 15,
         color: '#000',
         letterSpacing: 1,
     },

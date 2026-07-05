@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View, SafeAreaView } from 'react-native';
 import Animated, {
     Easing,
     FadeInDown,
@@ -101,7 +101,7 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
     }));
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Animated.View entering={FadeInDown.delay(200)} style={styles.header}>
 
                 <Text style={styles.subtitle}>Let go of exactly how it will happen. Trust the process.</Text>
@@ -169,7 +169,7 @@ const Step_5_Release = ({ onComplete }: { onComplete?: () => void }) => {
                     </Animated.View>
                 )}
             </View>
-        </View>
+        </SafeAreaView>
     );
 };
 

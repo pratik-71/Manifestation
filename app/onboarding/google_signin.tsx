@@ -1,11 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
-import React, { useState, useRef, useEffect } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View, Linking, FlatList, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Image, Linking, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BreathingBackground } from '../../components/BreathingBackground';
-import { AppColors } from '../../constants/Colors';
-import { getCurrentUser, signInWithGoogle, signInWithApple } from '../../services/authService';
+import { getCurrentUser, signInWithApple, signInWithGoogle } from '../../services/authService';
 import { hasCompletedOnboarding } from '../../services/profileService';
 import { identifyUser } from '../../services/purchaseService';
 
@@ -29,11 +28,11 @@ export default function GoogleSignIn() {
     const scrollX = useRef(new Animated.Value(0)).current;
     const flatListRef = useRef<FlatList>(null);
     const [currentIndex, setCurrentIndex] = useState(PROOF_POINTS.length);
-    
+
     // Explicit sizing for absolute centering
     const ITEM_WIDTH = width; // Fill width for paging effect
     const CARD_WIDTH = width - 60; // Inner card width
-    
+
     // Initial position for infinite scroll
     useEffect(() => {
         const centerIndex = PROOF_POINTS.length;
@@ -64,7 +63,7 @@ export default function GoogleSignIn() {
     const handleMomentumScrollEnd = (event: any) => {
         const contentOffset = event.nativeEvent.contentOffset.x;
         const index = Math.round(contentOffset / ITEM_WIDTH);
-        
+
         const bufferSize = PROOF_POINTS.length;
 
         // Invisible reset when landing on buffers
@@ -144,7 +143,7 @@ export default function GoogleSignIn() {
         setIsLoading(true);
         try {
             const result = await signInWithApple();
-            
+
             // If result is null, it typically means the user canceled the flow.
             if (result === null) {
                 return;
@@ -229,17 +228,17 @@ export default function GoogleSignIn() {
                                         </View>
                                     )}
                                 />
-                                
+
                                 <View style={styles.pagination}>
                                     {PROOF_POINTS.map((_, i) => {
                                         const actualIndex = currentIndex % PROOF_POINTS.length;
                                         return (
-                                            <View 
-                                                key={i} 
+                                            <View
+                                                key={i}
                                                 style={[
-                                                    styles.dot, 
+                                                    styles.dot,
                                                     actualIndex === i ? styles.activeDot : styles.inactiveDot
-                                                ]} 
+                                                ]}
                                             />
                                         );
                                     })}
@@ -251,7 +250,7 @@ export default function GoogleSignIn() {
                     {/* Action Area */}
                     <View style={styles.bottomSection}>
                         <Text style={styles.actionSubtitle}>START YOUR JOURNEY</Text>
-                        
+
 
                         <View style={styles.buttonStack}>
                             {Platform.OS === 'ios' && (
@@ -297,7 +296,7 @@ export default function GoogleSignIn() {
                     </View>
                 </View>
             </SafeAreaView >
-            
+
             {isLoading && (
                 <View style={styles.loadingOverlay}>
                     <ActivityIndicator size="large" color="#f59e0b" />

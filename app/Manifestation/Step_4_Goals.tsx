@@ -11,7 +11,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    View
+    View,
+    SafeAreaView
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import Animated, { FadeInDown, FadeInUp, FadeOut, Layout } from 'react-native-reanimated';
@@ -122,7 +123,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
     };
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Animated.View entering={FadeInDown.duration(800)} style={styles.header}>
                 <Text style={styles.subtitle}>List a few small actions you can take today moving you closer towards your goal.</Text>
             </Animated.View>
@@ -206,7 +207,7 @@ const Step_4_Goals = ({ onComplete }: { onComplete?: () => void }) => {
                     <Ionicons name="arrow-forward" size={14} color="rgba(255,255,255,0.3)" />
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 };
 
